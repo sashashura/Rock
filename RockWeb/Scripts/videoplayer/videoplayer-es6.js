@@ -242,31 +242,29 @@ class RockMediaPlayer {
             existingMapString = this.map;
             this.writeDebugMessage( 'Map provided in .map property: ' + existingMapString );
         }
-        else {
+        else
+        {
             // There's no existing map to use
             this.createBlankMap();
             this.writeDebugMessage( 'No previous map provided, creating a blank map.' );
             return;
         }
         
-        // If existing map has a comma the format is assumed to be run length encoded
-        if ( existingMapString.indexOf(',') > -1 ) 
-        { 
-            this.setRleMap = existingMapString;
-            return;
-        }
-        
-        // Split the string into an array
-        this.map = existingMapString.split( '' );
-        
-        // Ensure the array is the same length as the video otherwise 
-        // ignore the map. TODO: might re-thing what to do with an invalid length in the future
-        this.mapSize = Math.floor( this.player.duration ) - 1;
-        if ( this.map.length != this.mapSize ) 
+        // If existing map has a comma the format is assumed to be run length encoded. Convert
+        // the RLE format to the map and return
+        if (existingMapString.indexOf(',') > -1)
         {
-            this.writeDebugMessage( 'Provided map size (' + this.map.length + ') did not match the video (' + this.mapSize + '). Using a blank map.' );
-            this.createBlankMap();
+            this.map = rleToArray(existingMapString);
+            this.writeDebugMessage( 'Map provided in RLE format.' );
         }
+        else
+        {
+            // Split the string into an array
+            this.map = existingMapString.split('');
+        }
+
+        // Ensure the array is the same length as the video otherwise ignore the map.
+        this.validateMap();
     }
     /* #endregion */
 
@@ -343,6 +341,12 @@ class RockMediaPlayer {
         }
 
         return unencoded;
+    }
+
+    // Takes a RLE string and return a string in the format of a map (e.g. '1111110000000...')
+    rleToString( value )
+    {
+        return this.rleToArray(value).join('');
     }
 
     /* #endregion */

@@ -1,0 +1,6 @@
+﻿{
+  "compilerOptions": {
+    "removeComments": false,
+    "outDir": "./"
+  }
+}
