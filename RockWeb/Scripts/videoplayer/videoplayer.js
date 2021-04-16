@@ -9,7 +9,7 @@ var RockMediaPlayer = (function () {
         this.hiddenInputIdPercentage = "";
         this.hiddenInputIdMap = "";
         this.previousPlayBit = null;
-        this.appendToMap = true;
+        this.updateMap = true;
         this.resumePlaying = true;
         this.elementId = "";
         this.writeInteraction = "always";
@@ -58,11 +58,11 @@ var RockMediaPlayer = (function () {
                 this.writeDebugMessage('Could not find input element: ' + this.hiddenInputIdMap);
             }
         }
+        this.previousPlayBit = playBit;
         this.writeDebugMessage(this.watchBits.join(''));
         var currentRleMap = this.toRle(this.watchBits);
         this.writeDebugMessage('RLE: ' + currentRleMap);
         this.writeDebugMessage('Player Time: ' + this.player.currentTime + ' Current Time: ' + playBit + '; Percent Watched: ' + this.percentWatched + '; Unwatched Items: ' + unwatchedItemCount + '; Map Size: ' + this.mapSize);
-        this.previousPlayBit = playBit;
     };
     RockMediaPlayer.prototype.prepareForPlay = function () {
         this.writeDebugMessage("Preparing the player.");
@@ -86,7 +86,7 @@ var RockMediaPlayer = (function () {
         this.writeDebugMessage("The current starting position is: " + this.player.currentTime);
     };
     RockMediaPlayer.prototype.initializeMap = function () {
-        if (this.appendToMap) {
+        if (this.updateMap) {
             this.loadExistingMap();
         }
         else {
@@ -142,6 +142,9 @@ var RockMediaPlayer = (function () {
             return "";
         }
         var input = document.getElementById(this.hiddenInputIdMap);
+        if (input == null) {
+            return "";
+        }
         return input.value;
     };
     RockMediaPlayer.prototype.rleToArray = function (value) {

@@ -15,6 +15,25 @@
 // </copyright>
 //
 
+/*
+    ========================================
+    SPECIAL NOTES
+    ========================================
+
+    1. Resume Playing
+    -------------------
+    4/6/2020 - JME
+    Resume playing works on all video providers (HTML5, YouTube, Vimeo), but the
+    scrub bar will only auto forward before play on HTML5. It's possible we could
+    add support for this with YouTube by implementing an event for 'onstatechange'
+    and look for value 5 (video cued).
+    https://stackoverflow.com/questions/4718404/retrieve-player-state-with-multiple-youtube-players-on-a-page
+
+
+    
+    ========================================
+    */
+
 class RockMediaPlayer {
 
     // Properties
@@ -26,7 +45,7 @@ class RockMediaPlayer {
     hiddenInputIdPercentage = "";
     hiddenInputIdMap = "";
     previousPlayBit: number | null = null;
-    appendToMap = true;
+    updateMap = true;
     resumePlaying = true;
     elementId = "";
     writeInteraction = "always";
@@ -64,15 +83,18 @@ class RockMediaPlayer {
 
         var currentValue = this.watchBits[playBit];
 
+        // Max times we will count a watch is 9 to keep the map single digits
         if (currentValue < 9) {
             this.watchBits[playBit] = ++currentValue;
         }
 
+        // Get count of unwatched bits
         var unwatchedItemCount = this.watchBits.filter(item => item == 0).length;
 
+        // Calculate percent watched
         this.percentWatched = 1 - (unwatchedItemCount / this.mapSize);
 
-        // Update hidden fields
+        // Update percentage hidden field
         if (this.hiddenInputIdPercentage != '') {
             let input = <HTMLInputElement>document.getElementById(this.hiddenInputIdPercentage);
 
@@ -84,6 +106,7 @@ class RockMediaPlayer {
             }
         }
 
+        // Update map hidden field
         if (this.hiddenInputIdMap != '') {
             let input = <HTMLInputElement>document.getElementById(this.hiddenInputIdMap);
 
@@ -95,14 +118,16 @@ class RockMediaPlayer {
             }
         }
 
+        // Update previous played bit
+        this.previousPlayBit = playBit;
+
+        // Write debug timings
         this.writeDebugMessage(this.watchBits.join(''));
 
         let currentRleMap = this.toRle(this.watchBits);
         this.writeDebugMessage('RLE: ' + currentRleMap);
 
         this.writeDebugMessage('Player Time: ' + this.player.currentTime + ' Current Time: ' + playBit + '; Percent Watched: ' + this.percentWatched + '; Unwatched Items: ' + unwatchedItemCount + '; Map Size: ' + this.mapSize);
-
-        this.previousPlayBit = playBit;
     }
 
     // Initializes maps and sets resume location if requested
@@ -141,7 +166,7 @@ class RockMediaPlayer {
     // Method: Sets up the map to track watching
     private initializeMap() {
         // Load an existing map if requested and it exists
-        if (this.appendToMap) {
+        if (this.updateMap) {
             this.loadExistingMap();
         }
         else {
@@ -235,6 +260,10 @@ class RockMediaPlayer {
         }
 
         let input = <HTMLInputElement>document.getElementById(this.hiddenInputIdMap);
+
+        if (input == null) {
+            return "";
+        }
 
         return input.value;
     }
