@@ -52,7 +52,7 @@ namespace Rock.Storage.Provider
         Order = 3 )]
 
     [TextField( "Default Container Name",
-        Description = "The default Azure blob container to use if file type does not provide a container name.",
+        Description = "The default Azure blob container to use for file types that do not provide their own.",
         IsRequired = true,
         Order = 4 )]
 
@@ -182,12 +182,12 @@ namespace Rock.Storage.Provider
             }
 
             FileTypeSettings settings;
-            if ( binaryFile.StorageSettings != null && binaryFile.StorageSettings.ContainsKey( "ContainerName" ) && binaryFile.StorageSettings.ContainsKey( "ContainerFolderPath" ) )
+            if ( binaryFile.StorageSettings != null && binaryFile.StorageSettings.ContainsKey( "AzureBlobContainerName" ) && binaryFile.StorageSettings.ContainsKey( "AzureBlobContainerFolderPath" ) )
             {
                 settings = new FileTypeSettings
                 {
-                    ContainerName = binaryFile.StorageSettings["ContainerName"],
-                    Folder = binaryFile.StorageSettings["ContainerFolderPath"]
+                    ContainerName = binaryFile.StorageSettings["AzureBlobContainerName"],
+                    Folder = binaryFile.StorageSettings["AzureBlobContainerFolderPath"]
                 };
             }
             else
@@ -297,8 +297,8 @@ namespace Rock.Storage.Provider
                 binaryFileType.LoadAttributes();
             }
 
-            settings.ContainerName = binaryFileType.GetAttributeValue( "ContainerName" );
-            settings.Folder = ( binaryFileType.GetAttributeValue( "ContainerFolderPath" ) ?? string.Empty )
+            settings.ContainerName = binaryFileType.GetAttributeValue( "AzureBlobContainerName" );
+            settings.Folder = ( binaryFileType.GetAttributeValue( "AzureBlobContainerFolderPath" ) ?? string.Empty )
                 .Replace( @"\", "/" )
                 .TrimEnd( "/".ToCharArray() );
 

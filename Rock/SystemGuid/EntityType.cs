@@ -458,6 +458,11 @@ namespace Rock.SystemGuid
         public const string STORAGE_PROVIDER_FILESYSTEM = "A97B6002-454E-4890-B529-B99F8F2F376A";
 
         /// <summary>
+        /// The guid for the Azure Blob Storage storage provider entity (Rock.Storage.Provider.AzureBlobStorage)
+        /// </summary>
+        public const string STORAGE_PROVIDER_AZUREBLOBSTORAGE = "9925A20A-7262-4FC7-B86E-856F6D98BE17";
+
+        /// <summary>
         /// The asset storage 'Amazon S3' component (Rock.Storage.AssetStorage.AmazonS3Component)
         /// </summary>
         public const string STORAGE_ASSETSTORAGE_AMAZONS3 = "FFE9C4A0-7AB7-48CA-8938-EC73DEC134E8";
