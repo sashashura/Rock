@@ -110,17 +110,10 @@ namespace Rock.Storage.Provider
         /// <param name="binaryFile">The <see cref="BinaryFile"/>.</param>
         public override void DeleteContent( BinaryFile binaryFile )
         {
-            try
+            var blob = GetBlob( binaryFile );
+            if ( blob != null && !blob.IsDeleted && blob.Exists() )
             {
-                var blob = GetBlob( binaryFile );
-                if ( blob != null )
-                {
-                    blob.Delete();
-                }
-            }
-            catch ( Exception ex )
-            {
-                ExceptionLogService.LogException( ex );
+                blob.Delete();
             }
         }
 
