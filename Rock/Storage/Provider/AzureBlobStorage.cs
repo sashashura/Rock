@@ -60,9 +60,7 @@ namespace Rock.Storage.Provider
 
     public class AzureBlobStorage : ProviderComponent
     {
-        private readonly object _obj = new object();
-
-        private readonly ConcurrentDictionary<string, CloudBlobContainer> _containers = new ConcurrentDictionary<string, CloudBlobContainer>();
+        private readonly object __lockObj = new object();
 
         /// <summary>
         /// Saves the file.
@@ -134,13 +132,12 @@ namespace Rock.Storage.Provider
         public override System.IO.Stream GetContentStream( BinaryFile binaryFile )
         {
             var blob = GetBlob( binaryFile );
-            if ( blob != null )
+            if ( blob == null || !blob.Exists() )
             {
-                var stream = blob.OpenRead();
-                return stream;
+                return null;
             }
 
-            return null;
+            return blob.OpenRead();
         }
 
         /// <summary>
@@ -229,25 +226,16 @@ namespace Rock.Storage.Provider
                 return null;
             }
 
-            lock ( _obj )
+            lock ( __lockObj )
             {
-                //if ( _containers.ContainsKey( containerName ) )
-                //{
-                //    container = _containers[containerName];
-                //}
+                var accountName = GetAttributeValue( "AccountName" );
+                var accountKey = GetAttributeValue( "AccountKey" );
+                var customDomain = GetAttributeValue( "CustomDomain" );
 
-                string accountName = GetAttributeValue( "AccountName" );
-                string accountKey = GetAttributeValue( "AccountKey" );
-                string customDomain = GetAttributeValue( "CustomDomain" );
-
-                string connectionString = string.Empty;
-                if ( string.IsNullOrWhiteSpace( customDomain ) )
+                var connectionString = $"DefaultEndpointsProtocol=https;AccountName={accountName};AccountKey={accountKey}";
+                if ( !string.IsNullOrWhiteSpace( customDomain ) )
                 {
-                    connectionString = string.Format( "DefaultEndpointsProtocol=https;AccountName={0};AccountKey={1}", accountName, accountKey );
-                }
-                else
-                {
-                    connectionString = string.Format( "DefaultEndpointsProtocol=http;AccountName={0};AccountKey={1};BlobEndpoint={2}", accountName, accountKey, customDomain );
+                    connectionString = $"{connectionString};BlobEndpoint={customDomain}";
                 }
 
                 var storageAccount = CloudStorageAccount.Parse( connectionString );
@@ -276,7 +264,6 @@ namespace Rock.Storage.Provider
                     container.CreateIfNotExists();
                     container.SetPermissions( new BlobContainerPermissions { PublicAccess = BlobContainerPublicAccessType.Blob } );
                 }
-                _containers.AddOrReplace( containerName, container );
 
                 return container;
             }
@@ -311,7 +298,7 @@ namespace Rock.Storage.Provider
             }
 
             settings.ContainerName = binaryFileType.GetAttributeValue( "ContainerName" );
-            settings.Folder = binaryFileType.GetAttributeValue( "ContainerFolderPath" )
+            settings.Folder = ( binaryFileType.GetAttributeValue( "ContainerFolderPath" ) ?? string.Empty )
                 .Replace( @"\", "/" )
                 .TrimEnd( "/".ToCharArray() );
 
