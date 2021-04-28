@@ -45,6 +45,9 @@ INSERT [dbo].[Attribute] ([IsSystem], [FieldTypeId], [EntityTypeId], [EntityType
 INSERT [dbo].[Attribute] ([IsSystem], [FieldTypeId], [EntityTypeId], [EntityTypeQualifierColumn], [EntityTypeQualifierValue], [Key], [Name], [Description], [Order], [IsGridColumn], [DefaultValue], [IsMultiValue], [IsRequired], [Guid], [CreatedDateTime], [ModifiedDateTime], [CreatedByPersonAliasId], [ModifiedByPersonAliasId], [ForeignKey], [IconCssClass], [AllowSearch], [ForeignGuid], [IsIndexEnabled], [IsAnalytic], [IsAnalyticHistory], [IsActive], [EnableHistory], [PreHtml], [PostHtml], [AbbreviatedName], [ShowOnBulk], [IsPublic]) VALUES (1, @FieldTypeId, @BinaryFileEntityTypeId, N'StorageEntityTypeId', @AzureBlobStorageEntityTypeId, N'AzureBlobContainerFolderPath', N'Azure Blob Container Folder Path', N'An optional folder path inside the container to use for files of this type.', 0, 0, N'', 0, 0, N'ba7c28e6-b45e-4983-8a8d-96985e2c4ef4', NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, 0, 0, 1, 0, NULL, NULL, NULL, 0, 0);
 
 " );
+
+            // update the friendly name of the Pillars plugin if it was already installed.
+            Sql( "UPDATE [EntityType] SET [FriendlyName] = [FriendlyName] + N' (plugin)' WHERE [Guid] = 'F7DE0437-3A21-4EE7-AA53-DFCB366E252C';" );
         }
 
         /// <summary>
