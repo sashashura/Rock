@@ -1,0 +1,282 @@
+﻿// <copyright>
+// Copyright by the Spark Development Network
+//
+// Licensed under the Rock Community License (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.rockrms.com/license
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+// </copyright>
+//
+using Azure.Storage.Blobs;
+using Rock.Attribute;
+using Rock.Data;
+using Rock.Model;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.ComponentModel.Composition;
+
+namespace Rock.Storage.Provider
+{
+    /// <summary>
+    /// Storage provider for Azure Blob storage
+    /// </summary>
+    [Description( "Azure Blob Storage" )]
+    [Export( typeof( ProviderComponent ) )]
+    [ExportMetadata( "ComponentName", "Azure Blob Storage" )]
+
+    #region Storage Provider Attributes
+
+    [TextField( "Account Name",
+        Description = "The Azure account name.",
+        IsRequired = true,
+        Order = 1 )]
+
+    [TextField("Account Key",
+        Description = "The Azure account key.",
+        IsRequired = true,
+        Order = 2 )]
+
+    [UrlLinkField( "Custom Domain",
+        Description = "If you have configured the Azure container with a custom domain name that you'd like to use, set that value here (e.g. 'http://storage.yourorganization.com').",
+        IsRequired = false,
+        Order = 3 )]
+
+    [TextField( "Default Container Name",
+        Description = "The default Azure blob container to use for file types that do not provide their own.",
+        IsRequired = true,
+        Order = 4 )]
+
+    #endregion Storage Provider Attributes
+
+    public class AzureBlobStorage : ProviderComponent
+    {
+        #region ProviderComponent Implementation
+
+        /// <summary>
+        /// Saves the file.
+        /// </summary>
+        /// <param name="binaryFile">The <see cref="BinaryFile"/>.</param>
+        public override void SaveContent( BinaryFile binaryFile )
+        {
+            SaveContent( binaryFile, out _ );
+        }
+
+        /// <summary>
+        /// Saves the file.
+        /// </summary>
+        /// <param name="binaryFile">The <see cref="BinaryFile"/>.</param>
+        /// <param name="fileSize">Size of the file.</param>
+        public override void SaveContent( BinaryFile binaryFile, out long? fileSize )
+        {
+            var blobClient = GetBlobClient( binaryFile );
+            blobClient.Upload( binaryFile.ContentStream );
+            fileSize = binaryFile.ContentStream.Length;
+        }
+
+        /// <summary>
+        /// Removes the file.
+        /// </summary>
+        /// <param name="binaryFile">The <see cref="BinaryFile"/>.</param>
+        public override void DeleteContent( BinaryFile binaryFile )
+        {
+            var blobClient = GetBlobClient( binaryFile );
+            blobClient.DeleteIfExists();
+        }
+
+        /// <summary>
+        /// Gets the content stream of a file.
+        /// </summary>
+        /// <param name="binaryFile">The <see cref="BinaryFile"/>.</param>
+        /// <returns></returns>
+        public override System.IO.Stream GetContentStream( BinaryFile binaryFile )
+        {
+            var blobClient = GetBlobClient( binaryFile );
+            if ( blobClient.Exists() )
+            {
+                return blobClient.OpenRead();
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Gets the path of a file.
+        /// </summary>
+        /// <param name="binaryFile">The <see cref="BinaryFile"/>.</param>
+        /// <returns></returns>
+        public override string GetPath( BinaryFile binaryFile )
+        {
+            if ( binaryFile != null && ( binaryFile.BinaryFileType == null || !binaryFile.BinaryFileType.RequiresViewSecurity ) )
+            {
+                var blobClient = GetBlobClient( binaryFile );
+                if ( blobClient.Exists() )
+                {
+                    return blobClient.Uri.AbsoluteUri;
+                }
+            }
+
+            return base.GetPath( binaryFile );
+        }
+
+        /// <summary>
+        /// Gets the URL of a file.
+        /// </summary>
+        /// <param name="binaryFile">The <see cref="BinaryFile"/>.</param>
+        /// <returns></returns>
+        public override string GetUrl( BinaryFile binaryFile )
+        {
+            return binaryFile.Path;
+        }
+
+        #endregion ProviderComponent Implementation
+
+        #region Private Methods
+
+        /// <summary>
+        /// Get the Blob Client.
+        /// </summary>
+        /// <param name="binaryFile">The <see cref="BinaryFile"/>.</param>
+        /// <returns></returns>
+        private BlobClient GetBlobClient( BinaryFile binaryFile )
+        {
+            if ( binaryFile == null )
+            {
+                return null;
+            }
+
+            FileTypeSettings settings;
+            if ( binaryFile.StorageSettings != null && binaryFile.StorageSettings.ContainsKey( "AzureBlobContainerName" ) && binaryFile.StorageSettings.ContainsKey( "AzureBlobContainerFolderPath" ) )
+            {
+                settings = new FileTypeSettings
+                {
+                    ContainerName = binaryFile.StorageSettings["AzureBlobContainerName"],
+                    Folder = binaryFile.StorageSettings["AzureBlobContainerFolderPath"]
+                };
+            }
+            else
+            {
+                settings = GetSettingsFromFileType( binaryFile );
+            }
+
+            string rawGuid = binaryFile.Guid.ToString().Replace( "-", "" );
+            string fileName = $"{rawGuid}_{binaryFile.FileName}";
+            string blobName = string.IsNullOrWhiteSpace( settings.Folder ) ? fileName : $"{settings.Folder}/{fileName}";
+
+            var accountName = GetAttributeValue( "AccountName" );
+            var accountKey = GetAttributeValue( "AccountKey" );
+            var customDomain = GetAttributeValue( "CustomDomain" );
+
+            return AzureBlobStorageClient.Instance.GetBlobClient( accountName, accountKey, customDomain, settings.ContainerName, blobName );
+        }
+
+        /// <summary>
+        /// Gets the <see cref="FileTypeSettings"/> from attributes of the <see cref="BinaryFileType"/> associated with a file.
+        /// </summary>
+        /// <param name="binaryFile">The <see cref="BinaryFile"/>.</param>
+        /// <returns></returns>
+        private FileTypeSettings GetSettingsFromFileType( BinaryFile binaryFile )
+        {
+            var settings = new FileTypeSettings();
+            if ( binaryFile == null || !binaryFile.BinaryFileTypeId.HasValue )
+            {
+                return settings;
+            }
+
+            var binaryFileType = binaryFile.BinaryFileType;
+            if ( binaryFileType == null && binaryFile.BinaryFileTypeId.HasValue )
+            {
+                binaryFileType = new BinaryFileTypeService( new RockContext() ).Get( binaryFile.BinaryFileTypeId.Value );
+            }
+            if ( binaryFileType == null )
+            {
+                return settings;
+            }
+
+            if ( binaryFileType.Attributes == null )
+            {
+                binaryFileType.LoadAttributes();
+            }
+
+            settings.ContainerName = binaryFileType.GetAttributeValue( "AzureBlobContainerName" );
+            settings.Folder = ( binaryFileType.GetAttributeValue( "AzureBlobContainerFolderPath" ) ?? string.Empty )
+                .Replace( @"\", "/" )
+                .TrimEnd( "/".ToCharArray() );
+
+            return settings;
+        }
+
+        /// <summary>
+        /// File Type Settings POCO.
+        /// </summary>
+        private class FileTypeSettings
+        {
+            public string ContainerName;
+            public string Folder;
+        }
+
+        #endregion Private Methods
+    }
+
+    /// <summary>
+    /// Azure Blob Storage Client Singleton
+    /// </summary>
+    internal sealed class AzureBlobStorageClient
+    {
+        /// <summary>
+        /// Gets the client singleton instance.
+        /// </summary>
+        public static AzureBlobStorageClient Instance => _instance;
+        private static readonly AzureBlobStorageClient _instance = new AzureBlobStorageClient();
+
+        private System.Net.Http.HttpClient _httpClient;
+        private Dictionary<int, BlobContainerClient> _containerClients = new Dictionary<int, BlobContainerClient>();
+
+        /// <summary>
+        /// Gets a <see cref="BlobClient"/> for a specific Blob.
+        /// </summary>
+        /// <param name="accountName">The Azure Storage Account Name</param>
+        /// <param name="accountKey">The Azure Storage Account Key</param>
+        /// <param name="customDomain">The (optional) custom domain name of the Azure Storage Account.</param>
+        /// <param name="containerName">The name of the Azure Blob Container.</param>
+        /// <param name="blobName">The name of the Azure Blob.</param>
+        /// <returns></returns>
+        public BlobClient GetBlobClient( string accountName, string accountKey, string customDomain, string containerName, string blobName )
+        {
+            _httpClient = _httpClient ?? new System.Net.Http.HttpClient();
+
+            var hashKey = ( accountName + accountKey + customDomain + containerName ).GetHashCode();
+            if ( !_containerClients.ContainsKey( hashKey ) )
+            {
+                var connectionString = $"DefaultEndpointsProtocol=https;AccountName={accountName};AccountKey={accountKey}";
+                if ( !string.IsNullOrWhiteSpace( customDomain ) )
+                {
+                    connectionString = $"{connectionString};BlobEndpoint={customDomain}";
+                }
+
+                // use shared HttpClient for all container clients.
+                var clientOptions = new BlobClientOptions
+                {
+                    Transport = new Azure.Core.Pipeline.HttpClientTransport( _httpClient )
+                };
+
+                var containerClient = new BlobContainerClient( connectionString, containerName, clientOptions );
+                _containerClients.Add( hashKey, containerClient );
+            }
+
+            return _containerClients[hashKey].GetBlobClient( blobName );
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        private AzureBlobStorageClient()
+        {
+        }
+    }
+}
