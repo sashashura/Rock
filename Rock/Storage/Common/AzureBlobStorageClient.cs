@@ -16,6 +16,7 @@
 //
 using Azure.Storage.Blobs;
 using System.Collections.Generic;
+using System.Net.Http;
 
 namespace Rock.Storage.Common
 {
@@ -28,9 +29,20 @@ namespace Rock.Storage.Common
         /// Gets the client singleton instance.
         /// </summary>
         public static AzureBlobStorageClient Instance => _instance;
+
+        /// <summary>
+        /// The client singleton instance.
+        /// </summary>
         private static readonly AzureBlobStorageClient _instance = new AzureBlobStorageClient();
 
-        private System.Net.Http.HttpClient _httpClient;
+        /// <summary>
+        /// Shared <see cref="HttpClient"/>.  All Azure Clients should use this.
+        /// </summary>
+        private HttpClient _httpClient;
+
+        /// <summary>
+        /// Dictionary for cached <see cref="BlobContainerClient"/>s.  Users should have a limited number of containers, so we will keep them in memory as they are used.
+        /// </summary>
         private Dictionary<int, BlobContainerClient> _containerClients = new Dictionary<int, BlobContainerClient>();
 
         /// <summary>
@@ -44,7 +56,7 @@ namespace Rock.Storage.Common
         /// <returns></returns>
         public BlobClient GetBlobClient( string accountName, string accountKey, string customDomain, string containerName, string blobName )
         {
-            _httpClient = _httpClient ?? new System.Net.Http.HttpClient();
+            _httpClient = _httpClient ?? new HttpClient();
 
             var hashKey = ( accountName + accountKey + customDomain + containerName ).GetHashCode();
             if ( !_containerClients.ContainsKey( hashKey ) )
@@ -69,7 +81,7 @@ namespace Rock.Storage.Common
         }
 
         /// <summary>
-        /// Constructor.
+        /// Private (singleton) constructor.
         /// </summary>
         private AzureBlobStorageClient()
         {

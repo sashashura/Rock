@@ -25,7 +25,7 @@ using System.ComponentModel.Composition;
 namespace Rock.Storage.Provider
 {
     /// <summary>
-    /// Storage provider for Azure Blob storage
+    /// Storage provider for Azure Blob Storage
     /// </summary>
     [Description( "Azure Blob Storage" )]
     [Export( typeof( ProviderComponent ) )]
@@ -35,21 +35,25 @@ namespace Rock.Storage.Provider
 
     [TextField( "Account Name",
         Description = "The Azure account name.",
+        Key = AttributeKey.AccountName,
         IsRequired = true,
         Order = 1 )]
 
     [TextField("Account Key",
         Description = "The Azure account key.",
+        Key = AttributeKey.AccountKey,
         IsRequired = true,
         Order = 2 )]
 
     [UrlLinkField( "Custom Domain",
         Description = "If you have configured the Azure container with a custom domain name that you'd like to use, set that value here (e.g. 'http://storage.yourorganization.com').",
+        Key = AttributeKey.CustomDomain,
         IsRequired = false,
         Order = 3 )]
 
     [TextField( "Default Container Name",
         Description = "The default Azure blob container to use for file types that do not provide their own.",
+        Key = AttributeKey.DefaultContainerName,
         IsRequired = true,
         Order = 4 )]
 
@@ -57,6 +61,18 @@ namespace Rock.Storage.Provider
 
     public class AzureBlobStorage : ProviderComponent
     {
+        #region Attribute Keys
+
+        private static class AttributeKey
+        {
+            public const string AccountName = "AccountName";
+            public const string AccountKey = "AccountKey";
+            public const string CustomDomain = "CustomDomain";
+            public const string DefaultContainerName = "DefaultContainerName";
+        }
+
+        #endregion Attribute Keys
+
         #region ProviderComponent Implementation
 
         /// <summary>
@@ -168,11 +184,12 @@ namespace Rock.Storage.Provider
             string fileName = $"{rawGuid}_{binaryFile.FileName}";
             string blobName = string.IsNullOrWhiteSpace( settings.Folder ) ? fileName : $"{settings.Folder}/{fileName}";
 
-            var accountName = GetAttributeValue( "AccountName" );
-            var accountKey = GetAttributeValue( "AccountKey" );
-            var customDomain = GetAttributeValue( "CustomDomain" );
+            var accountName = GetAttributeValue( AttributeKey.AccountName );
+            var accountKey = GetAttributeValue( AttributeKey.AccountKey );
+            var customDomain = GetAttributeValue( AttributeKey.CustomDomain );
+            var containerName = settings.ContainerName.IsNotNullOrWhiteSpace() ? settings.ContainerName : GetAttributeValue( AttributeKey.DefaultContainerName );
 
-            return AzureBlobStorageClient.Instance.GetBlobClient( accountName, accountKey, customDomain, settings.ContainerName, blobName );
+            return AzureBlobStorageClient.Instance.GetBlobClient( accountName, accountKey, customDomain, containerName, blobName );
         }
 
         /// <summary>
