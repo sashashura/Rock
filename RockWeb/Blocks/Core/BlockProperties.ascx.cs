@@ -31,6 +31,7 @@ using System.Web;
 using Rock.Web.UI.Controls;
 using System.Text;
 using Rock.Web;
+using Rock.Attribute;
 
 namespace RockWeb.Blocks.Core
 {
@@ -40,6 +41,7 @@ namespace RockWeb.Blocks.Core
     [DisplayName( "Block Properties" )]
     [Category( "Core" )]
     [Description( "Allows you to administrate a block's properties." )]
+
     public partial class BlockProperties : RockBlock
     {
         #region Fields
