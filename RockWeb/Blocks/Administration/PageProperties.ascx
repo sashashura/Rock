@@ -125,14 +125,19 @@
                                         <Rock:CacheabilityPicker ID="cpCacheSettings" runat="server" Label="" />
                                     </div>
                                     <div class="col-md-12">
-                                        <Rock:RockCheckBox runat="server" ID="chkEnableRateLimiting" Label="Rate Limiting Enable" Help="Rate Limiting will limit the number of request that can be made to this page. This will help prevent bots from spamming a certian page." />
+                                        <Rock:RockCheckBox runat="server" ID="cbEnableRateLimiting" CssClass="js-rate-limit-checkbox" Label="Rate Limiting Enable" Help="Rate Limiting will limit the number of request that can be made to this page. This will help prevent bots from spamming a certian page." />
                                     </div>
-                                    <asp:Panel runat="server" ID="pnlRateLimitingSettings" CssClass="js-rate-limit-settings">
+                                    <asp:Panel runat="server" ID="pnlRateLimitingSettings" CssClass="js-rate-limit-settings d-none">
                                         <div class="col-md-6">
                                             <Rock:NumberBox runat="server" ID="nbRequestPerPeriod" Label="Max Request Per Period" />
                                         </div>
                                         <div class="col-md-6">
-                                            <Rock:NumberBox runat="server" ID="nbRateLimitPeriod" Label="Rate Limit Period" />
+                                            <div class="input-group">
+                                                <label class="control-label">Rate Limit Period</label>
+                                                <div class="input-group input-width-md">
+                                                    <Rock:NumberBox runat="server" ID="nbRateLimitPeriod" CssClass="form-control" /><span class="input-group-addon">(sec)</span>
+                                                </div>
+                                            </div>
                                         </div>
                                     </asp:Panel>
                                 </div>
@@ -290,6 +295,24 @@
                     }
                 });
 
+                // toggle rate limiting fields
+                $('.js-rate-limit-checkbox').on('click', function (e) {
+
+                    showHideRateLimitFields($(this));
+                });
+
+                function showHideRateLimitFields(rateLimitCheckbox) {
+                    var isChecked = rateLimitCheckbox.prop('checked');
+
+                    var panel = $(".js-rate-limit-settings")
+                    if (isChecked) {
+                        panel.removeClass('d-none');
+                    } else {
+                        panel.addClass('d-none');
+                    }
+                }
+
+                showHideRateLimitFields($('.js-rate-limit-checkbox'));
             });
         </script>
     </ContentTemplate>

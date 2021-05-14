@@ -503,7 +503,6 @@ namespace Rock.Web.UI
         /// </value>
         public int ViewStateSize { get; private set; }
 
-
         /// <summary>
         /// Gets the view state size compressed.
         /// </summary>
@@ -1739,14 +1738,17 @@ namespace Rock.Web.UI
 
             base.OnLoad( e );
 
-            var canProcess = RateLimiterCache.CanProcessPage( PageId, GetClientIpAddress(), TimeSpan.FromSeconds( 30 ), 10 );
-            if ( !canProcess )
+            if( _pageCache.IsRateLimited )
             {
-                Response.StatusCode = 429;
-                Response.StatusDescription = "Too many request";
-                Response.End();
+                var canProcess = RateLimiterCache.CanProcessPage( PageId, GetClientIpAddress(), TimeSpan.FromSeconds( _pageCache.RateLimitPeriod.Value ), _pageCache.RateLimitRequestPerPeriod.Value );
+                if ( !canProcess )
+                {
+                    Response.StatusCode = 429;
+                    Response.StatusDescription = "Too many request";
+                    Response.End();
+                }
             }
-
+            
             Page.Header.DataBind();
 
             try
