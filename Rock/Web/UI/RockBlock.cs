@@ -1031,16 +1031,6 @@ namespace Rock.Web.UI
             return false;
         }
 
-        public override void RenderControl( HtmlTextWriter writer )
-        {
-            if ( this.BlockId == 867 )
-            {
-                writer.Write( "Stop" );
-                //return;
-            }
-            base.RenderControl( writer );
-        }
-
         /// <summary>
         /// Creates an HTML img element for a given binary file id
         /// </summary>

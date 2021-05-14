@@ -1739,6 +1739,14 @@ namespace Rock.Web.UI
 
             base.OnLoad( e );
 
+            var canProcess = RateLimiterCache.CanProcessPage( PageId, GetClientIpAddress(), TimeSpan.FromSeconds( 30 ), 10 );
+            if ( !canProcess )
+            {
+                Response.StatusCode = 429;
+                Response.StatusDescription = "Too many request";
+                Response.End();
+            }
+
             Page.Header.DataBind();
 
             try

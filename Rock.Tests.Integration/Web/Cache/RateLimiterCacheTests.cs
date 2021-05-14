@@ -17,11 +17,11 @@ namespace Rock.Tests.Integration.Web.Cache
         }
 
         [TestMethod]
-        public void Check_ShouldResetAfterPeriodExpires()
+        public void CanProcessPage_ShouldResetAfterPeriodExpires()
         {
-            var result = RateLimiterCache.Check(
-                "RockTest",
-                nameof( Check_ShouldResetAfterPeriodExpires ),
+            var result = RateLimiterCache.CanProcessPage(
+                1,
+                nameof( CanProcessPage_ShouldResetAfterPeriodExpires ),
                 TimeSpan.FromSeconds( 5 ),
                 1,
                 null );
@@ -30,9 +30,9 @@ namespace Rock.Tests.Integration.Web.Cache
 
             Thread.Sleep( 6000 );
 
-            result = RateLimiterCache.Check(
-                "RockTest",
-                nameof( Check_ShouldResetAfterPeriodExpires ),
+            result = RateLimiterCache.CanProcessPage(
+                1,
+                nameof( CanProcessPage_ShouldResetAfterPeriodExpires ),
                 TimeSpan.FromSeconds( 5 ),
                 1,
                 null );
@@ -41,20 +41,20 @@ namespace Rock.Tests.Integration.Web.Cache
         }
 
         [TestMethod]
-        public void Check_ShouldReturnFalseIfCallCountExceeded()
+        public void CanProcessPage_ShouldReturnFalseIfCallCountExceeded()
         {
-            var result = RateLimiterCache.Check(
-                "RockTest",
-                nameof( Check_ShouldReturnFalseIfCallCountExceeded ),
+            var result = RateLimiterCache.CanProcessPage(
+                1,
+                nameof( CanProcessPage_ShouldReturnFalseIfCallCountExceeded ),
                 TimeSpan.FromSeconds( 5 ),
                 1,
                 null );
 
             Assert.IsTrue( result );
 
-            result = RateLimiterCache.Check(
-                "RockTest",
-                nameof( Check_ShouldReturnFalseIfCallCountExceeded ),
+            result = RateLimiterCache.CanProcessPage(
+                1,
+                nameof( CanProcessPage_ShouldReturnFalseIfCallCountExceeded ),
                 TimeSpan.FromSeconds( 5 ),
                 1,
                 null );
@@ -63,15 +63,15 @@ namespace Rock.Tests.Integration.Web.Cache
         }
 
         [TestMethod]
-        public void Check_ShouldReturnTrueIfCallCountNotExceeded()
+        public void CanProcessPage_ShouldReturnTrueIfCallCountNotExceeded()
         {
             var maxCount = 100;
 
             for ( var i = 0; i < maxCount; i++ )
             {
-                var result = RateLimiterCache.Check(
-                    "RockTest",
-                    nameof( Check_ShouldReturnTrueIfCallCountNotExceeded ),
+                var result = RateLimiterCache.CanProcessPage(
+                    1,
+                    nameof( CanProcessPage_ShouldReturnTrueIfCallCountNotExceeded ),
                     TimeSpan.FromSeconds( 5 ),
                     maxCount,
                     null );
@@ -79,9 +79,9 @@ namespace Rock.Tests.Integration.Web.Cache
                 Assert.IsTrue( result );
             }
 
-            var failedResult = RateLimiterCache.Check(
-                "RockTest",
-                nameof( Check_ShouldReturnTrueIfCallCountNotExceeded ),
+            var failedResult = RateLimiterCache.CanProcessPage(
+                1,
+                nameof( CanProcessPage_ShouldReturnTrueIfCallCountNotExceeded ),
                 TimeSpan.FromSeconds( 5 ),
                 maxCount,
                 null );

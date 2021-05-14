@@ -10,28 +10,57 @@ namespace Rock.Web.Cache
     [DataContract]
     public class RateLimiterCache : ItemCache<RateLimiterCache>, IHasLifespan
     {
+        /// <summary>
+        /// Gets or sets the actions per period.
+        /// </summary>
+        /// <value>
+        /// The actions per period.
+        /// </value>
         [DataMember]
-        private int PeriodActionCount { get; set; }
+        private int ActionsPerPeriod { get; set; }
 
+        /// <summary>
+        /// Gets or sets the maximum actions per period.
+        /// </summary>
+        /// <value>
+        /// The maximum actions per period.
+        /// </value>
         [DataMember]
-        private int PeriodMaxActionCount { get; set; }
+        private int MaxActionsPerPeriod { get; set; }
 
+        /// <summary>
+        /// Gets or sets the date last action performed.
+        /// </summary>
+        /// <value>
+        /// The date last action performed.
+        /// </value>
         [DataMember]
-        private DateTime LastAction { get; set; }
+        private DateTime DateLastActionPerformed { get; set; }
 
+        /// <summary>
+        /// Gets or sets the minimum time between actions.
+        /// </summary>
+        /// <value>
+        /// The minimum time between actions.
+        /// </value>
         [DataMember]
         private TimeSpan MinTimeBetweenActions { get; set; }
 
+        private TimeSpan? _lifespan = null;
+        /// <summary>
+        /// The amount of time that this item will live in the cache before expiring. If null, then the
+        /// <see cref="P:Rock.Web.Cache.ItemCache`1.DefaultLifespan" /> is used.
+        /// </summary>
         [DataMember]
-        public TimeSpan? Lifespan { get; private set; }
+        public override TimeSpan? Lifespan { get => _lifespan; }
 
         private RateLimiterCache( TimeSpan lifespan, int maxActionsInPeriod, TimeSpan? minTimeBetweenActions = null )
         {
-            PeriodActionCount = 0;
-            LastAction = DateTime.MinValue;
-            Lifespan = lifespan;
+            ActionsPerPeriod = 0;
+            DateLastActionPerformed = DateTime.MinValue;
+            _lifespan = lifespan;
 
-            PeriodMaxActionCount = maxActionsInPeriod;
+            MaxActionsPerPeriod = maxActionsInPeriod;
 
             if ( minTimeBetweenActions == null )
                 MinTimeBetweenActions = new TimeSpan( 0 );
@@ -39,45 +68,94 @@ namespace Rock.Web.Cache
                 MinTimeBetweenActions = minTimeBetweenActions.Value;
         }
 
-        public static bool Check( string actionName, string requestIdentifier, TimeSpan period, int maxActionsInPeriod, TimeSpan? minTimeBetweenActions = null )
+        /// <summary>
+        /// Determines whether this instance [can process page] the specified page identifier.
+        /// </summary>
+        /// <param name="pageId">The page identifier.</param>
+        /// <param name="clientIpAddress">The client ip address.</param>
+        /// <param name="period">The period.</param>
+        /// <param name="maxActionsInPeriod">The maximum actions in period.</param>
+        /// <param name="minTimeBetweenActions">The minimum time between actions.</param>
+        /// <returns>
+        ///   <c>true</c> if this instance [can process page] the specified page identifier; otherwise, <c>false</c>.
+        /// </returns>
+        public static bool CanProcessPage( int pageId, string clientIpAddress, TimeSpan period, int maxActionsInPeriod, TimeSpan? minTimeBetweenActions = null )
         {
-            var limiter = GetRateLimiter( actionName, requestIdentifier, period, maxActionsInPeriod, minTimeBetweenActions );
+            var limiter = GetRateLimiter( pageId, clientIpAddress, period, maxActionsInPeriod, minTimeBetweenActions );
             if ( limiter.CanPerformAction() )
             {
-                limiter.PerformAction();
+                limiter.UpdateActionsPerPeriod();
                 return true;
             }
             return false;
         }
 
-        private void PerformAction()
+        /// <summary>
+        /// Performs the action.
+        /// </summary>
+        private void UpdateActionsPerPeriod()
         {
-            PeriodActionCount++;
-            LastAction = DateTime.Now;
+            ActionsPerPeriod++;
+            DateLastActionPerformed = DateTime.Now;
         }
+
+        /// <summary>
+        /// Determines whether this instance [can perform action].
+        /// </summary>
+        /// <returns>
+        ///   <c>true</c> if this instance [can perform action]; otherwise, <c>false</c>.
+        /// </returns>
         private bool CanPerformAction()
         {
-            if ( PeriodActionCount >= PeriodMaxActionCount )
+            if ( ActionsPerPeriod >= MaxActionsPerPeriod )
+            {
                 return false;
-            if ( LastAction.Add( MinTimeBetweenActions ) > DateTime.Now )
+            }
+
+            if ( DateLastActionPerformed.Add( MinTimeBetweenActions ) > DateTime.Now )
+            {
                 return false;
+            }
+
             return true;
         }
 
-        private static RateLimiterCache GetRateLimiter( string actionName, string requestIdentifier, TimeSpan period, int maxActionsInPeriod, TimeSpan? minTimeBetweenActions = null )
+        /// <summary>
+        /// Gets the rate limiter.
+        /// </summary>
+        /// <param name="pageId">The page identifier.</param>
+        /// <param name="clientIpAddress">The client ip address.</param>
+        /// <param name="period">The period.</param>
+        /// <param name="maxActionsInPeriod">The maximum actions in period.</param>
+        /// <param name="minTimeBetweenActions">The minimum time between actions.</param>
+        /// <returns></returns>
+        private static RateLimiterCache GetRateLimiter( int pageId, string clientIpAddress, TimeSpan period, int maxActionsInPeriod, TimeSpan? minTimeBetweenActions = null )
         {
-            var cacheKey = GetRateLimiterCacheKey( actionName, requestIdentifier );
+            var cacheKey = GetRateLimiterCacheKey( pageId, clientIpAddress );
             return GetOrAddExisting( cacheKey, () => InitializeNewRateLimiterCache( period, maxActionsInPeriod, minTimeBetweenActions ) );
         }
 
+        /// <summary>
+        /// Initializes the new rate limiter cache.
+        /// </summary>
+        /// <param name="period">The period.</param>
+        /// <param name="maxActionsInPeriod">The maximum actions in period.</param>
+        /// <param name="minTimeBetweenActions">The minimum time between actions.</param>
+        /// <returns></returns>
         private static RateLimiterCache InitializeNewRateLimiterCache( TimeSpan period, int maxActionsInPeriod, TimeSpan? minTimeBetweenActions = null )
         {
             return new RateLimiterCache( period, maxActionsInPeriod, minTimeBetweenActions );
         }
 
-        private static string GetRateLimiterCacheKey( string actionName, string requestIdentifier )
+        /// <summary>
+        /// Gets the rate limiter cache key.
+        /// </summary>
+        /// <param name="pageId">The page identifier.</param>
+        /// <param name="clientIpAddress">The client ip address.</param>
+        /// <returns></returns>
+        private static string GetRateLimiterCacheKey( int pageId, string clientIpAddress )
         {
-            return actionName + "." + requestIdentifier;
+            return $"{pageId}.{clientIpAddress}";
         }
     }
 }
