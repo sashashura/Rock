@@ -29,6 +29,7 @@ namespace Rock.Utility
     /// </summary>
     /// <typeparam name="TKey">The key type that will be used to access the values.</typeparam>
     /// <typeparam name="TValue">The type of value that will be associated with each key.</typeparam>
+    [Rock.Infrastructure.RockInternal]
     public class LazyDictionary<TKey, TValue> : IDictionary<TKey, TValue>
     {
         #region Fields

@@ -67,6 +67,7 @@
     <Compile Include="ExtensionMethods\StringExtensions.cs" />
     <Compile Include="ExtensionMethods\StringHumanizerExtensions.cs" />
     <Compile Include="ExtensionMethods\StringPluralizationExtensions.cs" />
+    <Compile Include="Infrastructure\RockInternalAttribute.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RockObsolete.cs" />
     <Compile Include="Utilities\Enums\DayOfWeekFlag.cs" />
