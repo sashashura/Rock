@@ -16,7 +16,7 @@
 //
 
 import { defineComponent, inject } from "vue";
-import GatewayControl, { GatewayControlModel } from "../../../Controls/gatewayControl";
+import GatewayControl, { GatewayControlModel, prepareSubmitPayment } from "../../../Controls/gatewayControl";
 import { InvokeBlockActionFunc } from "../../../Util/block";
 import RockForm from "../../../Controls/rockForm";
 import RockValidation from "../../../Controls/rockValidation";
@@ -45,8 +45,11 @@ export default defineComponent( {
         Registrar,
         DiscountCodeForm
     },
-    setup () {
+    setup() {
+        const submitPayment = prepareSubmitPayment();
+
         return {
+            submitPayment,
             getRegistrationEntryBlockArgs: inject( "getRegistrationEntryBlockArgs" ) as () => RegistrationEntryBlockArgs,
             invokeBlockAction: inject( "invokeBlockAction" ) as InvokeBlockActionFunc,
             registrationEntryState: inject( "registrationEntryState" ) as RegistrationEntryState
@@ -56,9 +59,6 @@ export default defineComponent( {
         return {
             /** Is there an AJAX call in-flight? */
             loading: false,
-
-            /** Should the gateway control submit to the gateway to create a token? */
-            doGatewayControlSubmit: false,
 
             /** Gateway indicated error */
             gatewayErrorMessage: "",
@@ -129,7 +129,7 @@ export default defineComponent( {
                     // Otherwise, this is a traditional gateway
                     this.gatewayErrorMessage = "";
                     this.gatewayValidationFields = {};
-                    this.doGatewayControlSubmit = true;
+                    this.submitPayment();
                 }
             }
             else {
@@ -149,17 +149,17 @@ export default defineComponent( {
         async onGatewayControlSuccess ( token: string ) {
             this.registrationEntryState.gatewayToken = token;
             const success = await this.submit();
+
             this.loading = false;
 
-            if ( success ) {
-                this.$emit( "next" );
+            if (success) {
+                this.$emit("next");
             }
         },
 
         /** The gateway was requested by the user to reset. The token should be cleared */
         async onGatewayControlReset () {
             this.registrationEntryState.gatewayToken = "";
-            this.doGatewayControlSubmit = false;
         },
 
         /**
@@ -167,7 +167,6 @@ export default defineComponent( {
          * @param message
          */
         onGatewayControlError ( message: string ) {
-            this.doGatewayControlSubmit = false;
             this.loading = false;
             this.gatewayErrorMessage = message;
         },
@@ -176,8 +175,8 @@ export default defineComponent( {
          * The gateway wants the user to fix some fields
          * @param invalidFields
          */
-        onGatewayControlValidation ( invalidFields: Record<string, string> ) {
-            this.doGatewayControlSubmit = false;
+        onGatewayControlValidation(invalidFields: Record<string, string>) {
+            console.log("validation clearing loading");
             this.loading = false;
             this.gatewayValidationFields = invalidFields;
         },
@@ -230,7 +229,6 @@ export default defineComponent( {
             <div class="hosted-payment-control">
                 <GatewayControl
                     :gatewayControlModel="gatewayControlModel"
-                    :submit="doGatewayControlSubmit"
                     @success="onGatewayControlSuccess"
                     @reset="onGatewayControlReset"
                     @error="onGatewayControlError"

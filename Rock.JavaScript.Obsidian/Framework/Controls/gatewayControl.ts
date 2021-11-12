@@ -14,13 +14,44 @@
 // limitations under the License.
 // </copyright>
 //
-import { defineComponent, PropType } from "vue";
+import { defineComponent, inject, InjectionKey, PropType, provide } from "vue";
 import JavaScriptAnchor from "../Elements/javaScriptAnchor";
 import ComponentFromUrl from "./componentFromUrl";
 
 export type GatewayControlModel = {
     fileUrl: string;
     settings: Record<string, unknown>;
+};
+
+type SubmitPaymentObject = {
+    callback?: SubmitPaymentFunction;
+};
+
+const submitPaymentCallbackSymbol: InjectionKey<SubmitPaymentObject> = Symbol("gateway-submit-payment-callback");
+export type SubmitPaymentFunction = () => void;
+
+export const prepareSubmitPayment = (): SubmitPaymentFunction => {
+    const container: SubmitPaymentObject = {};
+    provide(submitPaymentCallbackSymbol, container);
+
+    return () => {
+        if (container.callback) {
+            container.callback();
+        }
+        else {
+            throw "Submit payment callback has not been defined.";
+        }
+    };
+};
+
+export const onSubmitPayment = (callback: SubmitPaymentFunction): void => {
+    const container = inject(submitPaymentCallbackSymbol);
+
+    if (!container || container.callback) {
+        throw "Submit payment callback already defined.";
+    }
+
+    container.callback = callback;
 };
 
 export enum ValidationField {
@@ -55,18 +86,6 @@ export default defineComponent({
         }
     },
     methods: {
-        /** Reset the component */
-        reset () {
-            // Remove the component from the DOM
-            this.isSuccess = true;
-
-            // Add the component back to the DOM on the next DOM update cycle
-            this.$nextTick( () => {
-                this.isSuccess = false;
-                this.$emit( "reset" );
-            } );
-        },
-
         /**
          * Intercept the success event, so that local state can reflect it.
          * @param token
@@ -77,44 +96,15 @@ export default defineComponent({
         },
 
         /**
-         * This method transforms the enum values into human friendly validation messages.
-         * @param validationFields
+         * This method handles validation errors.
+         * 
+         * @param validationErrors
          */
-        transformValidation(validationFields: ValidationField[]) {
-            const errors = {} as Record<string, string>;
-            let foundError = false;
-
-            if (validationFields?.includes(ValidationField.CardNumber)) {
-                errors["Card Number"] = "is not valid.";
-                foundError = true;
-            }
-
-            if (validationFields?.includes(ValidationField.Expiry)) {
-                errors["Expiration Date"] = "is not valid.";
-                foundError = true;
-            }
-
-            if (validationFields?.includes(ValidationField.SecurityCode)) {
-                errors["Security Code"] = "is not valid.";
-                foundError = true;
-            }
-
-            if (!foundError) {
-                errors["Payment Info"] = "is not valid.";
-            }
-
-            this.$emit("validation", errors);
-            return;
+        validationError(validationErrors: Record<string, string>) {
+            this.$emit("validation", validationErrors);
         }
     },
     template: `
-<ComponentFromUrl v-if="!isSuccess" :url="url" :settings="settings" @validationRaw="transformValidation" @successRaw="onSuccess" />
-<div v-else class="text-center">
-    Your payment is ready.
-    <small>
-        <JavaScriptAnchor @click="reset">
-            Reset Payment
-        </JavaScriptAnchor>
-    </small>
-</div>`
+<ComponentFromUrl v-if="!isSuccess" :url="url" :settings="settings" @validationError="validationError" @successRaw="onSuccess" />
+`
 });
