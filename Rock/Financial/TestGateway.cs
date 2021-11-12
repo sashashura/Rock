@@ -66,7 +66,7 @@ namespace Rock.Financial
         Key = AttributeKey.PromptForNameOnCard,
         DefaultBooleanValue = false,
         Order = 4 )]
-    public class TestGateway : GatewayComponent, IAutomatedGatewayComponent, IObsidianFinancialGateway
+    public class TestGateway : GatewayComponent, IAutomatedGatewayComponent, IObsidianHostedGatewayComponent
     {
         #region Attribute Keys
 
@@ -109,12 +109,8 @@ namespace Rock.Financial
             return "/Obsidian/Controls/TestGatewayControl.js";
         }
 
-        /// <summary>
-        /// Gets the obsidian control settings.
-        /// </summary>
-        /// <param name="financialGateway">The financial gateway.</param>
-        /// <returns></returns>
-        public object GetObsidianControlSettings( FinancialGateway financialGateway )
+        /// <inheritdoc/>
+        public object GetObsidianControlSettings( FinancialGateway financialGateway, HostedPaymentInfoControlOptions options )
         {
             return new
             {

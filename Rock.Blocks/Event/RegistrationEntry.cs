@@ -1872,7 +1872,7 @@ namespace Rock.Blocks.Event
             var financialGatewayId = context.RegistrationSettings.FinancialGatewayId;
             var financialGateway = financialGatewayId.HasValue ? new FinancialGatewayService( rockContext ).GetNoTracking( financialGatewayId.Value ) : null;
             var gatewayComponent = financialGateway?.GetGatewayComponent();
-            var financialGatewayComponent = gatewayComponent as IObsidianFinancialGateway;
+            var financialGatewayComponent = gatewayComponent as IObsidianHostedGatewayComponent;
 
             // Determine if this is a redirect gateway and get the redirect URL
             var redirectGateway = gatewayComponent as IRedirectionGateway;
@@ -1928,7 +1928,7 @@ namespace Rock.Blocks.Event
                 GatewayControl = isRedirectGateway ? null : new GatewayControlViewModel
                 {
                     FileUrl = financialGatewayComponent?.GetObsidianControlFileUrl( financialGateway ) ?? string.Empty,
-                    Settings = financialGatewayComponent?.GetObsidianControlSettings( financialGateway ) ?? new object()
+                    Settings = financialGatewayComponent?.GetObsidianControlSettings( financialGateway, null ) ?? new object()
                 },
                 IsRedirectGateway = isRedirectGateway,
                 SpotsRemaining = context.SpotsRemaining,
@@ -2083,9 +2083,9 @@ namespace Rock.Blocks.Event
                 transaction = redirectionGateway.FetchTransaction( rockContext, financialGateway, fundId, args.GatewayToken );
                 paymentInfo.Amount = transaction.TotalAmount;
             }
-            else if ( gateway is IHostedGatewayComponent hostedGateway )
+            else if ( gateway is IObsidianHostedGatewayComponent obsidianGateway )
             {
-                var customerToken = hostedGateway.CreateCustomerAccount( financialGateway, paymentInfo, out errorMessage );
+                var customerToken = obsidianGateway.CreateCustomerAccount( financialGateway, paymentInfo, out errorMessage );
 
                 if ( !errorMessage.IsNullOrWhiteSpace() )
                 {
