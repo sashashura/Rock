@@ -39,6 +39,7 @@ import { Person } from "../../ViewModels";
 import SessionRenewal from "./RegistrationEntry/sessionRenewal";
 import { useStore } from "../../Store/index";
 import { RockDateTime } from "../../Util/rockDateTime";
+import { List } from "../../Util/linq";
 
 const store = useStore();
 
@@ -445,6 +446,30 @@ export default defineComponent( {
             } );
 
             return items;
+        },
+
+        /**
+         * Determines if there are any costs or fees on the registration and
+         * checks if we have a valid gateway.
+         */
+        isInvalidGateway() {
+            if (!this.viewModel) {
+                return false;
+            }
+
+            const hasCostFees = new List(this.viewModel.fees)
+                .any(f => new List(f.items).any(i => i.cost > 0));
+
+            // If no cost or fees, then no gateway will be needed.
+            if (this.viewModel.cost <= 0 && !hasCostFees) {
+                return false;
+            }
+
+            if (this.viewModel.isRedirectGateway || this.viewModel.gatewayControl.fileUrl) {
+                return false;
+            }
+
+            return true;
         }
     },
     methods: {
@@ -565,6 +590,10 @@ export default defineComponent( {
     <Alert v-else-if="isUnauthorized" alertType="warning">
         <strong>Sorry</strong>
         <p>You are not allowed to view or edit the selected registration since you are not the one who created the registration.</p>
+    </Alert>
+    <Alert v-else-if="isInvalidGateway" alertType="warning">
+        <strong>Incorrect Configuration</strong>
+        <p>This registration has costs/fees associated with it but the configured payment gateway is not supported.</p>
     </Alert>
     <template v-else>
         <h1 v-if="currentStep !== steps.intro" v-html="stepTitleHtml"></h1>
