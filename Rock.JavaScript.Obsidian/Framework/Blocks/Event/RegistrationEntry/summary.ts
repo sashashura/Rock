@@ -216,7 +216,7 @@ export default defineComponent( {
             <CostSummary />
         </div>
 
-        <div v-if="gatewayControlModel && registrationEntryState.amountToPayToday" class="well">
+        <div v-if="gatewayControlModel" v-show="registrationEntryState.amountToPayToday" class="well">
             <h4>Payment Method</h4>
             <Alert v-if="gatewayErrorMessage" alertType="danger">{{gatewayErrorMessage}}</Alert>
             <RockValidation :errors="gatewayValidationFields" />
