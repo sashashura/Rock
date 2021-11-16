@@ -146,7 +146,7 @@ export default defineComponent( {
          * The gateway indicated success and returned a token
          * @param token
          */
-        async onGatewayControlSuccess ( token: string ) {
+        async onGatewayControlSuccess(token: string) {
             this.registrationEntryState.gatewayToken = token;
             const success = await this.submit();
 
@@ -157,16 +157,11 @@ export default defineComponent( {
             }
         },
 
-        /** The gateway was requested by the user to reset. The token should be cleared */
-        async onGatewayControlReset () {
-            this.registrationEntryState.gatewayToken = "";
-        },
-
         /**
          * The gateway indicated an error
          * @param message
          */
-        onGatewayControlError ( message: string ) {
+        onGatewayControlError(message: string) {
             this.loading = false;
             this.gatewayErrorMessage = message;
         },
@@ -176,7 +171,6 @@ export default defineComponent( {
          * @param invalidFields
          */
         onGatewayControlValidation(invalidFields: Record<string, string>) {
-            console.log("validation clearing loading");
             this.loading = false;
             this.gatewayValidationFields = invalidFields;
         },
@@ -230,7 +224,6 @@ export default defineComponent( {
                 <GatewayControl
                     :gatewayControlModel="gatewayControlModel"
                     @success="onGatewayControlSuccess"
-                    @reset="onGatewayControlReset"
                     @error="onGatewayControlError"
                     @validation="onGatewayControlValidation" />
             </div>

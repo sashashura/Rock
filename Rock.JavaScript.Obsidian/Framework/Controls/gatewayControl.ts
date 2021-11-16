@@ -14,22 +14,52 @@
 // limitations under the License.
 // </copyright>
 //
-import { defineComponent, inject, InjectionKey, PropType, provide } from "vue";
+import { computed, defineComponent, inject, InjectionKey, PropType, provide, ref } from "vue";
 import JavaScriptAnchor from "../Elements/javaScriptAnchor";
 import ComponentFromUrl from "./componentFromUrl";
 
+/**
+ * The strings that can be emitted by gateway components.
+ */
+export const enum GatewayEmitStrings {
+    /** Indicates a successful submission, value is a string. */
+    Success = "success",
+
+    /** Indicates one or more validation errors, value is Record<string, string> */
+    Validation = "validation",
+
+    /** A serious error occurred that prevents the gateway from functioning. */
+    Error = "error"
+}
+
+/**
+ * The gateway control model that contains its settings.
+ */
 export type GatewayControlModel = {
     fileUrl: string;
     settings: Record<string, unknown>;
 };
 
+/**
+ * The object to be provided by a parent so that it can interact with the
+ * financial gateway.
+ */
 type SubmitPaymentObject = {
+    /** The callback to use when submitting the payment. */
     callback?: SubmitPaymentFunction;
 };
 
+/** The unique symbol that holds our custom data. */
 const submitPaymentCallbackSymbol: InjectionKey<SubmitPaymentObject> = Symbol("gateway-submit-payment-callback");
+
+/** The function signature that will be called when the payment can be submitted. */
 export type SubmitPaymentFunction = () => void;
 
+/**
+ * Prepares the gateway control for use. This provides a custom object into the
+ * calling controls namespace and then returns the function that can be used to
+ * attempt to submit the payment.
+ */
 export const prepareSubmitPayment = (): SubmitPaymentFunction => {
     const container: SubmitPaymentObject = {};
     provide(submitPaymentCallbackSymbol, container);
@@ -44,6 +74,12 @@ export const prepareSubmitPayment = (): SubmitPaymentFunction => {
     };
 };
 
+/**
+ * Provides the callback from the gateway component that should be called when
+ * the user presses a button to initiate payment.
+ * 
+ * @param callback The function to be called when the payment should be attempted.
+ */
 export const onSubmitPayment = (callback: SubmitPaymentFunction): void => {
     const container = inject(submitPaymentCallbackSymbol);
 
@@ -54,6 +90,11 @@ export const onSubmitPayment = (callback: SubmitPaymentFunction): void => {
     container.callback = callback;
 };
 
+/**
+ * The field that failed validation.
+ *
+ * @obsolete This is no longer used.
+ */
 export enum ValidationField {
     CardNumber,
     Expiry,
@@ -62,49 +103,65 @@ export enum ValidationField {
 
 export default defineComponent({
     name: "GatewayControl",
+
     components: {
         ComponentFromUrl,
         JavaScriptAnchor
     },
+
     props: {
         gatewayControlModel: {
             type: Object as PropType<GatewayControlModel>,
             required: true
         }
     },
-    data() {
-        return {
-            isSuccess: false
-        };
-    },
-    computed: {
-        url(): string {
-            return this.gatewayControlModel.fileUrl;
-        },
-        settings(): Record<string, unknown> {
-            return this.gatewayControlModel.settings;
-        }
-    },
-    methods: {
+
+    setup(props, { emit }) {
+        /** The URL that will be used to load the gateway component. */
+        const url = computed((): string => props.gatewayControlModel.fileUrl);
+
+        /** The settings that will be supplied to the gateway component. */
+        const settings = computed((): Record<string, unknown> => props.gatewayControlModel.settings);
+
         /**
          * Intercept the success event, so that local state can reflect it.
          * @param token
          */
-        async onSuccess ( token: string ) {
-            this.isSuccess = true;
-            this.$emit( "success", token );
-        },
+        const onSuccess = (token: string): void => {
+            emit(GatewayEmitStrings.Success, token);
+        };
 
         /**
-         * This method handles validation errors.
+         * This method handles validation updates.
          * 
-         * @param validationErrors
+         * @param validationErrors The fields and error messages.
          */
-        validationError(validationErrors: Record<string, string>) {
-            this.$emit("validation", validationErrors);
-        }
+        const onValidation = (validationErrors: Record<string, string>): void => {
+            emit(GatewayEmitStrings.Validation, validationErrors);
+        };
+
+        /**
+         * This method handles errors in the gateway component.
+         * 
+         * @param message The error message to display.
+         */
+        const onError = (message: string): void => {
+            emit(GatewayEmitStrings.Error, message);
+        };
+
+        return {
+            url,
+            settings,
+            onSuccess,
+            onValidation,
+            onError
+        };
+    },
+    methods: {
     },
     template: `
-<ComponentFromUrl v-if="!isSuccess" :url="url" :settings="settings" @validationError="validationError" @successRaw="onSuccess" />
+<div>
+    <ComponentFromUrl :url="url" :settings="settings" @validation="onValidation" @success="onSuccess" @error="onError" />
+</div>
 `
 });

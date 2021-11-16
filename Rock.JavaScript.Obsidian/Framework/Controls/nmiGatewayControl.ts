@@ -14,11 +14,11 @@
 // limitations under the License.
 // </copyright>
 //
-import { computed, defineComponent, onMounted, PropType, ref, watch } from "vue";
+import { computed, defineComponent, onMounted, PropType, ref } from "vue";
 import LoadingIndicator from "../Elements/loadingIndicator";
 import { newGuid } from "../Util/guid";
-import { onSubmitPayment } from "./gatewayControl";
-import { CollectJSOptions, TokenResponse, ResponseCallback, TimeoutCallback, ValidationCallback, InputField } from "./nmiGatewayControlTypes";
+import { GatewayEmitStrings, onSubmitPayment } from "./gatewayControl";
+import { CollectJSOptions, InputField, ResponseCallback, TimeoutCallback, TokenResponse, ValidationCallback } from "./nmiGatewayControlTypes";
 
 const enum NMIPaymentType {
     Card = 0,
@@ -51,12 +51,99 @@ type ValidationField = {
     message: string;
 };
 
+const standardStyling = `
+.nmi-payment-inputs .iframe-input {
+  position: relative;
+  -ms-flex: 0 0 100%;
+  flex: 0 0 100%;
+  max-width: 100%;
+  height: 42px;
+  height: calc(var(--input-height-base) + 5px);
+  margin-bottom: 10px;
+  padding: 0 3px;
+  overflow: hidden;
+}
+.nmi-payment-inputs .iframe-input::before {
+  position: absolute;
+  top: 0;
+  z-index: -1;
+  width: calc(100% - 6px);
+  height: 38px;
+  height: var(--input-height-base);
+  padding: 6px 12px;
+  padding: var(--input-padding);
+  margin: 0;
+  content: " ";
+  background: #f3f3f3;
+  background: var(--input-bg-disabled);
+  border: 1px solid #d8d8d8;
+  border-color: var(--input-border);
+  border-radius: var(--input-border-radius);
+}
+.nmi-payment-inputs .iframe-input .CollectJSInlineIframe {
+  height: calc(var(--input-height-base) + 5px) !important;
+  height: 42px !important;
+}
+.nmi-payment-inputs .break {
+  -webkit-box-flex: 1;
+  -ms-flex: 1 1 100%;
+  flex: 1 1 100%;
+}
+.nmi-payment-inputs .gateway-payment-container {
+  display: -ms-flexbox;
+  display: flex;
+  -ms-flex-wrap: wrap;
+  flex-wrap: wrap;
+  margin: 0 -3px;
+  overflow-x: hidden;
+}
+.nmi-payment-inputs .credit-card-input {
+  position: relative;
+  -webkit-box-flex: 1;
+  -ms-flex: 1 1 0;
+  flex: 1 1 0;
+  min-width: 200px;
+}
+.nmi-payment-inputs .check-account-number-input,
+.nmi-payment-inputs .check-routing-number-input {
+  -ms-flex: 0 0 100%;
+  flex: 0 0 100%;
+  max-width: 100%;
+}
+.nmi-payment-inputs .credit-card-exp-input,
+.nmi-payment-inputs .credit-card-cvv-input {
+  -ms-flex: 1 1 50%;
+  flex: 1 1 50%;
+  min-width: 50px;
+}
+@media (min-width: 500px) {
+  .nmi-payment-inputs .break {
+    -webkit-box-flex: 0;
+    -ms-flex: 0 0 0%;
+    flex: 0 0 0%;
+  }
+  .nmi-payment-inputs .check-account-number-input,
+  .nmi-payment-inputs .check-routing-number-input {
+    -ms-flex: 0 0 50%;
+    flex: 0 0 50%;
+    max-width: 50%;
+  }
+  .nmi-payment-inputs .credit-card-exp-input,
+  .nmi-payment-inputs .credit-card-cvv-input {
+    -webkit-box-flex: 0;
+    -ms-flex: 0 0 auto;
+    flex: 0 0 auto;
+    max-width: 100px;
+  }
+}
+`;
+
 /**
  * Ensures the CollectJS script is loaded into the browser.
  * 
  * @param tokenizationKey The tokenization key that will be used to initialize the script.
  */
-async function loadCollectJS(tokenizationKey: string): Promise<boolean> {
+async function loadCollectJSAsync(tokenizationKey: string): Promise<boolean> {
     if (window.CollectJS === undefined) {
         const script = document.createElement("script");
         script.type = "text/javascript";
@@ -77,6 +164,24 @@ async function loadCollectJS(tokenizationKey: string): Promise<boolean> {
     }
 
     return window.CollectJS !== undefined;
+}
+
+/**
+ * Ensures the CollectJS script is loaded into the browser.
+ * 
+ * @param tokenizationKey The tokenization key that will be used to initialize the script.
+ */
+async function loadStandardStyleTagAsync(): Promise<void> {
+    const style = document.createElement("style");
+    style.type = "text/css";
+    style.innerText = standardStyling;
+
+    await new Promise<void>((resolve, reject) => {
+        style.addEventListener("load", () => resolve());
+        style.addEventListener("error", () => reject());
+
+        document.getElementsByTagName("head")[0].appendChild(style);
+    });
 }
 
 /**
@@ -241,7 +346,15 @@ export default defineComponent({
     },
 
     setup(props, { emit }) {
+        /**
+         * true if we have attempted to submit the payment information to NMI.
+         * This is used to determine if validation messages should be emitted
+         * since NMI is a little verbose in its validating.
+         */
         let hasAttemptedSubmit = false;
+
+        /** true if we have received a token back from NMI. */
+        let hasReceivedToken = false;
 
         /** true if there is a payment type of Credit Card; otherwise false. */
         const hasCreditCardPaymentType = computed((): boolean => {
@@ -287,6 +400,9 @@ export default defineComponent({
 
         /** true while we are still loading data; otherwise false. */
         const loading = ref(true);
+
+        /** true if we failed to load the CollectJS content. */
+        const failedToLoad = ref(false);
 
         /** Contains the current validation message to be displayed. */
         const validationMessage = ref("");
@@ -378,14 +494,14 @@ export default defineComponent({
             const validationResult = validateInputs();
 
             if (!validationResult.isValid) {
-                emit("validationRaw", validationResult.errors);
+                emit(GatewayEmitStrings.Validation, validationResult.errors);
             }
             else {
                 // Inputs seem to be valid, so show a message to let them
                 // know what seems to be happening.
                 console.log("Timeout happened for unknown reason, probably poor connectivity since we already validated inputs.");
 
-                emit("validationRaw", {
+                emit(GatewayEmitStrings.Validation, {
                     "Payment Timeout": "Response from gateway timed out. This could be do to poor connectivity or invalid payment values."
                 });
             }
@@ -416,13 +532,17 @@ export default defineComponent({
 
             const validationResult = validateInputs();
 
-            if (hasAttemptedSubmit && !CollectJS.inSubmission) {
-                emit("validationRaw", validationResult.errors);
+            if (hasAttemptedSubmit && !CollectJS.inSubmission && !hasReceivedToken) {
+                emit(GatewayEmitStrings.Validation, validationResult.errors);
             }
         };
 
         // Add a callback when the submit payment button is pressed.
         onSubmitPayment(() => {
+            if (loading.value || failedToLoad.value) {
+                return;
+            }
+
             tokenResponseSent.value = false;
 
             // The delay allows field validation when losing field focus.
@@ -434,7 +554,7 @@ export default defineComponent({
                     CollectJS.startPaymentRequest();
                 }
                 else {
-                    emit("validationRaw", validationResult.errors);
+                    emit(GatewayEmitStrings.Validation, validationResult.errors);
                 }
             }, 0);
         });
@@ -445,41 +565,43 @@ export default defineComponent({
          * @param tokenResponse The response data that contains the token.
          */
         const handleTokenResponse: ResponseCallback = (tokenResponse: TokenResponse): void => {
-            emit("successRaw", tokenResponse.token);
+            hasReceivedToken = true;
+            emit(GatewayEmitStrings.Success, tokenResponse.token);
         };
 
         // Additional processing once our template has been processed and mounted
         // into the DOM. Initialize the CollectJS fields.
-        onMounted(() => {
-            const doWork = async (): Promise<void> => {
-                if (!(await loadCollectJS(props.settings.tokenizationKey ?? ""))) {
-                    validationMessage.value = "Error configuring hosted gateway. This could be due to an invalid or missing Tokenization Key. Please verify that Tokenization Key is configured correctly in gateway settings.";
-                    return;
-                }
+        onMounted(async () => {
+            await loadStandardStyleTagAsync();
 
-                try {
-                    const options = getCollectJSOptions(controlId, inputStyleHook.value, inputInvalidStyleHook.value);
+            if (!(await loadCollectJSAsync(props.settings.tokenizationKey ?? ""))) {
+                emit(GatewayEmitStrings.Error, "Error configuring hosted gateway. This could be due to an invalid or missing Tokenization Key. Please verify that Tokenization Key is configured correctly in gateway settings." );
+                return;
+            }
 
-                    options.timeoutCallback = timeoutCallback;
-                    options.validationCallback = validationCallback;
-                    options.callback = handleTokenResponse;
+            try {
+                const options = getCollectJSOptions(controlId, inputStyleHook.value, inputInvalidStyleHook.value);
 
-                    CollectJS.configure(options);
-                }
-                catch {
-                    validationMessage.value = "Error configuring hosted gateway. This could be due to an invalid or missing Tokenization Key. Please verify that Tokenization Key is configured correctly in gateway settings.";
-                    return;
-                }
+                options.timeoutCallback = timeoutCallback;
+                options.validationCallback = validationCallback;
+                options.callback = handleTokenResponse;
+                options.fieldsAvailableCallback = () => {
+                    loading.value = false;
+                };
 
-                loading.value = false;
-            };
-
-            doWork();
+                CollectJS.configure(options);
+            }
+            catch {
+                failedToLoad.value = true;
+                emit(GatewayEmitStrings.Error, "Error configuring hosted gateway. This could be due to an invalid or missing Tokenization Key. Please verify that Tokenization Key is configured correctly in gateway settings.");
+                return;
+            }
         });
 
         return {
             controlId,
             loading,
+            failedToLoad,
             hasMultiplePaymentTypes,
             hasCreditCardPaymentType,
             hasBankAccountPaymentType,
@@ -501,7 +623,7 @@ export default defineComponent({
         <LoadingIndicator />
     </div>
 
-    <div v-show="!loading">
+    <div v-show="!loading && !failedToLoad" style="max-width: 600px; margin-left: auto; margin-right: auto;">
         <div v-if="hasMultiplePaymentTypes" class="gateway-type-selector btn-group btn-group-justified" role="group">
             <a :class="creditCardButtonClasses" @click.prevent="activateCreditCard">Card</a>
             <a :class="bankAccountButtonClasses" @click.prevent="activateBankAccount">Bank Account</a>
