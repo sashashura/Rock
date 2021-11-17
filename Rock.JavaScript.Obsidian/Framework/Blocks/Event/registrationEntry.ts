@@ -15,31 +15,30 @@
 // </copyright>
 //
 
-import { defineComponent, inject, provide, reactive, ref } from "vue";
-import RockButton from "../../Elements/rockButton";
-import { Guid, newGuid } from "../../Util/guid";
-import RegistrationEntryIntro from "./RegistrationEntry/intro";
-import RegistrationEntryRegistrants from "./RegistrationEntry/registrants";
-import { RegistrantInfo, RegistrantsSameFamily, RegistrarInfo, RegistrationEntryBlockFormFieldViewModel, RegistrationEntryBlockFormViewModel, RegistrationEntryBlockSuccessViewModel, RegistrationEntryBlockViewModel, RegistrationPersonFieldType } from "./RegistrationEntry/registrationEntryBlockViewModel";
-import RegistrationEntryRegistrationStart from "./RegistrationEntry/registrationStart";
-import RegistrationEntryRegistrationEnd from "./RegistrationEntry/registrationEnd";
-import RegistrationEntrySummary from "./RegistrationEntry/summary";
-import Registrants from "./RegistrationEntry/registrants";
-import ProgressTracker, { ProgressTrackerItem } from "../../Elements/progressTracker";
-import NumberFilter, { toWord } from "../../Services/number";
-import StringFilter, { isNullOrWhiteSpace, toTitleCase } from "../../Services/string";
+import { defineComponent, provide, reactive, ref } from "vue";
 import Alert from "../../Elements/alert";
 import CountdownTimer from "../../Elements/countdownTimer";
-import RegistrationEntrySuccess from "./RegistrationEntry/success";
-import Page from "../../Util/page";
-import { RegistrationEntryBlockArgs } from "./RegistrationEntry/registrationEntryBlockArgs";
-import { InvokeBlockActionFunc } from "../../Util/block";
 import JavaScriptAnchor from "../../Elements/javaScriptAnchor";
-import { Person } from "../../ViewModels";
-import SessionRenewal from "./RegistrationEntry/sessionRenewal";
+import ProgressTracker, { ProgressTrackerItem } from "../../Elements/progressTracker";
+import RockButton from "../../Elements/rockButton";
+import NumberFilter, { toWord } from "../../Services/number";
+import StringFilter, { isNullOrWhiteSpace, toTitleCase } from "../../Services/string";
 import { useStore } from "../../Store/index";
-import { RockDateTime } from "../../Util/rockDateTime";
+import { useConfigurationValues, useInvokeBlockAction } from "../../Util/block";
+import { Guid, newGuid } from "../../Util/guid";
 import { List } from "../../Util/linq";
+import Page from "../../Util/page";
+import { RockDateTime } from "../../Util/rockDateTime";
+import { Person } from "../../ViewModels";
+import RegistrationEntryIntro from "./RegistrationEntry/intro";
+import { default as Registrants, default as RegistrationEntryRegistrants } from "./RegistrationEntry/registrants";
+import RegistrationEntryRegistrationEnd from "./RegistrationEntry/registrationEnd";
+import { RegistrationEntryBlockArgs } from "./RegistrationEntry/registrationEntryBlockArgs";
+import { RegistrantInfo, RegistrantsSameFamily, RegistrarInfo, RegistrationEntryBlockFormFieldViewModel, RegistrationEntryBlockFormViewModel, RegistrationEntryBlockSuccessViewModel, RegistrationEntryBlockViewModel, RegistrationPersonFieldType } from "./RegistrationEntry/registrationEntryBlockViewModel";
+import RegistrationEntryRegistrationStart from "./RegistrationEntry/registrationStart";
+import SessionRenewal from "./RegistrationEntry/sessionRenewal";
+import RegistrationEntrySuccess from "./RegistrationEntry/success";
+import RegistrationEntrySummary from "./RegistrationEntry/summary";
 
 const store = useStore();
 
@@ -70,6 +69,7 @@ export type RegistrationEntryState = {
     registrationFieldValues: Record<Guid, unknown>;
     registrar: RegistrarInfo;
     gatewayToken: string;
+    savedAccountGuid: Guid | null;
     discountCode: string;
     discountAmount: number;
     discountPercentage: number;
@@ -166,8 +166,8 @@ export default defineComponent( {
         };
 
         const notFound = ref( false );
-        const viewModel = inject( "configurationValues" ) as RegistrationEntryBlockViewModel | null;
-        const invokeBlockAction = inject( "invokeBlockAction" ) as InvokeBlockActionFunc;
+        const viewModel = useConfigurationValues<RegistrationEntryBlockViewModel | null>();
+        const invokeBlockAction = useInvokeBlockAction();
 
         if (viewModel === null) {
             notFound.value = true;
@@ -198,14 +198,14 @@ export default defineComponent( {
             currentStep = hasPreAttributes ? steps.registrationStartForm : steps.perRegistrantForms;
         }
 
-        const registrationEntryState = reactive( {
+        const staticRegistrationEntryState: RegistrationEntryState = {
             steps: steps,
             viewModel: viewModel,
             firstStep: currentStep,
             currentStep: currentStep,
             currentRegistrantFormIndex: 0,
             currentRegistrantIndex: 0,
-            registrants: viewModel.session?.registrants || [ getDefaultRegistrantInfo( null, viewModel, null ) ],
+            registrants: viewModel.session?.registrants || [getDefaultRegistrantInfo(null, viewModel, null)],
             registrationFieldValues: viewModel.session?.fieldValues || {},
             registrar: viewModel.session?.registrar || {
                 nickName: "",
@@ -215,6 +215,7 @@ export default defineComponent( {
                 familyGuid: null
             },
             gatewayToken: "",
+            savedAccountGuid: null,
             discountCode: viewModel.session?.discountCode || "",
             discountAmount: viewModel.session?.discountAmount || 0,
             discountPercentage: viewModel.session?.discountPercentage || 0,
@@ -223,7 +224,8 @@ export default defineComponent( {
             sessionExpirationDateMs: null,
             registrationSessionGuid: viewModel.session?.registrationSessionGuid || newGuid(),
             ownFamilyGuid: store.state.currentPerson?.primaryFamilyGuid || newGuid()
-        } as RegistrationEntryState );
+        };
+        const registrationEntryState = reactive( staticRegistrationEntryState );
 
         provide( "registrationEntryState", registrationEntryState );
 
@@ -232,6 +234,7 @@ export default defineComponent( {
             return {
                 registrationSessionGuid: registrationEntryState.registrationSessionGuid,
                 gatewayToken: registrationEntryState.gatewayToken,
+                savedAccountGuid: registrationEntryState.savedAccountGuid,
                 discountCode: registrationEntryState.discountCode,
                 fieldValues: registrationEntryState.registrationFieldValues,
                 registrar: registrationEntryState.registrar,

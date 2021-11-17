@@ -17,7 +17,7 @@
 
 import { GatewayControlModel } from "../../../Controls/gatewayControl";
 import { Guid } from "../../../Util/guid";
-import { ClientEditableAttributeValue } from "../../../ViewModels";
+import { ClientEditableAttributeValue, ListItem } from "../../../ViewModels";
 import { RegistrationEntryBlockSession } from "./registrationEntryBlockArgs";
 import { DropDownListOption } from "../../../Elements/dropDownList";
 
@@ -125,7 +125,9 @@ export type RegistrationEntryBlockViewModel = {
     allowRegistrationUpdates: boolean;
     startAtBeginning: boolean;
     gatewayGuid: Guid | null;
-    campuses: DropDownListOption[];
+    campuses: ListItem[];
+    enableSaveAccount: boolean;
+    savedAccounts: ListItem[] | null;
 };
 
 export type RegistrationEntryBlockFamilyMemberViewModel = {

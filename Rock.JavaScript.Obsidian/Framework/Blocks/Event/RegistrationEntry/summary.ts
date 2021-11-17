@@ -15,21 +15,23 @@
 // </copyright>
 //
 
-import { defineComponent, inject } from "vue";
+import { defineComponent, inject, ref } from "vue";
 import GatewayControl, { GatewayControlModel, prepareSubmitPayment } from "../../../Controls/gatewayControl";
-import { InvokeBlockActionFunc } from "../../../Util/block";
+import { useInvokeBlockAction } from "../../../Util/block";
 import RockForm from "../../../Controls/rockForm";
 import RockValidation from "../../../Controls/rockValidation";
 import Alert from "../../../Elements/alert";
 import CheckBox from "../../../Elements/checkBox";
 import EmailBox from "../../../Elements/emailBox";
 import RockButton from "../../../Elements/rockButton";
+import DropDownList, { DropDownListOption } from "../../../Elements/dropDownList";
 import { getRegistrantBasicInfo, RegistrantBasicInfo, RegistrationEntryState } from "../registrationEntry";
 import CostSummary from "./costSummary";
 import DiscountCodeForm from "./discountCodeForm";
 import Registrar from "./registrar";
 import { RegistrationEntryBlockArgs } from "./registrationEntryBlockArgs";
 import { RegistrationEntryBlockSuccessViewModel, RegistrationEntryBlockViewModel } from "./registrationEntryBlockViewModel";
+import { toGuidOrNull } from "../../../Util/guid";
 
 export default defineComponent( {
     name: "Event.RegistrationEntry.Summary",
@@ -39,6 +41,7 @@ export default defineComponent( {
         EmailBox,
         RockForm,
         Alert,
+        DropDownList,
         GatewayControl,
         RockValidation,
         CostSummary,
@@ -48,28 +51,42 @@ export default defineComponent( {
     setup() {
         const submitPayment = prepareSubmitPayment();
 
+        const getRegistrationEntryBlockArgs = inject("getRegistrationEntryBlockArgs") as () => RegistrationEntryBlockArgs;
+        const invokeBlockAction = useInvokeBlockAction();
+        const registrationEntryState = inject("registrationEntryState") as RegistrationEntryState;
+
+        /** Is there an AJAX call in-flight? */
+        const loading = ref(false);
+
+        /** Gateway indicated error */
+        const gatewayErrorMessage = ref("");
+
+        /** Gateway indicated validation issues */
+        const gatewayValidationFields = ref<Record<string, string>>({});
+
+        /** An error message received from a bad submission */
+        const submitErrorMessage = ref("");
+
+        /** The currently selected saved account. */
+        const selectedSavedAccount = ref("");
+
+        if (registrationEntryState.viewModel.savedAccounts !== null && registrationEntryState.viewModel.savedAccounts.length > 0) {
+            selectedSavedAccount.value = registrationEntryState.viewModel.savedAccounts[0].value;
+        }
+
         return {
+            loading,
+            gatewayErrorMessage,
+            gatewayValidationFields,
+            submitErrorMessage,
+            selectedSavedAccount,
             submitPayment,
-            getRegistrationEntryBlockArgs: inject( "getRegistrationEntryBlockArgs" ) as () => RegistrationEntryBlockArgs,
-            invokeBlockAction: inject( "invokeBlockAction" ) as InvokeBlockActionFunc,
-            registrationEntryState: inject( "registrationEntryState" ) as RegistrationEntryState
+            getRegistrationEntryBlockArgs,
+            invokeBlockAction,
+            registrationEntryState: registrationEntryState
         };
     },
-    data () {
-        return {
-            /** Is there an AJAX call in-flight? */
-            loading: false,
 
-            /** Gateway indicated error */
-            gatewayErrorMessage: "",
-
-            /** Gateway indicated validation issues */
-            gatewayValidationFields: {} as Record<string, string>,
-
-            /** An error message received from a bad submission */
-            submitErrorMessage: ""
-        };
-    },
     computed: {
         /** The settings for the gateway (MyWell, etc) control */
         gatewayControlModel (): GatewayControlModel {
@@ -99,8 +116,43 @@ export default defineComponent( {
         /** The text to be displayed on the "Finish" button */
         finishButtonText (): string {
             return ( this.viewModel.isRedirectGateway && this.registrationEntryState.amountToPayToday ) ? "Pay" : "Finish";
+        },
+
+        /** true if there are any saved accounts to be selected. */
+        hasSavedAccounts(): boolean {
+            return this.registrationEntryState.viewModel.savedAccounts !== null
+                && this.registrationEntryState.viewModel.savedAccounts.length > 0;
+        },
+
+        /** Contains the options to display in the saved account drop down list. */
+        savedAccountOptions(): DropDownListOption[] {
+            if (this.registrationEntryState.viewModel.savedAccounts === null) {
+                return [];
+            }
+
+            const options = this.registrationEntryState.viewModel.savedAccounts.map(a => {
+                const option: DropDownListOption = {
+                    value: a.value,
+                    text: a.text
+                };
+
+                return option;
+            });
+
+            options.push({
+                value: "",
+                text: "Use a different payment method"
+            });
+
+            return options;
+        },
+
+        /** true if the gateway control should be visible. */
+        showGateway(): boolean {
+            return !this.hasSavedAccounts || this.selectedSavedAccount === "";
         }
     },
+
     methods: {
         /** User clicked the "previous" button */
         onPrevious () {
@@ -114,10 +166,10 @@ export default defineComponent( {
             // If there is a cost, then the gateway will need to be used to pay
             if ( this.registrationEntryState.amountToPayToday ) {
                 // If this is a redirect gateway, then persist and redirect now
-                if ( this.viewModel.isRedirectGateway ) {
+                if (this.viewModel.isRedirectGateway) {
                     const redirectUrl = await this.getPaymentRedirect();
 
-                    if ( redirectUrl ) {
+                    if (redirectUrl) {
                         location.href = redirectUrl;
                     }
                     else {
@@ -125,11 +177,26 @@ export default defineComponent( {
                         this.loading = false;
                     }
                 }
-                else {
+                else if (this.showGateway) {
                     // Otherwise, this is a traditional gateway
                     this.gatewayErrorMessage = "";
                     this.gatewayValidationFields = {};
                     this.submitPayment();
+                }
+                else if (this.selectedSavedAccount !== "") {
+                    this.registrationEntryState.savedAccountGuid = toGuidOrNull(this.selectedSavedAccount);
+                    const success = await this.submit();
+                    this.loading = false;
+
+                    if (success) {
+                        this.$emit("next");
+                    }
+                }
+                else {
+                    this.submitErrorMessage = "Please select a valid payment option.";
+                    this.loading = false;
+
+                    return;
                 }
             }
             else {
@@ -176,7 +243,9 @@ export default defineComponent( {
         },
 
         /** Submit the registration to the server */
-        async submit (): Promise<boolean> {
+        async submit(): Promise<boolean> {
+            this.submitErrorMessage = "";
+
             const result = await this.invokeBlockAction<RegistrationEntryBlockSuccessViewModel>( "SubmitRegistration", {
                 args: this.getRegistrationEntryBlockArgs()
             } );
@@ -204,6 +273,7 @@ export default defineComponent( {
             return result.data || "";
         }
     },
+
     template: `
 <div class="registrationentry-summary">
     <RockForm @submit="onNext">
@@ -218,14 +288,17 @@ export default defineComponent( {
 
         <div v-if="gatewayControlModel" v-show="registrationEntryState.amountToPayToday" class="well">
             <h4>Payment Method</h4>
-            <Alert v-if="gatewayErrorMessage" alertType="danger">{{gatewayErrorMessage}}</Alert>
-            <RockValidation :errors="gatewayValidationFields" />
-            <div class="hosted-payment-control">
-                <GatewayControl
-                    :gatewayControlModel="gatewayControlModel"
-                    @success="onGatewayControlSuccess"
-                    @error="onGatewayControlError"
-                    @validation="onGatewayControlValidation" />
+            <DropDownList v-if="hasSavedAccounts" v-model="selectedSavedAccount" :options="savedAccountOptions" :showBlankItem="false" />
+            <div v-show="showGateway">
+                <Alert v-if="gatewayErrorMessage" alertType="danger">{{gatewayErrorMessage}}</Alert>
+                <RockValidation :errors="gatewayValidationFields" />
+                <div class="hosted-payment-control">
+                    <GatewayControl
+                        :gatewayControlModel="gatewayControlModel"
+                        @success="onGatewayControlSuccess"
+                        @error="onGatewayControlError"
+                        @validation="onGatewayControlValidation" />
+                </div>
             </div>
         </div>
 
