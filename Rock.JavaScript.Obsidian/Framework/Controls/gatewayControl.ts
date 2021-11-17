@@ -14,7 +14,7 @@
 // limitations under the License.
 // </copyright>
 //
-import { computed, defineComponent, inject, InjectionKey, PropType, provide, ref } from "vue";
+import { computed, defineComponent, inject, InjectionKey, PropType, provide } from "vue";
 import JavaScriptAnchor from "../Elements/javaScriptAnchor";
 import ComponentFromUrl from "./componentFromUrl";
 

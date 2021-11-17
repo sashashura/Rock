@@ -118,7 +118,8 @@ type CollectJS = {
 };
 
 declare global {
-    var CollectJS: CollectJS;
+    /* eslint-disable-next-line */
+    var CollectJS: CollectJS | undefined;
 }
 
 export { };

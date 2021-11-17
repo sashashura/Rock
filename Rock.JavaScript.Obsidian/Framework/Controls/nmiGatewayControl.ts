@@ -409,13 +409,13 @@ export default defineComponent({
 
         /** Activates the credit card payment type. */
         const activateCreditCard = (): void => {
-            CollectJS.clearInputs();
+            CollectJS?.clearInputs();
             activePaymentType.value = NMIPaymentType.Card;
         };
 
         /** Activates the bank account payment type. */
         const activateBankAccount = (): void => {
-            CollectJS.clearInputs();
+            CollectJS?.clearInputs();
             activePaymentType.value = NMIPaymentType.BankAccount;
         };
 
@@ -458,7 +458,7 @@ export default defineComponent({
                 const validationField = validationFieldStatus[validationFieldKey];
 
                 // first check visibility. If this is an ACH field, but we are in CC mode (and vice versa), don't validate
-                const inputField = document.querySelector(CollectJS.config.fields[validationFieldKey]?.selector ?? "") as HTMLElement;
+                const inputField = document.querySelector(CollectJS?.config.fields[validationFieldKey]?.selector ?? "") as HTMLElement;
                 const fieldVisible = (inputField?.offsetWidth ?? 0) !== 0 || (inputField?.offsetHeight ?? 0) !== 0;
 
                 if (fieldVisible && !validationField.status) {
@@ -532,7 +532,7 @@ export default defineComponent({
 
             const validationResult = validateInputs();
 
-            if (hasAttemptedSubmit && !CollectJS.inSubmission && !hasReceivedToken) {
+            if (hasAttemptedSubmit && !(CollectJS?.inSubmission ?? false) && !hasReceivedToken) {
                 emit(GatewayEmitStrings.Validation, validationResult.errors);
             }
         };
@@ -551,7 +551,7 @@ export default defineComponent({
 
                 hasAttemptedSubmit = true;
                 if (validationResult.isValid) {
-                    CollectJS.startPaymentRequest();
+                    CollectJS?.startPaymentRequest();
                 }
                 else {
                     emit(GatewayEmitStrings.Validation, validationResult.errors);
@@ -575,7 +575,7 @@ export default defineComponent({
             await loadStandardStyleTagAsync();
 
             if (!(await loadCollectJSAsync(props.settings.tokenizationKey ?? ""))) {
-                emit(GatewayEmitStrings.Error, "Error configuring hosted gateway. This could be due to an invalid or missing Tokenization Key. Please verify that Tokenization Key is configured correctly in gateway settings." );
+                emit(GatewayEmitStrings.Error, "Error configuring hosted gateway. This could be due to an invalid or missing Tokenization Key. Please verify that Tokenization Key is configured correctly in gateway settings.");
                 return;
             }
 
@@ -589,7 +589,7 @@ export default defineComponent({
                     loading.value = false;
                 };
 
-                CollectJS.configure(options);
+                CollectJS?.configure(options);
             }
             catch {
                 failedToLoad.value = true;
