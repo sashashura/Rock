@@ -76,4 +76,4 @@ export default defineComponent({
 <div style="max-width: 600px; margin-left: auto; margin-right: auto;">
     <TextBox label="Credit Card" v-model="cardNumber" />
 </div>`
-} );
+});

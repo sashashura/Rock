@@ -19,7 +19,6 @@ import { GatewayControlModel } from "../../../Controls/gatewayControl";
 import { Guid } from "../../../Util/guid";
 import { ClientEditableAttributeValue, ListItem } from "../../../ViewModels";
 import { RegistrationEntryBlockSession } from "./registrationEntryBlockArgs";
-import { DropDownListOption } from "../../../Elements/dropDownList";
 
 export const enum RegistrationPersonFieldType {
     FirstName = 0,

@@ -884,7 +884,11 @@
     <Compile Include="Model\Event\Registration\RegistrationCostSummaryType.cs" />
     <Compile Include="Model\Event\Registration\RegistrationExtensionMethods.cs" />
     <Compile Include="Model\Event\Registration\RegistrationInfo.cs" />
+    <Compile Include="Model\Finance\BenevolenceRequest\BenevolenceRequest.Configuration.cs" />
     <Compile Include="Model\Finance\BenevolenceRequest\BenevolenceRequest.Logic.cs" />
+    <Compile Include="Model\Finance\BenevolenceType\BenevolenceType.cs" />
+    <Compile Include="Model\Finance\BenevolenceWorkflow\BenevolenceWorkflow.cs" />
+    <Compile Include="Model\Finance\BenevolenceWorkflow\BenevolenceWorkflow.Configuration.cs" />
     <Compile Include="Model\Group\GroupDemographicType\GroupDemographicType.cs" />
     <Compile Include="Model\Group\GroupDemographicValue\GroupDemographicValue.cs" />
     <Compile Include="Model\Group\GroupDemographicValue\GroupDemographicValue.Logic.cs" />
@@ -2156,9 +2160,9 @@
     <Compile Include="Model\Core\Finance\FinancialAccount\FinancialAccountService.cs" />
     <Compile Include="Data\IAnalyticsAddresses.cs" />
     <Compile Include="Model\Group\GroupSync\GroupSync.cs" />
-    <Compile Include="Model\MetaFirstNameGenderLookup.cs" />
-    <Compile Include="Model\MetaLastNameLookup.cs" />
-    <Compile Include="Model\MetaNickNameLookup.cs" />
+    <Compile Include="Model\Meta\MetaFirstNameGenderLookup\MetaFirstNameGenderLookup.cs" />
+    <Compile Include="Model\Meta\MetaLastNameLookup\MetaLastNameLookup.cs" />
+    <Compile Include="Model\Meta\MetaNickNameLookup\MetaNickNameLookup.cs" />
     <Compile Include="Model\Reporting\Metric\MetricService.cs" />
     <Compile Include="Model\Event\AttendanceCode\AttendanceCodeService.cs" />
     <Compile Include="Model\Event\Attendance\AttendanceService.cs" />
@@ -2447,7 +2451,7 @@
     <Compile Include="Model\Location.cs" />
     <Compile Include="Model\LocationService.Partial.cs" />
     <Compile Include="Model\MergeTemplate.cs" />
-    <Compile Include="Model\Metaphone.cs" />
+    <Compile Include="Model\Core\Metaphone\Metaphone.cs" />
     <Compile Include="Model\Reporting\Metric\Metric.cs" />
     <Compile Include="Model\Reporting\MetricCategory\MetricCategory.cs" />
     <Compile Include="Model\Reporting\MetricPartition\MetricPartition.cs" />
@@ -2468,9 +2472,9 @@
     <Compile Include="Model\PageRouteService.Partial.cs" />
     <Compile Include="Model\PageService.Partial.cs" />
     <Compile Include="Model\Person.cs" />
-    <Compile Include="Model\PersonalDevice.cs" />
+    <Compile Include="Model\CRM\PersonalDevice\PersonalDevice.cs" />
     <Compile Include="Model\PersonAlias.cs" />
-    <Compile Include="Model\PersonalDeviceService.Partial.cs" />
+    <Compile Include="Model\CRM\PersonalDevice\PersonalDeviceService.cs" />
     <Compile Include="Model\PersonAliasService.Partial.cs" />
     <Compile Include="Model\Badge.cs" />
     <Compile Include="Model\BadgeService.partial.cs" />
