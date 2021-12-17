@@ -2718,7 +2718,7 @@ namespace Rock.Model
         /// <param name="maxWidth">The maximum width (in px).</param>
         /// <param name="maxHeight">The maximum height (in px).</param>
         /// <returns></returns>
-        [RockObsolete( "1.8" )]
+        -[RockObsolete( "1.8" )]
         [Obsolete( "Use other GetPersonPhotoUrl", true )]
         public static string GetPersonPhotoUrl( int? personId, int? photoId, int? age, Gender gender, Guid? recordTypeValueGuid, int? maxWidth = null, int? maxHeight = null )
         {

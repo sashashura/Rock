@@ -238,7 +238,7 @@ namespace Rock.Model
         /// <value>
         /// <c>true</c> if this instance is schedule or checkin active; otherwise, <c>false</c>.
         /// </value>
-        [RockObsolete( "1.8" )]
+        -[RockObsolete( "1.8" )]
         [Obsolete( "Use WasScheduleOrCheckInActive( DateTime time ) method instead.", true )]
         public virtual bool IsScheduleOrCheckInActive
         {
@@ -278,7 +278,7 @@ namespace Rock.Model
         /// <returns></returns>
         [NotMapped]
         [LavaInclude]
-        [RockObsolete( "1.8" )]
+        -[RockObsolete( "1.8" )]
         [Obsolete( "Use GetNextStartDateTime( DateTime currentDateTime ) instead.", true )]
         public virtual DateTime? NextStartDateTime
         {

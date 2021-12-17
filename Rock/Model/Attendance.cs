@@ -508,7 +508,7 @@ namespace Rock.Model
         /// </value>
         [LavaInclude]
         [NotMapped]
-        [RockObsolete( "1.8" )]
+        -[RockObsolete( "1.8" )]
         [Obsolete( "Use Occurrence.GroupId instead", true )]
         public int? GroupId
         {
@@ -531,7 +531,7 @@ namespace Rock.Model
         /// </value>
         [LavaInclude]
         [NotMapped]
-        [RockObsolete( "1.8" )]
+        -[RockObsolete( "1.8" )]
         [Obsolete( "Use Occurrence.LocationId instead", true )]
         public int? LocationId
         {
@@ -553,7 +553,7 @@ namespace Rock.Model
         /// </value>
         [LavaInclude]
         [NotMapped]
-        [RockObsolete( "1.8" )]
+        -[RockObsolete( "1.8" )]
         [Obsolete( "Use Occurrence.ScheduleId instead", true )]
         public int? ScheduleId
         {
@@ -575,7 +575,7 @@ namespace Rock.Model
         /// </value>
         [LavaInclude]
         [NotMapped]
-        [RockObsolete( "1.8" )]
+        -[RockObsolete( "1.8" )]
         [Obsolete( "Use Occurrence.DidNotOccur instead", true )]
         public bool? DidNotOccur
         {
@@ -597,7 +597,7 @@ namespace Rock.Model
         /// </value>
         [LavaInclude]
         [NotMapped]
-        [RockObsolete( "1.8" )]
+        -[RockObsolete( "1.8" )]
         [Obsolete( "Use Occurrence.SundayDate instead", true )]
         public DateTime SundayDate
         {
@@ -623,7 +623,7 @@ namespace Rock.Model
         /// </value>
         [LavaInclude]
         [NotMapped]
-        [RockObsolete( "1.8" )]
+        -[RockObsolete( "1.8" )]
         [Obsolete( "Use Occurrence.Group instead", true )]
         public virtual Group Group
         {
@@ -650,7 +650,7 @@ namespace Rock.Model
         /// </value>
         [LavaInclude]
         [NotMapped]
-        [RockObsolete( "1.8" )]
+        -[RockObsolete( "1.8" )]
         [Obsolete( "Use Occurrence.Location instead", true )]
         public virtual Location Location
         {
@@ -677,7 +677,7 @@ namespace Rock.Model
         /// </value>
         [LavaInclude]
         [NotMapped]
-        [RockObsolete( "1.8" )]
+        -[RockObsolete( "1.8" )]
         [Obsolete( "Use Occurrence.Schedule instead", true )]
         public virtual Schedule Schedule
         {

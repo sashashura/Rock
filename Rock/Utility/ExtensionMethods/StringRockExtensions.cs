@@ -118,7 +118,7 @@ namespace Rock
         /// <returns>
         ///   <c>true</c> if [is not null or whitespace] [the specified string]; otherwise, <c>false</c>.
         /// </returns>
-        [RockObsolete( "1.8" )]
+        -[RockObsolete( "1.8" )]
         [Obsolete( "Use IsNotNullOrWhiteSpace instead. Fixes non-standard casing.", true )]
         public static bool IsNotNullOrWhitespace( this string str )
         {

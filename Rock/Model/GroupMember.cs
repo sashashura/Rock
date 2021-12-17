@@ -1246,7 +1246,7 @@ namespace Rock.Model
         /// <value>
         /// The changes.
         /// </value>
-        [RockObsolete( "1.8" )]
+        -[RockObsolete( "1.8" )]
         [Obsolete( "Use PersonHistoryChangeList or GroupMemberHistoryChangeList instead, depending on what you are doing. ", true )]
         public List<string> Changes { get; set; }
 

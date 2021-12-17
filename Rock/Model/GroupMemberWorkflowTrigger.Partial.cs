@@ -65,7 +65,7 @@ namespace Rock.Model
         /// <summary>
         /// Flushes cached triggers.
         /// </summary>
-        [RockObsolete( "1.8" )]
+        -[RockObsolete( "1.8" )]
         [Obsolete( "Use RemovedCachedTriggers() instead.", true )]
         public static void FlushCachedTriggers()
         {

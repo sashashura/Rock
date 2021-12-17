@@ -530,7 +530,7 @@ namespace Rock.Reporting
         /// </summary>
         /// <param name="phFilters">The ph filters.</param>
         /// <returns></returns>
-        [RockObsolete( "1.8" )]
+        -[RockObsolete( "1.8" )]
         [Obsolete( "", true )]
         public static DataViewFilterOverrides GetFilterOverridesFromControls( PlaceHolder phFilters )
         {

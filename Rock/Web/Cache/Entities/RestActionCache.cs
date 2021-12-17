@@ -149,7 +149,7 @@ namespace Rock.Web.Cache
         /// <param name="apiId">The API identifier.</param>
         /// <param name="rockContext">The rock context.</param>
         /// <returns></returns>
-        [RockObsolete( "1.8" )]
+        -[RockObsolete( "1.8" )]
         [Obsolete("Use Get Instead", true )]
         public static RestActionCache Read( string apiId, RockContext rockContext = null )
         {

@@ -35,7 +35,7 @@ namespace Rock.Web.UI.Controls
         /// <summary>
         /// Initializes a new instance of the <see cref="NoteOptions"/> class.
         /// </summary>
-        [RockObsolete( "1.8" )]
+        -[RockObsolete( "1.8" )]
         [Obsolete( " Use NoteOptions( NoteContainer noteContainer ) instead", true )]
         public NoteOptions() : this( null )
         {

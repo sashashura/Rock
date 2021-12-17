@@ -170,7 +170,7 @@ namespace Rock.Web.Cache
         /// <param name="tagName">Name of the tag.</param>
         /// <param name="rockContext">The rock context.</param>
         /// <returns></returns>
-        [RockObsolete( "1.8" )]
+        -[RockObsolete( "1.8" )]
         [Obsolete( "No Longer Supported", true )]
         public static LavaShortcodeCache Read( string tagName, RockContext rockContext = null )
         {

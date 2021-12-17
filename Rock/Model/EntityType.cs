@@ -197,7 +197,7 @@ namespace Rock.Model
         /// <value>
         /// <c>true</c> if this instance is analytic supported; otherwise, <c>false</c>.
         /// </value>
-        [RockObsolete( "1.8" )]
+        -[RockObsolete( "1.8" )]
         [Obsolete( "Use EntityTypeCache.IsAnalyticsSupported(..) instead", true )]
         public bool IsAnalyticSupported
         {
@@ -213,7 +213,7 @@ namespace Rock.Model
         /// <value>
         /// <c>true</c> if this instance is analytic historical supported; otherwise, <c>false</c>.
         /// </value>
-        [RockObsolete( "1.8" )]
+        -[RockObsolete( "1.8" )]
         [Obsolete( "Use EntityTypeCache.IsAnalyticHistoricalSupported(..) instead", true )]
         public bool IsAnalyticHistoricalSupported
         {

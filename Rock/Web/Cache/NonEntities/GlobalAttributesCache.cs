@@ -152,7 +152,7 @@ namespace Rock.Web.Cache
         /// Reads this instance.
         /// </summary>
         /// <returns></returns>
-        [RockObsolete( "1.8" )]
+        -[RockObsolete( "1.8" )]
         [Obsolete( "Use Get instead", true )]
         public static GlobalAttributesCache Read()
         {
@@ -164,7 +164,7 @@ namespace Rock.Web.Cache
         /// </summary>
         /// <param name="rockContext">The rock context.</param>
         /// <returns></returns>
-        [RockObsolete( "1.8" )]
+        -[RockObsolete( "1.8" )]
         [Obsolete( "Use Get instead", true )]
         public static GlobalAttributesCache Read( RockContext rockContext )
         {
@@ -339,7 +339,7 @@ namespace Rock.Web.Cache
         /// <param name="key">The key.</param>
         /// <param name="valueFactory">The value factory.</param>
         /// <returns></returns>
-        [RockObsolete( "1.8" )]
+        -[RockObsolete( "1.8" )]
         [Obsolete("No longer needed", true )]
         public static GlobalAttributesCache GetOrAddExisting( string key, Func<GlobalAttributesCache> valueFactory )
         {

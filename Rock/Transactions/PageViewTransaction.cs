@@ -27,7 +27,7 @@ namespace Rock.Transactions
     /// <summary>
     /// Tracks when a page is viewed.
     /// </summary>
-    [RockObsolete( "1.8" )]
+    -[RockObsolete( "1.8" )]
     [Obsolete("Use InteractionTransaction Instead", true )]
     public class PageViewTransaction : ITransaction
     {

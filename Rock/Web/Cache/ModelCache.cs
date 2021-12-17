@@ -46,7 +46,7 @@ namespace Rock.Web.Cache
         /// Copies from model.
         /// </summary>
         /// <param name="model">The model.</param>
-        [RockObsolete( "1.8" )]
+        -[RockObsolete( "1.8" )]
         [Obsolete("Use SetFromEntity instead", true )]
         public virtual void CopyFromModel( Rock.Data.IEntity model )
         {
@@ -350,7 +350,7 @@ namespace Rock.Web.Cache
         /// <summary>
         /// Reloads the attribute values.
         /// </summary>
-        [RockObsolete( "1.8" )]
+        -[RockObsolete( "1.8" )]
         [Obsolete( "No longer needed. The Attributes will get reloaded automatically.", true )]
         public virtual void ReloadAttributeValues()
         {
@@ -372,7 +372,7 @@ namespace Rock.Web.Cache
         /// Loads the attributes.
         /// </summary>
         /// <param name="rockContext">The rock context.</param>
-        [RockObsolete( "1.8" )]
+        -[RockObsolete( "1.8" )]
         [Obsolete( "No longer needed on Cached items. The Attributes will get loaded automatically.", true )]
         public void LoadAttributes( RockContext rockContext )
         {
@@ -382,7 +382,7 @@ namespace Rock.Web.Cache
         /// <summary>
         /// Loads the attributes.
         /// </summary>
-        [RockObsolete( "1.8" )]
+        -[RockObsolete( "1.8" )]
         [Obsolete( "No longer needed on Cached items. The Attributes will get loaded automatically.", true )]
         public void LoadAttributes()
         {

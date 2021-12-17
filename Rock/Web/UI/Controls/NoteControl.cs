@@ -32,7 +32,7 @@ namespace Rock.Web.UI.Controls
     /// Displays a Rock Note.
     /// </summary>
     [ToolboxData( "<{0}:NoteControl runat=server></{0}:NoteControl>" )]
-    [RockObsolete( "1.8" )]
+    -[RockObsolete( "1.8" )]
     [Obsolete("No Longer Supported", true )]
     public class NoteControl : CompositeControl
     {

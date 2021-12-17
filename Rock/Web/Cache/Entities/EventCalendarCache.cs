@@ -37,7 +37,7 @@ namespace Rock.Web.Cache
         /// </summary>
         /// <param name="id">The event calendar id.</param>
         /// <returns></returns>
-        [RockObsolete( "1.8" )]
+        -[RockObsolete( "1.8" )]
         [Obsolete("No longer needed", true )]
         public static string CacheKey( int id )
         {
