@@ -58,13 +58,11 @@ System.register(["vue", "/Obsidian/Controls/gatewayControl"], function (exports_
                     // Emits any validation errors that prevent payment from proceeding.
                     // "validationErrors" is an Object whose keys are the field name and values are text error messages.
                     const handleValidationErrors = (validationErrors) => {
-                        console.log("Validation Errors", validationErrors);
                         emit("validation", validationErrors);
                     };
 
                     // Emits the payment token back to the page for processing.
                     const handleTokenResponse = (token) => {
-                        console.log("Success Token", token);
                         emit("success", token);
                     };
 
