@@ -876,6 +876,12 @@
     <Compile Include="Model\Core\EntityType\EntityType.Logic.cs" />
     <Compile Include="Model\Core\FieldType\FieldType.Logic.cs" />
     <Compile Include="Model\Core\History\History.Logic.cs" />
+    <Compile Include="Model\Core\Location\Location.Logic.cs" />
+    <Compile Include="Model\Core\Location\Location.SaveHook.cs" />
+    <Compile Include="Model\Core\Location\Location.WebForms.cs" />
+    <Compile Include="Model\Core\Location\LocationService.cs" />
+    <Compile Include="Model\Core\Location\MapCoordinate.cs" />
+    <Compile Include="Model\Core\Location\MapItem.cs" />
     <Compile Include="Model\Core\PersonSignal\PersonSignal.Logic.cs" />
     <Compile Include="Model\Core\PersonToken\PersonToken.Logic.cs" />
     <Compile Include="Model\Core\PersonToken\PersonToken.WebForms.cs" />
@@ -962,7 +968,6 @@
     <Compile Include="Model\Engagement\AchievementTypePrerequisite\AchievementTypePrerequisite.cs" />
     <Compile Include="Model\Engagement\AchievementTypePrerequisite\AchievementTypePrerequisite.Logic.cs" />
     <Compile Include="Model\Engagement\AchievementType\AchievementType.Logic.cs" />
-    <Compile Include="Model\Engagement\StepProgramCompletion\StepProgramCompletion.Logic.cs" />
     <Compile Include="Model\Engagement\StepProgram\StepProgram.Logic.cs" />
     <Compile Include="Model\Engagement\StepStatus\StepStatus.Logic.cs" />
     <Compile Include="Model\Engagement\StepType\StepType.Logic.cs" />
@@ -1062,7 +1067,6 @@
     <Compile Include="Model\Finance\FinancialTransaction\TransactionGraphBy.cs" />
     <Compile Include="Model\Group\GroupDemographicType\GroupDemographicType.cs" />
     <Compile Include="Model\Group\GroupDemographicValue\GroupDemographicValue.cs" />
-    <Compile Include="Model\Group\GroupDemographicValue\GroupDemographicValue.Logic.cs" />
     <Compile Include="Model\Group\GroupHistorical\GroupHistorical.cs" />
     <Compile Include="Model\Group\GroupHistorical\GroupHistorical.Logic.cs" />
     <Compile Include="Model\Group\GroupLocationHistoricalSchedule\GroupLocationHistoricalSchedule.cs" />
@@ -1213,6 +1217,7 @@
     <Compile Include="Model\Workflow\Workflow\Workflow.WebForms.cs" />
     <Compile Include="Model\Workflow\Workflow\Workflow.Logic.cs" />
     <Compile Include="Model\Workflow\Workflow\Workflow.SaveHook.cs" />
+    <Compile Include="Plugin\HotFixes\146_UpdateStatementGeneratorDownloadLink.cs" />
     <Compile Include="Plugin\HotFixes\145_UpdateWistiaVideosToVimeo.cs" />
     <Compile Include="Plugin\HotFixes\144_AddRebuildGroupSalutationsJob.cs" />
     <Compile Include="Reporting\DataFilter\ConnectionRequest\ActivityFilter.cs" />
@@ -1550,6 +1555,7 @@
     <Compile Include="Web\PageRouteWasUpdatedConsumer.cs" />
     <Compile Include="Web\UI\Controls\CompositePlaceHolder.cs" />
     <Compile Include="Web\UI\Controls\FieldVisibilityRuleField.cs" />
+    <Compile Include="Web\UI\Controls\FirstNameTextBox.cs" />
     <Compile Include="Web\UI\Controls\IDoNotBlockValidate.cs" />
     <Compile Include="Web\UI\Controls\IHasAttributeId.cs" />
     <Compile Include="Web\UI\Controls\MediaPlayer.cs" />
@@ -2640,7 +2646,6 @@
     <Compile Include="Model\Core\InteractionSession\InteractionSession.cs" />
     <Compile Include="Model\CMS\Layout\Layout.cs" />
     <Compile Include="Model\Core\Location\Location.cs" />
-    <Compile Include="Model\Core\Location\LocationService.Partial.cs" />
     <Compile Include="Model\Reporting\MergeTemplate\MergeTemplate.cs" />
     <Compile Include="Model\Meta\Metaphone\Metaphone.cs" />
     <Compile Include="Model\Reporting\Metric\Metric.cs" />
@@ -3640,6 +3645,7 @@
     <Compile Include="Workflow\Action\WorkflowControl\Redirect.cs" />
     <Compile Include="Workflow\Action\Utility\RunJob.cs" />
     <Compile Include="Workflow\Action\Utility\RunSQL.cs" />
+    <Compile Include="Workflow\Action\WorkflowControl\SetWorkflowCampus.cs" />
     <Compile Include="Workflow\Action\WorkflowControl\ShowHtml.cs" />
     <Compile Include="Workflow\Action\WorkflowAttributes\SetAttributeFromEntity.cs" />
     <Compile Include="Workflow\Action\WorkflowAttributes\SetAttributeFromPerson.cs" />

@@ -26,6 +26,7 @@ import { IEntity } from "../entity";
 export type RelatedEntity = IEntity & {
     additionalSettingsJson?: string | null;
     isSystem?: boolean;
+    note?: string | null;
     order?: number;
     purposeKey?: string | null;
     qualifierValue?: string | null;
