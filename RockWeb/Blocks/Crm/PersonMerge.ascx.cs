@@ -1243,7 +1243,7 @@ namespace RockWeb.Blocks.Crm
 
             if ( requiredSecurityRole != null )
             {
-                if ( !requiredSecurityRole.IsPersonInRole( RockPage.CurrentPerson.Guid ) )
+                if ( !requiredSecurityRole.IsPersonInRole( RockPage.CurrentPersonId ) )
                 {
                     canMergeResult.IsAllowedToMerge = false;
                 }

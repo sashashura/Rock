@@ -4097,7 +4097,7 @@ namespace Rock.Model
         /// </summary>
         /// <param name="person">The <see cref="Rock.Model.Person"/> to retrieve the user preference settings for.</param>
         /// <returns>A dictionary containing all of the <see cref="Rock.Model.Person">Person's</see> user preference settings.</returns>
-        public static Dictionary<string, string> GetUserPreferences( Person person )
+        public static Dictionary<string, string> GetUserPreferences( int? personId )
         {
             int? personEntityTypeId = EntityTypeCache.Get( Person.USER_VALUE_ENTITY ).Id;
 
@@ -4110,7 +4110,7 @@ namespace Rock.Model
                         v.Attribute.EntityTypeId == personEntityTypeId &&
                         ( v.Attribute.EntityTypeQualifierColumn == null || v.Attribute.EntityTypeQualifierColumn == string.Empty ) &&
                         ( v.Attribute.EntityTypeQualifierValue == null || v.Attribute.EntityTypeQualifierValue == string.Empty ) &&
-                        v.EntityId.Value == person.Id )
+                        v.EntityId.Value == personId )
                     .Select( a => new { a.AttributeId, a.Value } ) )
                 {
                     var attributeKey = AttributeCache.Get( attributeValue.AttributeId )?.Key;

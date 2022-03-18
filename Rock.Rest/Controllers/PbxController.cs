@@ -141,7 +141,7 @@ namespace Rock.Rest.Controllers
         /// </summary>
         /// <param name="currentPerson">The current person.</param>
         /// <returns></returns>
-        private PbxComponent GetPbxComponent( Person currentPerson )
+        private PbxComponent GetPbxComponent( int? currentPersonId )
         {
             // check that a pbx component is active
             var pbxComponent = Rock.Pbx.PbxContainer.GetActiveComponent();
@@ -151,7 +151,7 @@ namespace Rock.Rest.Controllers
             }
 
             // check that this person is allowed to access this component
-            if ( !Rock.Security.Authorization.Authorized( pbxComponent, Authorization.VIEW, currentPerson ) )
+            if ( !Rock.Security.Authorization.Authorized( pbxComponent, Authorization.VIEW, currentPersonId ) )
             {
                 return pbxComponent;
             }

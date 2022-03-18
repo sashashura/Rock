@@ -61,7 +61,7 @@ namespace Rock.Web.UI.Controls
                 foreach ( KeyValuePair<int, Lazy<Rock.Search.SearchComponent, Rock.Extension.IComponentData>> service in Rock.Search.SearchContainer.Instance.Components )
                 {
                     var searchComponent = service.Value.Value;
-                    if ( searchComponent.IsAuthorized( Authorization.VIEW, rockPage.CurrentPerson ) )
+                    if ( searchComponent.IsAuthorized( Authorization.VIEW, rockPage.CurrentPersonId ) )
                     {
                         if ( !searchComponent.AttributeValues.ContainsKey( "Active" ) || bool.Parse( searchComponent.AttributeValues["Active"].Value ) )
                         {

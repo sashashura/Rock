@@ -102,7 +102,7 @@ namespace Rock.Security
         /// </returns>
         public bool IsAuthorized( string action, Rock.Model.Person person )
         {
-            return Security.Authorization.Authorized( this, action, person );
+            return Security.Authorization.Authorized( this, action, person?.Id );
         }
 
         /// <summary>

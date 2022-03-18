@@ -72,7 +72,7 @@ namespace Rock.Lava
         /// <param name="currentPerson">The current person.</param>
         /// <param name="options">The options.</param>
         /// <returns></returns>
-        public static Dictionary<string, object> GetCommonMergeFields( RockPage rockPage, Person currentPerson = null, CommonMergeFieldsOptions options = null )
+        public static Dictionary<string, object> GetCommonMergeFields( RockPage rockPage, Person currentPersonInput = null, CommonMergeFieldsOptions options = null )
         {
             var mergeFields = new Dictionary<string, object>();
 
@@ -86,15 +86,17 @@ namespace Rock.Lava
                 options = new CommonMergeFieldsOptions();
             }
 
-            if ( currentPerson == null )
+            Lazy<Person> _lazyCurrentPerson = new Lazy<Person>( () => currentPersonInput ?? new Person() );
+
+            if ( currentPersonInput == null )
             {
                 if ( rockPage != null )
                 {
-                    currentPerson = rockPage.CurrentPerson;
+                    //currentPerson = rockPage.CurrentPerson;
                 }
                 else if ( HttpContext.Current != null && HttpContext.Current.Items.Contains( "CurrentPerson" ) )
                 {
-                    currentPerson = HttpContext.Current.Items["CurrentPerson"] as Person;
+                   // _lazyCurrentPerson = HttpContext.Current.Items["CurrentPerson"] as Person;
                 }
             }
 
@@ -163,9 +165,9 @@ namespace Rock.Lava
 
             if ( options.GetCurrentPerson )
             {
-                if ( currentPerson != null )
+                if ( _lazyCurrentPerson != null )
                 {
-                    mergeFields.Add( "CurrentPerson", currentPerson );
+                    mergeFields.Add( "CurrentPerson", _lazyCurrentPerson );
                 }
             }
 

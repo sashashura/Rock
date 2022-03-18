@@ -44,7 +44,9 @@ using Rock.Utility.Settings;
 using Rock.ViewModel;
 using Rock.Web.Cache;
 using Rock.Web.UI.Controls;
+
 using static Rock.Security.Authorization;
+
 using Page = System.Web.UI.Page;
 
 namespace Rock.Web.UI
@@ -96,11 +98,6 @@ namespace Rock.Web.UI
         #endregion
 
         #region Protected Variables
-
-        /// <summary>
-        /// The full name of the currently logged in user
-        /// </summary>
-        protected string UserName = string.Empty;
 
         /// <summary>
         /// Gets a dictionary of the current context items (models).
@@ -363,16 +360,18 @@ namespace Rock.Web.UI
         {
             get
             {
-                if ( CurrentPerson != null )
+                if ( !_currentPersonId.HasValue )
                 {
-                    return CurrentPerson.Id;
+                    var currentUserName = UserLogin.GetCurrentUserName();
+                    _currentPersonId = new UserLoginService( new RockContext() ).Queryable().Where( a => a.UserName == currentUserName ).Select( a => a.PersonId ).FirstOrDefault();
+                    
                 }
-                else
-                {
-                    return null;
-                }
+
+                return _currentPersonId;
             }
         }
+
+        private int? _currentPersonId = null;
 
         /// <summary>
         /// Gets the current person alias.
@@ -795,7 +794,7 @@ namespace Rock.Web.UI
                 // redirect back to the current page, otherwise redirect to the site's default page
                 if ( _pageCache != null )
                 {
-                    if ( _pageCache.IsAuthorized( Authorization.VIEW, null ) )
+                    if ( _pageCache.IsAuthorized( Authorization.VIEW, ( int? ) null ) )
                     {
                         // Remove the 'logout' queryparam before redirecting
                         var pageReference = new PageReference( PageReference.PageId, PageReference.RouteId, PageReference.Parameters );
@@ -840,7 +839,8 @@ namespace Rock.Web.UI
 
             // Get current user/person info
             Page.Trace.Warn( "Getting CurrentUser" );
-            Rock.Model.UserLogin user = CurrentUser;
+            //Rock.Model.UserLogin user = CurrentUser;
+            string userName = UserLogin.GetCurrentUserName();
 
             if ( _showDebugTimings )
             {
@@ -851,10 +851,12 @@ namespace Rock.Web.UI
 
             // If there is a logged in user, see if it has an associated Person Record.  If so, set the UserName to
             // the person's full name (which is then cached in the Session state for future page requests)
-            if ( user != null )
+            if ( userName != null )
             {
                 Page.Trace.Warn( "Setting CurrentPerson" );
-                UserName = user.UserName;
+
+                /*
+                UserName = userName;
                 int? personId = user.PersonId;
 
                 if ( personId.HasValue )
@@ -877,6 +879,7 @@ namespace Rock.Web.UI
                         Session[personNameKey] = UserName;
                     }
                 }
+                */
 
                 if ( _showDebugTimings )
                 {
@@ -886,14 +889,14 @@ namespace Rock.Web.UI
                 }
 
                 // check that they aren't required to change their password
-                if ( user.IsPasswordChangeRequired == true && Site.ChangePasswordPageReference != null )
+                /*if ( user.IsPasswordChangeRequired == true && Site.ChangePasswordPageReference != null )
                 {
                     // don't redirect if this is the change password page
                     if ( Site.ChangePasswordPageReference.PageId != this.PageId )
                     {
                         Site.RedirectToChangePasswordPage( true, true );
                     }
-                }
+                }*/
 
                 // Check if there is a ROCK_PERSONALDEVICE_ADDRESS cookie, link person to device
                 HandleRockWiFiCookie( CurrentPersonAliasId );
@@ -964,7 +967,7 @@ namespace Rock.Web.UI
                 // Verify that the current user is allowed to view the page.
                 Page.Trace.Warn( "Checking if user is authorized" );
 
-                var isCurrentPersonAuthorized = _pageCache.IsAuthorized( Authorization.VIEW, CurrentPerson );
+                var isCurrentPersonAuthorized = _pageCache.IsAuthorized( Authorization.VIEW, CurrentPersonId );
 
                 if ( _showDebugTimings )
                 {
@@ -975,7 +978,7 @@ namespace Rock.Web.UI
 
                 if ( !isCurrentPersonAuthorized )
                 {
-                    if ( user == null )
+                    if ( userName == null )
                     {
                         // If not authorized, and the user hasn't logged in yet, redirect to the login page
                         Page.Trace.Warn( "Redirecting to login page" );
@@ -1125,8 +1128,8 @@ namespace Rock.Web.UI
                     this.EnableViewState = _pageCache.EnableViewState;
 
                     Page.Trace.Warn( "Checking if user can administer" );
-                    canAdministratePage = _pageCache.IsAuthorized( Authorization.ADMINISTRATE, CurrentPerson );
-                    canEditPage = _pageCache.IsAuthorized( Authorization.EDIT, CurrentPerson );
+                    canAdministratePage = _pageCache.IsAuthorized( Authorization.ADMINISTRATE, CurrentPersonId );
+                    canEditPage = _pageCache.IsAuthorized( Authorization.EDIT, CurrentPersonId );
 
                     // If the current person isn't allowed to edit or administrate the page, check to see if they are being impersonated by someone who
                     // may have edit and/or administrate access to the page.
@@ -1137,8 +1140,8 @@ namespace Rock.Web.UI
                         var currentUserIsImpersonated = ( HttpContext.Current?.User?.Identity?.Name ?? string.Empty ).StartsWith( "rckipid=" );
                         if ( impersonatedByUser != null && currentUserIsImpersonated )
                         {
-                            canAdministratePage = canAdministratePage || _pageCache.IsAuthorized( Authorization.ADMINISTRATE, impersonatedByUser.Person );
-                            canEditPage = canEditPage || _pageCache.IsAuthorized( Authorization.EDIT, impersonatedByUser.Person );
+                            canAdministratePage = canAdministratePage || _pageCache.IsAuthorized( Authorization.ADMINISTRATE, impersonatedByUser.PersonId );
+                            canEditPage = canEditPage || _pageCache.IsAuthorized( Authorization.EDIT, impersonatedByUser.PersonId );
                         }
                     }
 
@@ -1221,9 +1224,9 @@ Rock.settings.initialize({{
 
                         // Get current user's permissions for the block instance
                         Page.Trace.Warn( "\tChecking permission" );
-                        bool canAdministrate = block.IsAuthorized( Authorization.ADMINISTRATE, CurrentPerson );
-                        bool canEdit = block.IsAuthorized( Authorization.EDIT, CurrentPerson );
-                        bool canView = block.IsAuthorized( Authorization.VIEW, CurrentPerson );
+                        bool canAdministrate = block.IsAuthorized( Authorization.ADMINISTRATE, CurrentPersonId );
+                        bool canEdit = block.IsAuthorized( Authorization.EDIT, CurrentPersonId );
+                        bool canView = block.IsAuthorized( Authorization.VIEW, CurrentPersonId );
 
                         // if this is a Site-wide block, only render it if its Zone exists on this page
                         // In other cases, Rock will add the block to the Form (at the very bottom of the page)
@@ -1848,7 +1851,7 @@ Obsidian.onReady(() => {{
                 bool showDebugTimings = this.PageParameter( "ShowDebugTimings" ).AsBoolean();
                 if ( showDebugTimings && _onLoadStopwatch.Elapsed.TotalMilliseconds > 500 )
                 {
-                    if ( _pageCache.IsAuthorized( Authorization.ADMINISTRATE, CurrentPerson ) )
+                    if ( _pageCache.IsAuthorized( Authorization.ADMINISTRATE, CurrentPersonId ) )
                     {
                         Page.Form.Controls.Add( new Literal
                         {
@@ -1947,7 +1950,8 @@ Sys.Application.add_load(function () {
             _tsDuration = RockDateTime.Now.Subtract( ( DateTime ) Context.Items["Request_Start_Time"] );
             _duration = Math.Round( stepDuration, 2 );
 
-            var viewModel = new DebugTimingViewModel {
+            var viewModel = new DebugTimingViewModel
+            {
                 TimestampMs = _previousTiming,
                 DurationMs = _duration,
                 Title = eventTitle,
@@ -2120,7 +2124,7 @@ Sys.Application.add_load(function () {
                 // Add the measurement codes that start with 'UA' to the gtag script. If there are multiple measurement IDs the first one is used as the default.
                 gtagCodes.AddRange( code.Split( ',' ).Select( a => a.Trim() ).Where( a => a.StartsWith( "UA-", StringComparison.OrdinalIgnoreCase ) ).ToList() ?? new List<string>() );
 
-                if( gtagCodes.Any() )
+                if ( gtagCodes.Any() )
                 {
                     var sb = new StringBuilder();
                     sb.Append( $@"
@@ -2129,7 +2133,7 @@ Sys.Application.add_load(function () {
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){{window.dataLayer.push(arguments);}}
-      gtag('js', new Date());");
+      gtag('js', new Date());" );
                     sb.AppendLine( "" );
                     gtagCodes.ForEach( a => sb.AppendLine( $"      gtag('config', '{a}');" ) );
                     sb.AppendLine( "    </script>" );
@@ -3578,7 +3582,7 @@ Sys.Application.add_load(function () {
                     .OrderByDescending( d => d )
                     .FirstOrDefault();
 
-                _obsidianFingerprint = (lastWriteTime ?? RockDateTime.Now).Ticks;
+                _obsidianFingerprint = ( lastWriteTime ?? RockDateTime.Now ).Ticks;
 
                 // Check if we are in debug mode and if so enable the watchers.
                 var cfg = ( CompilationSection ) ConfigurationManager.GetSection( "system.web/compilation" );
@@ -3776,14 +3780,14 @@ Sys.Application.add_load(function () {
         public Dictionary<string, string> SessionUserPreferences()
         {
             string sessionKey = string.Format( "{0}_{1}",
-                Person.USER_VALUE_ENTITY, CurrentPerson != null ? CurrentPerson.Id : 0 );
+                Person.USER_VALUE_ENTITY, CurrentPersonId ?? 0 );
 
             var userPreferences = Session[sessionKey] as Dictionary<string, string>;
             if ( userPreferences == null )
             {
-                if ( CurrentPerson != null )
+                if ( CurrentPersonId != null )
                 {
-                    userPreferences = PersonService.GetUserPreferences( CurrentPerson );
+                    userPreferences = PersonService.GetUserPreferences( CurrentPersonId );
                 }
                 else
                 {
@@ -3983,7 +3987,8 @@ Sys.Application.add_load(function () {
     /// <summary>
     /// Debug Timing
     /// </summary>
-    public sealed class DebugTimingViewModel {
+    public sealed class DebugTimingViewModel
+    {
         /// <summary>
         /// Gets or sets the timestamp milliseconds.
         /// </summary>

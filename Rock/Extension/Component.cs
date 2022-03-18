@@ -378,9 +378,15 @@ namespace Rock.Extension
         /// <returns>
         ///   <c>true</c> if the specified action is authorized; otherwise, <c>false</c>.
         /// </returns>
+        [Obsolete]
         public bool IsAuthorized( string action, Model.Person person )
         {
-            return Security.Authorization.Authorized( this, action, person );
+            return Security.Authorization.Authorized( this, action, person?.Id );
+        }
+
+        public bool IsAuthorized( string action, int? personId )
+        {
+            return Security.Authorization.Authorized( this, action, personId );
         }
 
         /// <summary>

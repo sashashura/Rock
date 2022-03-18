@@ -79,19 +79,19 @@ namespace Rock.Web.Cache
         /// The people.
         /// </value>
         [DataMember]
-        public ConcurrentDictionary<Guid, bool> People { get; private set; } = new ConcurrentDictionary<Guid, bool>();
+        public ConcurrentDictionary<int, bool> People { get; private set; } = new ConcurrentDictionary<int, bool>();
 
         /// <summary>
         /// Is user in role
         /// </summary>
         /// <param name="personGuid">The person unique identifier.</param>
         /// <returns></returns>
-        public bool IsPersonInRole( Guid? personGuid )
+        public bool IsPersonInRole( int? personId )
         {
-            if ( !personGuid.HasValue ) return false;
+            if ( !personId.HasValue ) return false;
 
             bool inRole;
-            return People.TryGetValue( personGuid.Value, out inRole ) && inRole;
+            return People.TryGetValue( personId.Value, out inRole ) && inRole;
         }
 
         #region Static Methods
@@ -132,19 +132,19 @@ namespace Rock.Web.Cache
                     Id = groupModel.Id,
                     Guid = groupModel.Guid,
                     Name = groupModel.Name,
-                    People = new ConcurrentDictionary<Guid, bool>()
+                    People = new ConcurrentDictionary<int, bool>()
                 };
 
                 var groupMembersQry = groupMemberService.Queryable().Where( a => a.GroupId == groupModel.Id );
 
                 // Add the members
-                foreach ( var personGuid in groupMembersQry
+                foreach ( var personId in groupMembersQry
                     .Where( m => m.GroupMemberStatus == Model.GroupMemberStatus.Active )
-                    .Select( m => m.Person.Guid )
+                    .Select( m => m.PersonId )
                     .ToList()
                     .Distinct() )
                 {
-                    role.People.TryAdd( personGuid, true );
+                    role.People.TryAdd( personId, true );
                 }
 
                 role.IsSecurityTypeGroup = groupModel.GroupTypeId == securityGroupTypeId;

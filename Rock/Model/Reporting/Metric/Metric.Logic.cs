@@ -52,7 +52,7 @@ namespace Rock.Model
 
 
             // First check for security on the metric
-            bool? isAuthorized = Security.Authorization.AuthorizedForEntity( this, action, person );
+            bool? isAuthorized = Security.Authorization.AuthorizedForEntity( this, action, person?.Id );
             if ( isAuthorized.HasValue )
             {
                 return isAuthorized.Value;
@@ -66,7 +66,7 @@ namespace Rock.Model
                 bool? denied = null;
                 foreach ( var metricCategory in this.MetricCategories )
                 {
-                    var categoryAuthorized = Security.Authorization.AuthorizedForEntity( metricCategory.Category, action, person, true );
+                    var categoryAuthorized = Security.Authorization.AuthorizedForEntity( metricCategory.Category, action, person?.Id, true );
                     if ( categoryAuthorized.HasValue )
                     {
                         if ( categoryAuthorized.Value )

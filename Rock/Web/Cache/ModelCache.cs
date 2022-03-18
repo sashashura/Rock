@@ -162,9 +162,23 @@ namespace Rock.Web.Cache
         /// <returns>
         ///   <c>true</c> if the specified action is authorized; otherwise, <c>false</c>.
         /// </returns>
+        [Obsolete("Use IsAuthorized with PersonId instead")]
         public virtual bool IsAuthorized( string action, Person person )
         {
-            return Authorization.Authorized( this, action, person );
+            return IsAuthorized( action, person?.Id );
+        }
+
+        /// <summary>
+        /// Return <c>true</c> if the user is authorized to perform the selected action on this object.
+        /// </summary>
+        /// <param name="action">The action.</param>
+        /// <param name="person">The person.</param>
+        /// <returns>
+        ///   <c>true</c> if the specified action is authorized; otherwise, <c>false</c>.
+        /// </returns>
+        public virtual bool IsAuthorized( string action, int? personId )
+        {
+            return Authorization.Authorized( this, action, personId );
         }
 
         /// <summary>
@@ -444,7 +458,7 @@ namespace Rock.Web.Cache
                 if ( !Attributes.ContainsKey( attributeKey ) ) return null;
 
                 var attribute = Attributes[attributeKey];
-                if ( !attribute.IsAuthorized( Authorization.VIEW, null ) ) return null;
+                if ( !attribute.IsAuthorized( Authorization.VIEW, (int?)null ) ) return null;
 
                 var field = attribute.FieldType.Field;
                 var value = GetAttributeValue( attribute.Key );
@@ -505,7 +519,7 @@ namespace Rock.Web.Cache
 
             var attribute = Attributes[attributeKey];
 
-            return attribute.IsAuthorized( Authorization.VIEW, null );
+            return attribute.IsAuthorized( Authorization.VIEW, ( int? ) null );
         }
 
         #endregion

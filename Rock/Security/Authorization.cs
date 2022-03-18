@@ -400,11 +400,11 @@ namespace Rock.Security
         /// </summary>
         /// <param name="entity">The entity.</param>
         /// <param name="action">The action.</param>
-        /// <param name="person">The person.</param>
+        /// <param name="personId">The person identifier.</param>
         /// <returns></returns>
-        public static bool Authorized( ISecured entity, string action, Person person )
+        public static bool Authorized( ISecured entity, string action, int? personId )
         {
-            return ItemAuthorized( entity, action, person, true, true ) ?? entity.IsAllowedByDefault( action );
+            return ItemAuthorized( entity, action, personId, true, true ) ?? entity.IsAllowedByDefault( action );
         }
 
         /// <summary>
@@ -905,9 +905,9 @@ namespace Rock.Security
         /// <param name="action">The action.</param>
         /// <param name="person">The person.</param>
         /// <returns></returns>
-        public static bool? AuthorizedForEntity( ISecured entity, string action, Person person )
+        public static bool? AuthorizedForEntity( ISecured entity, string action, int? personId )
         {
-            return AuthorizedForEntity( entity, action, person, false );
+            return AuthorizedForEntity( entity, action, personId, false );
         }
 
         /// <summary>
@@ -918,9 +918,9 @@ namespace Rock.Security
         /// <param name="person">The person.</param>
         /// <param name="checkParentAuthority">if set to <c>true</c> [check parent authority].</param>
         /// <returns></returns>
-        public static bool? AuthorizedForEntity( ISecured entity, string action, Person person, bool checkParentAuthority )
+        public static bool? AuthorizedForEntity( ISecured entity, string action, int? personId, bool checkParentAuthority )
         {
-            return ItemAuthorized( entity, action, person, true, checkParentAuthority );
+            return ItemAuthorized( entity, action, personId, true, checkParentAuthority );
         }
 
         /// <summary>
@@ -1011,11 +1011,11 @@ namespace Rock.Security
         /// </summary>
         /// <param name="entity">The entity.</param>
         /// <param name="action">The action.</param>
-        /// <param name="person">The person.</param>
+        /// <param name="personId">The person identifier.</param>
         /// <param name="isRootEntity">if set to <c>true</c> [is root entity].</param>
         /// <param name="checkParentAuthority">if set to <c>true</c> [check parent].</param>
         /// <returns></returns>
-        private static bool? ItemAuthorized( ISecured entity, string action, Person person, bool isRootEntity, bool checkParentAuthority )
+        private static bool? ItemAuthorized( ISecured entity, string action, int? personId, bool isRootEntity, bool checkParentAuthority )
         {
             var entityTypeId = entity.TypeId;
 
@@ -1052,8 +1052,6 @@ namespace Rock.Security
                 authorizations[entityTypeId].Keys.Contains( entity.Id ) &&
                 authorizations[entityTypeId][entity.Id].Keys.Contains( action ) )
             {
-                var personGuid = person?.Guid;
-
                 foreach ( var authRule in authorizations[entityTypeId][entity.Id][action] )
                 {
                     // All Users
@@ -1065,7 +1063,7 @@ namespace Rock.Security
                     }
 
                     // All Authenticated Users
-                    if ( authRule.SpecialRole == SpecialRole.AllAuthenticatedUsers && personGuid.HasValue )
+                    if ( authRule.SpecialRole == SpecialRole.AllAuthenticatedUsers && personId.HasValue )
                     {
                         matchFound = true;
                         authorized = authRule.AllowOrDeny == 'A';
@@ -1073,7 +1071,7 @@ namespace Rock.Security
                     }
 
                     // All Unauthenticated Users
-                    if ( authRule.SpecialRole == SpecialRole.AllUnAuthenticatedUsers && !personGuid.HasValue )
+                    if ( authRule.SpecialRole == SpecialRole.AllUnAuthenticatedUsers && !personId.HasValue )
                     {
                         matchFound = true;
                         authorized = authRule.AllowOrDeny == 'A';
@@ -1081,13 +1079,13 @@ namespace Rock.Security
                     }
 
                     // If rule is a special role, or the person is unknown, just continue, we don't need to check for person/role access
-                    if ( authRule.SpecialRole != SpecialRole.None || person == null )
+                    if ( authRule.SpecialRole != SpecialRole.None || (personId == null) )
                     {
                         continue;
                     }
 
                     // Rule is for this person
-                    if ( authRule.PersonId.HasValue && authRule.PersonId.Value == person.Id )
+                    if ( authRule.PersonId.HasValue && authRule.PersonId.Value == personId.Value )
                     {
                         matchFound = true;
                         authorized = authRule.AllowOrDeny == 'A';
@@ -1104,7 +1102,7 @@ namespace Rock.Security
                     var role = RoleCache.Get( authRule.GroupId.Value );
 
                     // If the role was invalid, or person is not in the role, keep checking
-                    if ( role == null || !role.IsPersonInRole( personGuid ) )
+                    if ( role == null || !role.IsPersonInRole( personId ) )
                     {
                         continue;
                     }
@@ -1132,12 +1130,12 @@ namespace Rock.Security
 
             if ( isRootEntity && entity.ParentAuthorityPre != null )
             {
-                parentAuthorized = ItemAuthorized( entity.ParentAuthorityPre, action, person, false, false );
+                parentAuthorized = ItemAuthorized( entity.ParentAuthorityPre, action, personId, false, false );
             }
 
             if ( !parentAuthorized.HasValue && entity.ParentAuthority != null )
             {
-                parentAuthorized = ItemAuthorized( entity.ParentAuthority, action, person, false, true );
+                parentAuthorized = ItemAuthorized( entity.ParentAuthority, action, personId, false, true );
             }
 
             return parentAuthorized;

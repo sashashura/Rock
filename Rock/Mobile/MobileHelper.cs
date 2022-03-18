@@ -167,7 +167,7 @@ namespace Rock.Mobile
                 .Where( a => a.Categories.Any( c => additionalSettings.PersonAttributeCategories.Contains( c.Id ) ) );
 
             var roleGuids = RoleCache.AllRoles()
-                .Where( r => r.IsPersonInRole( person.Guid ) )
+                .Where( r => r.IsPersonInRole( person?.Id ) )
                 .Select( r => r.Guid )
                 .ToList();
 

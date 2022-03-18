@@ -137,7 +137,7 @@ namespace Rock.Pbx
                 var component = indexType.Value.Value;
                 if ( component.IsActive && component.SupportsOrigination )
                 {
-                    var isAuthorized = Rock.Security.Authorization.Authorized( component, Authorization.VIEW, person );
+                    var isAuthorized = Rock.Security.Authorization.Authorized( component, Authorization.VIEW, person?.Id );
 
                     if ( isAuthorized )
                     {

@@ -404,9 +404,15 @@ namespace Rock.Data
         /// <returns>
         ///   <c>true</c> if the specified action is authorized; otherwise, <c>false</c>.
         /// </returns>
+        [Obsolete]
         public virtual bool IsAuthorized( string action, Rock.Model.Person person )
         {
-            return Authorization.Authorized( this, action, person );
+            return Authorization.Authorized( this, action, person?.Id );
+        }
+
+        public virtual bool IsAuthorized( string action, int? personId )
+        {
+            return Authorization.Authorized( this, action, personId );
         }
 
         /// <summary>
@@ -547,7 +553,7 @@ namespace Rock.Data
                         if ( this.Attributes.ContainsKey( attributeKey ) )
                         {
                             var attribute = this.Attributes[attributeKey];
-                            if ( attribute.IsAuthorized( Authorization.VIEW, null ) )
+                            if ( attribute.IsAuthorized( Authorization.VIEW, (int?)null ) )
                             {
                                 Rock.Model.ExceptionLogService.LogException( new Rock.Lava.LegacyLavaSyntaxDetectedException( this.GetType().GetFriendlyTypeName(), attributeKey ), System.Web.HttpContext.Current );
 
@@ -631,7 +637,7 @@ namespace Rock.Data
                 if ( this.Attributes != null && this.Attributes.ContainsKey( key ) )
                 {
                     var attribute = this.Attributes[key];
-                    if ( attribute.IsAuthorized( Authorization.VIEW, null ) )
+                    if ( attribute.IsAuthorized( Authorization.VIEW, ( int? ) null ) )
                     {
                         return true;
                     }
