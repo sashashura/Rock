@@ -178,6 +178,22 @@ namespace Rock.ViewModels.Entities
         public bool EnablePageViews { get; set; }
 
         /// <summary>
+        /// Gets or sets the EnablePersonalization.
+        /// </summary>
+        /// <value>
+        /// The EnablePersonalization.
+        /// </value>
+        public bool EnablePersonalization { get; set; }
+
+        /// <summary>
+        /// Gets or sets the EnableVisitorTracking.
+        /// </summary>
+        /// <value>
+        /// The EnableVisitorTracking.
+        /// </value>
+        public bool EnableVisitorTracking { get; set; }
+
+        /// <summary>
         /// Gets or sets the ErrorPage.
         /// </summary>
         /// <value>

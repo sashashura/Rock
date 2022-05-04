@@ -77,6 +77,33 @@ namespace Rock.Model
         /// </value>
         public Guid? AliasPersonGuid { get; set; }
 
+        /// <summary>
+        /// Gets or sets a value indicating whether this instance is primary alias.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this instance is primary alias; otherwise, <c>false</c>.
+        /// </value>
+        [DataMember]
+        public bool IsPrimaryAlias { get; set; }
+
+        /// <summary>
+        /// Gets or sets the aliased date time.
+        /// </summary>
+        /// <value>
+        /// The aliased date time.
+        /// </value>
+        [DataMember]
+        public DateTime? AliasedDateTime { get; set; }
+
+        /// <summary>
+        /// Gets or sets the last visit time.
+        /// </summary>
+        /// <value>
+        /// The last visit time.
+        /// </value>
+        [DataMember]
+        public DateTime? LastVisitDateTime { get; set; }
+
         #endregion
 
         #region Navigation Properties

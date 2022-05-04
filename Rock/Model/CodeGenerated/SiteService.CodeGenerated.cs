@@ -120,6 +120,8 @@ namespace Rock.Model
                 EnableMobileRedirect = model.EnableMobileRedirect,
                 EnablePageViewGeoTracking = model.EnablePageViewGeoTracking,
                 EnablePageViews = model.EnablePageViews,
+                EnablePersonalization = model.EnablePersonalization,
+                EnableVisitorTracking = model.EnableVisitorTracking,
                 ErrorPage = model.ErrorPage,
                 ExternalUrl = model.ExternalUrl,
                 FavIconBinaryFileId = model.FavIconBinaryFileId,
@@ -231,6 +233,8 @@ namespace Rock.Model
             target.EnableMobileRedirect = source.EnableMobileRedirect;
             target.EnablePageViewGeoTracking = source.EnablePageViewGeoTracking;
             target.EnablePageViews = source.EnablePageViews;
+            target.EnablePersonalization = source.EnablePersonalization;
+            target.EnableVisitorTracking = source.EnableVisitorTracking;
             target.ErrorPage = source.ErrorPage;
             target.ExternalUrl = source.ExternalUrl;
             target.FavIconBinaryFileId = source.FavIconBinaryFileId;

@@ -513,6 +513,24 @@ namespace Rock.Model
             private set { }
         }
 
+        /// <summary>
+        /// Gets or sets a value indicating whether /[enable visitor tracking].
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if [enable visitor tracking]; otherwise, <c>false</c>.
+        /// </value>
+        [DataMember]
+        public bool EnableVisitorTracking { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether [enable personalization].
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if [enable personalization]; otherwise, <c>false</c>.
+        /// </value>
+        [DataMember]
+        public bool EnablePersonalization { get; set; }
+
         #endregion
 
         #region Navigation Properties

@@ -32,15 +32,15 @@ using Rock.Web.Cache;
 namespace Rock.Model
 {
     /// <summary>
-    /// ContentChannel Service class
+    /// RequestFilter Service class
     /// </summary>
-    public partial class ContentChannelService : Service<ContentChannel>
+    public partial class RequestFilterService : Service<RequestFilter>
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="ContentChannelService"/> class
+        /// Initializes a new instance of the <see cref="RequestFilterService"/> class
         /// </summary>
         /// <param name="context">The context.</param>
-        public ContentChannelService(RockContext context) : base(context)
+        public RequestFilterService(RockContext context) : base(context)
         {
         }
 
@@ -52,30 +52,18 @@ namespace Rock.Model
         /// <returns>
         ///   <c>true</c> if this instance can delete the specified item; otherwise, <c>false</c>.
         /// </returns>
-        public bool CanDelete( ContentChannel item, out string errorMessage )
+        public bool CanDelete( RequestFilter item, out string errorMessage )
         {
             errorMessage = string.Empty;
-
-            if ( new Service<ContentChannelItem>( Context ).Queryable().Any( a => a.ContentChannelId == item.Id ) )
-            {
-                errorMessage = string.Format( "This {0} is assigned to a {1}.", ContentChannel.FriendlyTypeName, ContentChannelItem.FriendlyTypeName );
-                return false;
-            }
-
-            if ( new Service<MediaFolder>( Context ).Queryable().Any( a => a.ContentChannelId == item.Id ) )
-            {
-                errorMessage = string.Format( "This {0} is assigned to a {1}.", ContentChannel.FriendlyTypeName, MediaFolder.FriendlyTypeName );
-                return false;
-            }
             return true;
         }
     }
 
     /// <summary>
-    /// ContentChannel View Model Helper
+    /// RequestFilter View Model Helper
     /// </summary>
-    [DefaultViewModelHelper( typeof( ContentChannel ) )]
-    public partial class ContentChannelViewModelHelper : ViewModelHelper<ContentChannel, ContentChannelBag>
+    [DefaultViewModelHelper( typeof( RequestFilter ) )]
+    public partial class RequestFilterViewModelHelper : ViewModelHelper<RequestFilter, RequestFilterBag>
     {
         /// <summary>
         /// Converts the model to a view model.
@@ -84,37 +72,23 @@ namespace Rock.Model
         /// <param name="currentPerson">The current person.</param>
         /// <param name="loadAttributes">if set to <c>true</c> [load attributes].</param>
         /// <returns></returns>
-        public override ContentChannelBag CreateViewModel( ContentChannel model, Person currentPerson = null, bool loadAttributes = true )
+        public override RequestFilterBag CreateViewModel( RequestFilter model, Person currentPerson = null, bool loadAttributes = true )
         {
             if ( model == null )
             {
                 return default;
             }
 
-            var viewModel = new ContentChannelBag
+            var viewModel = new RequestFilterBag
             {
                 Id = model.Id,
                 IdKey = model.IdKey,
                 Guid = model.Guid,
-                ChannelUrl = model.ChannelUrl,
-                ChildItemsManuallyOrdered = model.ChildItemsManuallyOrdered,
-                ContentChannelTypeId = model.ContentChannelTypeId,
-                ContentControlType = ( int ) model.ContentControlType,
-                Description = model.Description,
-                EnablePersonalization = model.EnablePersonalization,
-                EnableRss = model.EnableRss,
-                IconCssClass = model.IconCssClass,
-                IsIndexEnabled = model.IsIndexEnabled,
-                IsStructuredContent = model.IsStructuredContent,
-                IsTaggingEnabled = model.IsTaggingEnabled,
-                ItemsManuallyOrdered = model.ItemsManuallyOrdered,
-                ItemTagCategoryId = model.ItemTagCategoryId,
-                ItemUrl = model.ItemUrl,
+                FilterJson = model.FilterJson,
+                IsActive = model.IsActive,
                 Name = model.Name,
-                RequiresApproval = model.RequiresApproval,
-                RootImageDirectory = model.RootImageDirectory,
-                StructuredContentToolValueId = model.StructuredContentToolValueId,
-                TimeToLive = model.TimeToLive,
+                RequestFilterKey = model.RequestFilterKey,
+                SiteId = model.SiteId,
                 CreatedDateTime = model.CreatedDateTime,
                 ModifiedDateTime = model.ModifiedDateTime,
                 CreatedByPersonAliasId = model.CreatedByPersonAliasId,
@@ -131,36 +105,36 @@ namespace Rock.Model
     /// <summary>
     /// Generated Extension Methods
     /// </summary>
-    public static partial class ContentChannelExtensionMethods
+    public static partial class RequestFilterExtensionMethods
     {
         /// <summary>
-        /// Clones this ContentChannel object to a new ContentChannel object
+        /// Clones this RequestFilter object to a new RequestFilter object
         /// </summary>
         /// <param name="source">The source.</param>
         /// <param name="deepCopy">if set to <c>true</c> a deep copy is made. If false, only the basic entity properties are copied.</param>
         /// <returns></returns>
-        public static ContentChannel Clone( this ContentChannel source, bool deepCopy )
+        public static RequestFilter Clone( this RequestFilter source, bool deepCopy )
         {
             if (deepCopy)
             {
-                return source.Clone() as ContentChannel;
+                return source.Clone() as RequestFilter;
             }
             else
             {
-                var target = new ContentChannel();
+                var target = new RequestFilter();
                 target.CopyPropertiesFrom( source );
                 return target;
             }
         }
 
         /// <summary>
-        /// Clones this ContentChannel object to a new ContentChannel object with default values for the properties in the Entity and Model base classes.
+        /// Clones this RequestFilter object to a new RequestFilter object with default values for the properties in the Entity and Model base classes.
         /// </summary>
         /// <param name="source">The source.</param>
         /// <returns></returns>
-        public static ContentChannel CloneWithoutIdentity( this ContentChannel source )
+        public static RequestFilter CloneWithoutIdentity( this RequestFilter source )
         {
-            var target = new ContentChannel();
+            var target = new RequestFilter();
             target.CopyPropertiesFrom( source );
 
             target.Id = 0;
@@ -177,34 +151,20 @@ namespace Rock.Model
         }
 
         /// <summary>
-        /// Copies the properties from another ContentChannel object to this ContentChannel object
+        /// Copies the properties from another RequestFilter object to this RequestFilter object
         /// </summary>
         /// <param name="target">The target.</param>
         /// <param name="source">The source.</param>
-        public static void CopyPropertiesFrom( this ContentChannel target, ContentChannel source )
+        public static void CopyPropertiesFrom( this RequestFilter target, RequestFilter source )
         {
             target.Id = source.Id;
-            target.ChannelUrl = source.ChannelUrl;
-            target.ChildItemsManuallyOrdered = source.ChildItemsManuallyOrdered;
-            target.ContentChannelTypeId = source.ContentChannelTypeId;
-            target.ContentControlType = source.ContentControlType;
-            target.Description = source.Description;
-            target.EnablePersonalization = source.EnablePersonalization;
-            target.EnableRss = source.EnableRss;
+            target.FilterJson = source.FilterJson;
             target.ForeignGuid = source.ForeignGuid;
             target.ForeignKey = source.ForeignKey;
-            target.IconCssClass = source.IconCssClass;
-            target.IsIndexEnabled = source.IsIndexEnabled;
-            target.IsStructuredContent = source.IsStructuredContent;
-            target.IsTaggingEnabled = source.IsTaggingEnabled;
-            target.ItemsManuallyOrdered = source.ItemsManuallyOrdered;
-            target.ItemTagCategoryId = source.ItemTagCategoryId;
-            target.ItemUrl = source.ItemUrl;
+            target.IsActive = source.IsActive;
             target.Name = source.Name;
-            target.RequiresApproval = source.RequiresApproval;
-            target.RootImageDirectory = source.RootImageDirectory;
-            target.StructuredContentToolValueId = source.StructuredContentToolValueId;
-            target.TimeToLive = source.TimeToLive;
+            target.RequestFilterKey = source.RequestFilterKey;
+            target.SiteId = source.SiteId;
             target.CreatedDateTime = source.CreatedDateTime;
             target.ModifiedDateTime = source.ModifiedDateTime;
             target.CreatedByPersonAliasId = source.CreatedByPersonAliasId;
@@ -220,9 +180,9 @@ namespace Rock.Model
         /// <param name="model">The entity.</param>
         /// <param name="currentPerson" >The currentPerson.</param>
         /// <param name="loadAttributes" >Load attributes?</param>
-        public static ContentChannelBag ToViewModel( this ContentChannel model, Person currentPerson = null, bool loadAttributes = false )
+        public static RequestFilterBag ToViewModel( this RequestFilter model, Person currentPerson = null, bool loadAttributes = false )
         {
-            var helper = new ContentChannelViewModelHelper();
+            var helper = new RequestFilterViewModelHelper();
             var viewModel = helper.CreateViewModel( model, currentPerson, loadAttributes );
             return viewModel;
         }
