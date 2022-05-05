@@ -257,10 +257,12 @@
     <Compile Include="Entities\RemoteAuthenticationSessionBag.cs" />
     <Compile Include="Entities\ReportBag.cs" />
     <Compile Include="Entities\ReportFieldBag.cs" />
+    <Compile Include="Entities\RequestFilterBag.cs" />
     <Compile Include="Entities\RestActionBag.cs" />
     <Compile Include="Entities\RestControllerBag.cs" />
     <Compile Include="Entities\ScheduleBag.cs" />
     <Compile Include="Entities\ScheduleCategoryExclusionBag.cs" />
+    <Compile Include="Entities\SegmentBag.cs" />
     <Compile Include="Entities\ServiceJobBag.cs" />
     <Compile Include="Entities\ServiceJobHistoryBag.cs" />
     <Compile Include="Entities\ServiceLogBag.cs" />

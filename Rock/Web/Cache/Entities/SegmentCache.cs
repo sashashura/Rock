@@ -15,24 +15,21 @@
 // </copyright>
 //
 using Rock.Data;
-using Rock.Web.Cache;
+using Rock.Model;
+using System;
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 using System.Runtime.Serialization;
 
-namespace Rock.Model
+namespace Rock.Web.Cache
 {
     /// <summary>
-    /// Segment Entity
+    /// Information about a Segment
     /// </summary>
-    /// <seealso cref="Data.Model{TEntity}" />
-    /// <seealso cref="ICacheable" />
-    [RockDomain( "CRM" )]
-    [Table( "Segment" )]
+    [Serializable]
     [DataContract]
-    public partial class Segment : Model<Segment>, ICacheable
+    public class SegmentCache : ModelCache<SegmentCache, Segment>
     {
-        #region Entity Properties
+        #region Properties
 
         /// <summary>
         /// Gets or sets the name.
@@ -41,8 +38,7 @@ namespace Rock.Model
         /// The name.
         /// </value>
         [DataMember]
-        [MaxLength( 100 )]
-        public string Name { get; set; }
+        public string Name { get; private set; }
 
         /// <summary>
         /// Gets or sets the segment key.
@@ -51,7 +47,7 @@ namespace Rock.Model
         /// The segment key.
         /// </value>
         [DataMember]
-        public string SegmentKey { get; set; }
+        public string SegmentKey { get; private set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether this instance is active.
@@ -60,7 +56,7 @@ namespace Rock.Model
         ///   <c>true</c> if this instance is active; otherwise, <c>false</c>.
         /// </value>
         [DataMember]
-        public bool IsActive { get; set; }
+        public bool IsActive { get; private set; }
 
         /// <summary>
         /// Gets or sets the filter data view identifier.
@@ -69,7 +65,7 @@ namespace Rock.Model
         /// The filter data view identifier.
         /// </value>
         [DataMember]
-        public int? FilterDataViewId { get; set; }
+        public int? FilterDataViewId { get; private set; }
 
         /// <summary>
         /// Gets or sets the additional filter json.
@@ -78,8 +74,30 @@ namespace Rock.Model
         /// The additional filter json.
         /// </value>
         [DataMember]
-        public string AdditionalFilterJson { get; set; }
+        public string AdditionalFilterJson { get; private set; }
 
         #endregion
+
+        #region Public Methods
+
+        /// <summary>
+        /// Set's the cached objects properties from the model/entities properties.
+        /// </summary>
+        /// <param name="entity">The entity.</param>
+        public override void SetFromEntity( IEntity entity )
+        {
+            base.SetFromEntity( entity );
+
+            if ( entity is Segment segment )
+            {
+                Name = segment.Name;
+                SegmentKey = segment.SegmentKey;
+                IsActive = segment.IsActive;
+                FilterDataViewId = segment.FilterDataViewId;
+                AdditionalFilterJson = segment.AdditionalFilterJson;
+            }
+        }
+
+        #endregion Public Methods
     }
 }
