@@ -16,24 +16,20 @@
 //
 
 using Rock.Data;
-using Rock.Web.Cache;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+using Rock.Model;
+using System;
 using System.Runtime.Serialization;
 
-namespace Rock.Model
+namespace Rock.Web.Cache
 {
     /// <summary>
-    /// Segment Entity
+    /// Information about a RequestFilter
     /// </summary>
-    /// <seealso cref="Data.Model{TEntity}" />
-    /// <seealso cref="ICacheable" />
-    [RockDomain( "CRM" )]
-    [Table( "RequestFilter" )]
+    [Serializable]
     [DataContract]
-    public class RequestFilter : Model<RequestFilter>, ICacheable
+    public class RequestFilterCache : ModelCache<RequestFilterCache, RequestFilter>
     {
-        #region Entity Properties
+        #region Properties
 
         /// <summary>
         /// Gets or sets the name.
@@ -42,7 +38,6 @@ namespace Rock.Model
         /// The name.
         /// </value>
         [DataMember]
-        [MaxLength( 100 )]
         public string Name { get; set; }
 
         /// <summary>
@@ -81,6 +76,39 @@ namespace Rock.Model
         [DataMember]
         public string FilterJson { get; set; }
 
-        #endregion
+        #endregion Properties
+
+        #region Public Methods
+
+        /// <summary>
+        /// Set's the cached objects properties from the model/entities properties.
+        /// </summary>
+        /// <param name="entity">The entity.</param>
+        public override void SetFromEntity( IEntity entity )
+        {
+            base.SetFromEntity( entity );
+
+            if ( entity is RequestFilter requestFilter )
+            {
+                Name = requestFilter.Name;
+                RequestFilterKey = requestFilter.RequestFilterKey;
+                IsActive = requestFilter.IsActive;
+                SiteId = requestFilter.SiteId;
+                FilterJson = requestFilter.FilterJson;
+            }
+        }
+
+        /// <summary>
+        /// Returns a <see cref="System.String"/> that represents this instance.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="System.String"/> that represents this instance.
+        /// </returns>
+        public override string ToString()
+        {
+            return Name;
+        }
+
+        #endregion Public Methods
     }
 }
