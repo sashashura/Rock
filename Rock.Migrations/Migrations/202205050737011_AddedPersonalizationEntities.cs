@@ -108,6 +108,17 @@ namespace Rock.Migrations
             AddColumn("dbo.ContentChannel", "EnablePersonalization", c => c.Boolean(nullable: false));
             AddColumn("dbo.Site", "EnableVisitorTracking", c => c.Boolean(nullable: false));
             AddColumn("dbo.Site", "EnablePersonalization", c => c.Boolean(nullable: false));
+
+            Sql( @"
+               WITH CTE AS
+                (SELECT
+	                 [Id], [IsPrimaryAlias], ROW_NUMBER() OVER (PARTITION BY [PersonId] ORDER BY [Id]) as RecordNumber 
+                 FROM 
+	                [PersonAlias] )
+                UPDATE CTE
+                SET [IsPrimaryAlias] = 1
+                WHERE RecordNumber = 1
+                " );
         }
         
         /// <summary>
