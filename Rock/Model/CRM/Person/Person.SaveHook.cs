@@ -134,7 +134,7 @@ namespace Rock.Model
                 {
                     if ( !this.Entity.Aliases.Any() || !this.Entity.Aliases.Any( a => a.AliasPersonId == this.Entity.Id ) )
                     {
-                        this.Entity.Aliases.Add( new PersonAlias { AliasPerson = this.Entity, AliasPersonGuid = this.Entity.Guid, Guid = System.Guid.NewGuid() } );
+                        this.Entity.Aliases.Add( new PersonAlias { AliasPerson = this.Entity, AliasPersonGuid = this.Entity.Guid, Guid = System.Guid.NewGuid(), IsPrimaryAlias = true } );
                     }
                 }
 

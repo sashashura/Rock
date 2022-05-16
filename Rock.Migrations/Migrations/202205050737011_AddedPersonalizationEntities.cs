@@ -112,13 +112,196 @@ namespace Rock.Migrations
             Sql( @"
                WITH CTE AS
                 (SELECT
-	                 [Id], [IsPrimaryAlias], ROW_NUMBER() OVER (PARTITION BY [PersonId] ORDER BY [Id]) as RecordNumber 
-                 FROM 
+	                    [Id], [IsPrimaryAlias], ROW_NUMBER() OVER (PARTITION BY [PersonId] ORDER BY [Id], case when AliasPersonId = PersonId then 0 else 1 end) as RecordNumber 
+                    FROM 
 	                [PersonAlias] )
+
                 UPDATE CTE
                 SET [IsPrimaryAlias] = 1
                 WHERE RecordNumber = 1
                 " );
+
+            RockMigrationHelper.UpdateDefinedValue( "26BE73A6-A9C5-4E94-AE00-3AFDCF8C9275", "Anonymous Visitor", "An Anonymous Visitor", "80007453-30A7-453C-BF0B-C82AAFE2BA12", true );
+
+            Sql( @"
+DECLARE @personRecordType INT = ( SELECT [Id] FROM [DefinedValue] WHERE [Guid] = '36CF10D6-C695-413D-8E7C-4546EFEF385E' ),
+		@connectionStatusValueId INT = ( SELECT [Id] FROM [DefinedValue] WHERE [Guid] = '8EBC0CEB-474D-4C1B-A6BA-734C3A9AB061'),
+		@recordStatusValueId INT = (select [Id] from [DefinedValue] where [Guid] = '618F906C-C33D-4FA3-8AEF-E58CB7B63F1E'),
+		@personId INT,
+		@groupId INT,
+		@personGuid UNIQUEIDENTIFIER = '7EBC167B-512D-4683-9D80-98B6BB02E1B9',
+		@familyGroupType INT = ( SELECT [Id] FROM [GroupType] WHERE [Guid] = '790E3215-3B10-442B-AF69-616C0DCB998E' ),
+		@adultRole INT = ( SELECT [Id] FROM [GroupTypeRole] WHERE [Guid] = '2639F9A5-2AAE-4E48-A8C3-4FFE86681E42' )
+
+INSERT INTO [Person] (
+    [IsSystem]
+    ,[FirstName]
+    ,[NickName]
+    ,[LastName]
+    ,[Gender]
+    ,[AgeClassification]
+    ,[IsEmailActive]
+    ,[EmailPreference]
+    ,[Guid]
+    ,[RecordTypeValueId]
+    ,[RecordStatusValueId]
+    ,[ConnectionStatusValueId]
+	,[IsDeceased]
+    ,[CreatedDateTime]
+    )
+VALUES (
+    1
+    ,'Anonymous'
+    ,'Anonymous'
+    ,'Visitor'
+    ,0
+    ,1
+    ,1
+    ,0
+    ,@personGuid
+    ,@personRecordType
+    ,@recordStatusValueId
+    ,@connectionStatusValueId
+	,0
+    ,SYSDATETIME()
+    )
+
+SET @personId = SCOPE_IDENTITY()
+
+INSERT INTO [PersonAlias] (
+    PersonId
+    ,AliasPersonId
+    ,AliasPersonGuid
+    ,[Guid]
+    )
+VALUES (
+    @personId
+    ,@personId
+    ,@personGuid
+    ,NEWID()
+    );
+
+declare @randomCampusId int = (select top 1 Id from Campus order by newid())
+
+-- create family
+INSERT INTO [Group] (
+    IsSystem
+    ,GroupTypeId
+    ,NAME
+    ,IsSecurityRole
+    ,IsActive
+    ,CampusId
+    ,[Guid]
+    ,[Order]
+    )
+VALUES (
+    0
+    ,@familyGroupType
+    ,'Anonymous Visitor Family'
+    ,0
+    ,1
+    ,@randomCampusId
+    ,NEWID()
+    ,0
+    )
+
+SET @groupId = SCOPE_IDENTITY()
+
+INSERT INTO [GroupMember] (
+    IsSystem
+    ,GroupId
+    ,PersonId
+    ,GroupRoleId
+    ,[Guid]
+    ,GroupMemberStatus
+	,DateTimeAdded
+    )
+VALUES (
+    0
+    ,@groupId
+    ,@personId
+    ,@adultRole
+    ,newid()
+    ,1
+	,SYSDATETIME()
+    )
+
+
+	UPDATE Person
+        SET GivingId = (
+		        CASE 
+			        WHEN [GivingGroupId] IS NOT NULL
+				        THEN 'G' + CONVERT([varchar], [GivingGroupId])
+			        ELSE 'P' + CONVERT([varchar], [Id])
+			        END
+		        )
+        WHERE GivingId IS NULL OR GivingId != (
+		        CASE 
+			        WHEN [GivingGroupId] IS NOT NULL
+				        THEN 'G' + CONVERT([varchar], [GivingGroupId])
+			        ELSE 'P' + CONVERT([varchar], [Id])
+			        END
+		        )
+
+        UPDATE x
+        SET x.PrimaryFamilyId = x.CalculatedPrimaryFamilyId
+            ,x.PrimaryCampusId = x.CalculatedPrimaryCampusId
+        FROM (
+            SELECT p.Id
+                ,p.NickName
+                ,p.LastName
+                ,p.PrimaryFamilyId
+                ,p.PrimaryCampusId
+                ,pf.CalculatedPrimaryFamilyId
+                ,pf.CalculatedPrimaryCampusId
+            FROM Person p
+            OUTER APPLY (
+                SELECT TOP 1
+                    g.Id [CalculatedPrimaryFamilyId]
+                    ,g.CampusId [CalculatedPrimaryCampusId]
+                FROM GroupMember gm
+                JOIN [Group] g ON g.Id = gm.GroupId
+                WHERE g.GroupTypeId = @familyGroupType
+                    AND gm.PersonId = p.Id
+                ORDER BY gm.GroupOrder
+                    ,gm.GroupId
+                ) pf
+            WHERE (
+                    (ISNULL(p.PrimaryFamilyId, 0) != ISNULL(pf.CalculatedPrimaryFamilyId, 0))
+                    OR (ISNULL(p.PrimaryCampusId, 0) != ISNULL(pf.CalculatedPrimaryCampusId, 0))
+                    ) ) x
+
+            UPDATE x
+            SET x.GivingLeaderId = x.CalculatedGivingLeaderId
+            FROM (
+	            SELECT p.Id
+		            ,p.NickName
+		            ,p.LastName
+		            ,p.GivingLeaderId
+		            ,isnull(pf.CalculatedGivingLeaderId, p.Id) CalculatedGivingLeaderId
+	            FROM Person p
+	            OUTER APPLY (
+		            SELECT TOP 1 p2.[Id] CalculatedGivingLeaderId
+		            FROM [GroupMember] gm
+		            INNER JOIN [GroupTypeRole] r ON r.[Id] = gm.[GroupRoleId]
+		            INNER JOIN [Person] p2 ON p2.[Id] = gm.[PersonId]
+		            WHERE gm.[GroupId] = p.GivingGroupId
+			            AND p2.[IsDeceased] = 0
+			            AND p2.[GivingGroupId] = p.GivingGroupId
+		            ORDER BY r.[Order]
+			            ,p2.[Gender]
+			            ,p2.[BirthYear]
+			            ,p2.[BirthMonth]
+			            ,p2.[BirthDay]
+		            ) pf
+	            WHERE (
+			            p.GivingLeaderId IS NULL
+			            OR (p.GivingLeaderId != pf.CalculatedGivingLeaderId)
+			            )) x
+
+" );
+
+            Sql( MigrationSQL._202205050737011_spCrm_PersonMerge );
         }
         
         /// <summary>
