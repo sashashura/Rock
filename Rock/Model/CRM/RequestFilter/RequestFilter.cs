@@ -31,7 +31,7 @@ namespace Rock.Model
     [RockDomain( "CRM" )]
     [Table( "RequestFilter" )]
     [DataContract]
-    public class RequestFilter : Model<RequestFilter>, ICacheable
+    public partial class RequestFilter : Model<RequestFilter>, ICacheable
     {
         #region Entity Properties
 
