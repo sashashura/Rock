@@ -161,13 +161,14 @@ namespace RockWeb.Blocks.Connection
         "Bulk Update Requests",
         Description = "Page used to update selected connection requests",
         IsRequired = true,
-        DefaultValue = "",
+        DefaultValue = Rock.SystemGuid.Page.CONNECTION_REQUESTS_BULK_UPDATE,
         Order = 16,
         Key = AttributeKey.BulkUpdateRequestsPage )]
 
     #endregion Block Attributes
 
     [ContextAware( typeof( Person ), IsConfigurable = false )]
+    [Rock.SystemGuid.BlockTypeGuid( "28DBE708-E99B-4879-A64D-656C030D25B5" )]
     public partial class ConnectionRequestBoard : ContextEntityBlock
     {
         /*
@@ -970,6 +971,12 @@ namespace RockWeb.Blocks.Connection
             {
                 return;
             }
+
+            var title = connectionRequest.ToString();
+            string quickReturnLava = "{{ Title | AddQuickReturn:'ConnectionRequests', 60 }}";
+            var quickReturnMergeFields = Rock.Lava.LavaHelper.GetCommonMergeFields( this.RockPage, this.CurrentPerson, new Rock.Lava.CommonMergeFieldsOptions { GetLegacyGlobalMergeFields = false } );
+            quickReturnMergeFields.Add( "Title", title );
+            quickReturnLava.ResolveMergeFields( quickReturnMergeFields );
 
             // Add the lava header
             // Resolve the text field merge fields

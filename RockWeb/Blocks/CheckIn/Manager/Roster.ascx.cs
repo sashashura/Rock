@@ -119,6 +119,7 @@ namespace RockWeb.Blocks.CheckIn.Manager
 
     #endregion Block Attributes
 
+    [Rock.SystemGuid.BlockTypeGuid( "EA5C2CF9-8602-445F-B2B7-48D0A5CFEA8C" )]
     public partial class Roster : Rock.Web.UI.RockBlock
     {
         #region Attribute Keys
@@ -1309,7 +1310,7 @@ namespace RockWeb.Blocks.CheckIn.Manager
         private bool HasCheckoutEnabled( GroupTypeCache[] checkinAreas )
         {
             var checkinConfigurationTypes = checkinAreas.Select( a => a.GetCheckInConfigurationType() );
-            return checkinConfigurationTypes.Any( a => a != null && a.GetAttributeValue( Rock.SystemKey.GroupTypeAttributeKey.CHECKIN_GROUPTYPE_ALLOW_CHECKOUT ).AsBoolean() );
+            return checkinConfigurationTypes.Any( a => a != null && a.GetAttributeValue( Rock.SystemKey.GroupTypeAttributeKey.CHECKIN_GROUPTYPE_ALLOW_CHECKOUT_MANAGER ).AsBoolean() );
         }
 
         /// <summary>

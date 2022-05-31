@@ -17,8 +17,10 @@
 using System;
 using System.ComponentModel;
 using System.ComponentModel.Composition;
+using System.IO;
 
 using Rock.Attribute;
+using Rock.Data;
 using Rock.Model;
 using Rock.Web.Cache;
 
@@ -47,6 +49,7 @@ namespace Rock.Badge.Component
         order: 2,
         key: AttributeKey.IsCondensed )]
 
+    [Rock.SystemGuid.EntityTypeGuid( "3246EFE4-76E4-44C9-9DF0-1A7C3EAD4597")]
     public class Steps : BadgeComponent
     {
         #region Keys
@@ -79,14 +82,10 @@ namespace Rock.Badge.Component
             return type.IsNullOrWhiteSpace() || typeof( Person ).FullName == type;
         }
 
-        /// <summary>
-        /// Renders the specified writer.
-        /// </summary>
-        /// <param name="badge">The badge.</param>
-        /// <param name="writer">The writer.</param>
-        public override void Render( BadgeCache badge, System.Web.UI.HtmlTextWriter writer )
+        /// <inheritdoc/>
+        public override void Render( BadgeCache badge, IEntity entity, TextWriter writer )
         {
-            if ( Person == null )
+            if ( !( entity is Person ) )
             {
                 return;
             }
@@ -99,19 +98,15 @@ namespace Rock.Badge.Component
             }
 
             var isCondensed = IsCondensed( badge );
-            var domElementKey = GenerateBadgeKey( badge );
+            var domElementKey = GenerateBadgeKey( badge, entity );
             var html = GetHtmlTemplate( isCondensed, domElementKey );
             writer.Write( html );
         }
 
-        /// <summary>
-        /// Gets the java script.
-        /// </summary>
-        /// <param name="badge"></param>
-        /// <returns></returns>
-        protected override string GetJavaScript( BadgeCache badge )
+        /// <inheritdoc/>
+        protected override string GetJavaScript( BadgeCache badge, IEntity entity )
         {
-            if ( Person == null )
+            if ( !( entity is Person person ) )
             {
                 return null;
             }
@@ -123,9 +118,9 @@ namespace Rock.Badge.Component
                 return null;
             }
 
-            var domElementKey = GenerateBadgeKey( badge );
+            var domElementKey = GenerateBadgeKey( badge, person );
             var isCondensed = IsCondensed( badge );
-            return GetScript( stepProgramGuid.Value, Person.Id, domElementKey, isCondensed );
+            return GetScript( stepProgramGuid.Value, person.Id, domElementKey, isCondensed );
         }
 
         /// <summary>

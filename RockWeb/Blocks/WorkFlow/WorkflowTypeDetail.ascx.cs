@@ -78,6 +78,7 @@ This {{ Workflow.WorkflowType.WorkTerm }} does not currently require your attent
     </div>
 {% endif %}", "", 3 )]
     [LinkedPage( "Export Workflows Page", "Page used to export workflows.", false, "", "", 4 )]
+    [Rock.SystemGuid.BlockTypeGuid( "E1FF677D-5E52-4259-90C7-5560ECBBD82B" )]
     public partial class WorkflowTypeDetail : RockBlock
     {
         protected static class AuthorizationMisc
@@ -328,6 +329,7 @@ This {{ Workflow.WorkflowType.WorkTerm }} does not currently require your attent
                 var newWorkflowType = workflowType.CloneWithoutIdentity();
                 newWorkflowType.IsSystem = false;
                 newWorkflowType.Name = workflowType.Name + " - Copy";
+                newWorkflowType.WorkflowIdPrefix = workflowType.WorkflowIdPrefix + " - Copy";
 
                 // Create temporary state objects for the new workflow type
                 var newAttributesState = new List<Attribute>();

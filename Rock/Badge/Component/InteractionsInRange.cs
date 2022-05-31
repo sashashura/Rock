@@ -14,12 +14,13 @@
 // limitations under the License.
 // </copyright>
 //
-using System;
 using System.ComponentModel;
 using System.ComponentModel.Composition;
+using System.IO;
 using System.Web;
 
 using Rock.Attribute;
+using Rock.Data;
 using Rock.Model;
 using Rock.Web.Cache;
 
@@ -37,6 +38,7 @@ namespace Rock.Badge.Component
     [LinkedPage( "Detail Page", "Select the page to navigate when the badge is clicked.", false, order: 2 )]
     [TextField( "Badge Icon CSS", "The CSS icon to use for the badge.", true, "fa-random", key: "BadgeIconCss", order:3 )]
     [TextField( "Badge Color", "The color of the badge (#ffffff).", true, "#0ab4dd", order: 4 )]
+    [Rock.SystemGuid.EntityTypeGuid( "DE2F669D-4321-466F-BFC2-AE4F9952C2ED")]
     public class InteractionsInRange : BadgeComponent
     {
         /// <summary>
@@ -49,14 +51,10 @@ namespace Rock.Badge.Component
             return type.IsNullOrWhiteSpace() || typeof( Person ).FullName == type;
         }
 
-        /// <summary>
-        /// Renders the specified writer.
-        /// </summary>
-        /// <param name="badge">The badge.</param>
-        /// <param name="writer">The writer.</param>
-        public override void Render( BadgeCache badge, System.Web.UI.HtmlTextWriter writer )
+        /// <inheritdoc/>
+        public override void Render( BadgeCache badge, IEntity entity, TextWriter writer )
         {
-            if ( Person == null )
+            if ( !( entity is Person ) )
             {
                 return;
             }
@@ -65,14 +63,10 @@ namespace Rock.Badge.Component
             writer.Write( "</div>" );
         }
 
-        /// <summary>
-        /// Gets the java script.
-        /// </summary>
-        /// <param name="badge"></param>
-        /// <returns></returns>
-        protected override string GetJavaScript( BadgeCache badge )
+        /// <inheritdoc/>
+        protected override string GetJavaScript( BadgeCache badge, IEntity entity )
         {
-            if ( Person == null )
+            if ( !( entity is Person person ) )
             {
                 return null;
             }
@@ -95,7 +89,7 @@ namespace Rock.Badge.Component
             return $@"
                 $.ajax({{
                     type: 'GET',
-                    url: Rock.settings.get('baseUrl') + 'api/Badges/InteractionsInRange/{Person.Id}/{interactionChannel.Id}/{HttpUtility.UrlEncode( dateRange )}' ,
+                    url: Rock.settings.get('baseUrl') + 'api/Badges/InteractionsInRange/{person.Id}/{interactionChannel.Id}/{HttpUtility.UrlEncode( dateRange )}' ,
                     statusCode: {{
                         200: function (data, status, xhr) {{
 

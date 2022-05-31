@@ -19,8 +19,8 @@ import { deepEqual } from "./util";
 import { useSuspense } from "./suspense";
 import { newGuid } from "./guid";
 import { ControlLazyMode, ControlLazyModeType } from "@Obsidian/Types/Controls/controlLazyMode";
+import { PickerDisplayStyle, PickerDisplayStyleType } from "@Obsidian/Types/Controls/pickerDisplayStyle";
 import type { RulesPropType, ValidationRule } from "@Obsidian/Types/validationRules";
-import { containsRequiredRule } from "./validationRules";
 
 type Prop = { [key: string]: unknown };
 type PropKey<T extends Prop> = Extract<keyof T, string>;
@@ -47,14 +47,14 @@ export function useVModelPassthrough<T extends Prop, K extends PropKey<T>, E ext
 
 /**
  * Updates the Ref value, but only if the new value is actually different than
- * the current value. A strict comparison is performed.
- * 
+ * the current value. A deep comparison is performed.
+ *
  * @param target The target Ref object to be updated.
  * @param value The new value to be assigned to the target.
  *
  * @returns True if the target was updated, otherwise false.
  */
-export function updateRefValue<T>(target: Ref<T>, value: T): boolean {
+export function updateRefValue<T, TV extends T>(target: Ref<T>, value: TV): boolean {
     if (deepEqual(target.value, value, true)) {
         return false;
     }
@@ -67,10 +67,10 @@ export function updateRefValue<T>(target: Ref<T>, value: T): boolean {
 /**
  * Defines a component that will be loaded asynchronously. This contains logic
  * to properly work with the RockSuspense control.
- * 
+ *
  * @param source The function to call to load the component.
  *
- * @retunrs The component that was loaded.
+ * @returns The component that was loaded.
  */
 export function defineAsyncComponent<T extends Component = { new(): ComponentPublicInstance }>(source: AsyncComponentLoader<T>): T {
     return vueDefineAsyncComponent(async () => {
@@ -142,7 +142,7 @@ export const standardRockFormFieldProps: StandardRockFormFieldProps = {
 /**
  * Copies the known properties for the standard rock form field props from
  * the source object to the destination object.
- * 
+ *
  * @param source The source object to copy the values from.
  * @param destination The destination object to copy the values to.
  */
@@ -158,7 +158,7 @@ function copyStandardRockFormFieldProps(source: ExtractPropTypes<StandardRockFor
  * Configures the basic properties that should be passed to the RockFormField
  * component. The value returned by this function should be used with v-bind on
  * the RockFormField in order to pass all the defined prop values to it.
- * 
+ *
  * @param props The props of the component that will be using the RockFormField.
  *
  * @returns An object of prop values that can be used with v-bind.
@@ -184,24 +184,40 @@ export function useStandardRockFormFieldProps(props: ExtractPropTypes<StandardRo
 // #region Standard Async Pickers
 
 type StandardAsyncPickerProps = StandardRockFormFieldProps & {
+    /** Enhance the picker for dealing with long lists by providing a search mechanism. */
     enhanceForLongLists: {
         type: PropType<boolean>,
         default: false
     },
 
+    /** The method the picker should use to load data. */
     lazyMode: {
         type: PropType<ControlLazyModeType>,
         default: ControlLazyMode.OnDemand
     },
 
+    /** True if the picker should allow multiple items to be selected. */
     multiple: {
         type: PropType<boolean>,
         default: false
     },
 
+    /** True if the picker should allow empty selections. */
     showBlankItem: {
         type: PropType<boolean>,
         default: false
+    },
+
+    /** The visual style to use when displaying the picker. */
+    displayStyle: {
+        type: PropType<PickerDisplayStyleType>,
+        default: PickerDisplayStyle.Auto
+    },
+
+    /** The number of columns to use when displaying the items in a list. */
+    columnCount: {
+        type: PropType<number>,
+        default: 0
     }
 };
 
@@ -227,13 +243,23 @@ export const standardAsyncPickerProps: StandardAsyncPickerProps = {
     showBlankItem: {
         type: Boolean as PropType<boolean>,
         default: false
+    },
+
+    displayStyle: {
+        type: String as PropType<PickerDisplayStyleType>,
+        default: PickerDisplayStyle.Auto
+    },
+
+    columnCount: {
+        type: Number as PropType<number>,
+        default: 0
     }
 };
 
 /**
  * Copies the known properties for the standard async picker props from
  * the source object to the destination object.
- * 
+ *
  * @param source The source object to copy the values from.
  * @param destination The destination object to copy the values to.
  */
@@ -243,14 +269,16 @@ function copyStandardAsyncPickerProps(source: ExtractPropTypes<StandardAsyncPick
     destination.enhanceForLongLists = source.enhanceForLongLists;
     destination.lazyMode = source.lazyMode;
     destination.multiple = source.multiple;
-    destination.showBlankItem = source.showBlankItem || !containsRequiredRule(source.rules);
+    destination.showBlankItem = source.showBlankItem;
+    destination.displayStyle = source.displayStyle;
+    destination.columnCount = source.columnCount;
 }
 
 /**
  * Configures the basic properties that should be passed to the BaseAsyncPicker
  * component. The value returned by this function should be used with v-bind on
  * the BaseAsyncPicker in order to pass all the defined prop values to it.
- * 
+ *
  * @param props The props of the component that will be using the BaseAsyncPicker.
  *
  * @returns An object of prop values that can be used with v-bind.
@@ -263,7 +291,9 @@ export function useStandardAsyncPickerProps(props: ExtractPropTypes<StandardAsyn
         enhanceForLongLists: props.enhanceForLongLists,
         lazyMode: props.lazyMode,
         multiple: props.multiple,
-        showBlankItem: props.showBlankItem || !containsRequiredRule(props.rules)
+        showBlankItem: props.showBlankItem,
+        displayStyle: props.displayStyle,
+        columnCount: props.columnCount
     });
 
     // Watch for changes in any of the standard props. Use deep for this so we
@@ -275,7 +305,7 @@ export function useStandardAsyncPickerProps(props: ExtractPropTypes<StandardAsyn
     });
 
     // Watch for changes in our known list of props that might change.
-    watch([() => props.enhanceForLongLists, () => props.lazyMode, () => props.multiple, () => props.showBlankItem], () => {
+    watch([() => props.enhanceForLongLists, () => props.lazyMode, () => props.multiple, () => props.showBlankItem, () => props.displayStyle, () => props.columnCount], () => {
         copyStandardAsyncPickerProps(props, propValues);
     });
 

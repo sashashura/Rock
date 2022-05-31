@@ -1010,24 +1010,14 @@ namespace Rock.Migrations.Migrations {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to /*
-        ///&lt;doc&gt;
-        ///	&lt;summary&gt;
-        ///		This procedure merges the data from the non-primary person to the primary person.  It
-        ///		is used when merging people in Rock and should never be used outside of that process. 
-        ///	&lt;/summary&gt;
-        ///
-        ///	&lt;returns&gt;
-        ///	&lt;/returns&gt;
-        ///	&lt;param name=&quot;Old Id&quot; datatype=&quot;int&quot;&gt;The person id of the non-primary Person being merged&lt;/param&gt;
-        ///	&lt;param name=&quot;New Id&quot; datatype=&quot;int&quot;&gt;The person id of the primary Person being merged&lt;/param&gt;
-        ///	&lt;remarks&gt;	
-        ///		Uses the following constants:
-        ///			* Group Type - Family: 790E [rest of string was truncated]&quot;;.
+        ///   Looks up a localized string similar to DECLARE @LaunchWorkflowConditionId int = ( SELECT TOP 1 [Id] FROM [Attribute] WHERE [Guid] = &apos;E5EFC23D-E030-496C-A9A4-D2BF4181CB49&apos; )
+        ///DECLARE @LaunchWorkflowOnlyIfIndividualLoggedInId int = ( SELECT TOP 1 [Id] FROM [Attribute] WHERE [Guid] = &apos;EB298724-07D5-42AF-B4BF-82420AF6A657&apos; )
+        ///DECLARE @WriteInteractionOnlyIfIndividualLoggedInId int = ( SELECT TOP 1 [Id] FROM [Attribute] WHERE [Guid] = &apos;63B254F7-E19C-48FD-A93F-AFEE19C1ED21&apos; )
+        ///DECLARE @LogInteractionsId int = ( SELECT TOP 1 [Id] FROM [Attribute] WHERE [G [rest of string was truncated]&quot;;.
         /// </summary>
-        public static string _202205050737011_spCrm_PersonMerge {
+        public static string _202205091654423_RemoveContentChannelViewDetail_Script {
             get {
-                return ResourceManager.GetString("_202205050737011_spCrm_PersonMerge", resourceCulture);
+                return ResourceManager.GetString("_202205091654423_RemoveContentChannelViewDetail_Script", resourceCulture);
             }
         }
     }

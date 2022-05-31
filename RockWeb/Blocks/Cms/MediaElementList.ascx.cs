@@ -1,4 +1,4 @@
-﻿// <copyright>
+// <copyright>
 // Copyright by the Spark Development Network
 //
 // Licensed under the Rock Community License (the "License");
@@ -51,6 +51,7 @@ namespace RockWeb.Blocks.Cms
         Key = AttributeKey.AddPage,
         Order = 1 )]
 
+    [Rock.SystemGuid.BlockTypeGuid( "28D6F57B-59D9-4DA6-A8DC-6DBD3E157554" )]
     public partial class MediaElementList : RockBlock, ICustomGridColumns, ISecondaryBlock
     {
         #region Attribute Keys
@@ -319,11 +320,11 @@ namespace RockWeb.Blocks.Cms
             }
 
             var selectQry = qry
-               .Select( a => new
+               .Select( a => new FolderList
                {
-                   a.Id,
-                   a.Name,
-                   a.DurationSeconds,
+                   Id = a.Id,
+                   Name = a.Name,
+                   DurationSeconds =  a.DurationSeconds,
                    WatchCount = watchCountQry.Where( b => interactionComponentQry.Where( c => a.Id == c.EntityId && b.InteractionComponentId == c.Id ).Any() ).Count()
                } );
 
@@ -379,5 +380,44 @@ namespace RockWeb.Blocks.Cms
         }
 
         #endregion Methods
+    }
+
+    /// <summary>
+    /// Connector View Model
+    /// </summary>
+    public class FolderList
+    {
+        /// <summary>
+        /// Gets or sets the identifier.
+        /// </summary>
+        /// <value>
+        /// The identifier.
+        /// </value>
+        public int Id { get; set; }
+
+        /// <summary>
+        /// Gets or sets the name.
+        /// </summary>
+        /// <value>
+        /// The name.
+        /// </value>
+        public string Name { get; set; }
+
+        /// <summary>
+        /// Gets or sets the duration in seconds.
+        /// </summary>
+        /// <value>
+        /// The duration in seconds.
+        /// </value>
+        public int? DurationSeconds { get; set; }
+
+        /// <summary>
+        /// Gets or sets the watch count.
+        /// </summary>
+        /// <value>
+        /// The watch count.
+        /// </value>
+        public int WatchCount { get; set; }
+
     }
 }
