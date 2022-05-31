@@ -18,7 +18,7 @@ namespace Rock.Migrations
 {
     using System;
     using System.Data.Entity.Migrations;
-    
+
     /// <summary>
     ///
     /// </summary>
@@ -32,82 +32,82 @@ namespace Rock.Migrations
             CreateTable(
                 "dbo.PersonAliasPersonalization",
                 c => new
-                    {
-                        PersonAliasId = c.Int(nullable: false),
-                        PersonalizationType = c.Int(nullable: false),
-                        PersonalizationTypeId = c.Int(nullable: false),
-                    })
-                .PrimaryKey(t => new { t.PersonAliasId, t.PersonalizationType, t.PersonalizationTypeId });
-            
+                {
+                    PersonAliasId = c.Int( nullable: false ),
+                    PersonalizationType = c.Int( nullable: false ),
+                    PersonalizationTypeId = c.Int( nullable: false ),
+                } )
+                .PrimaryKey( t => new { t.PersonAliasId, t.PersonalizationType, t.PersonalizationTypeId } );
+
             CreateTable(
                 "dbo.PersonalizedEntity",
                 c => new
-                    {
-                        EntityTypeId = c.Int(nullable: false),
-                        EntityId = c.Int(nullable: false),
-                        PersonalizationType = c.Int(nullable: false),
-                        PersonalizationTypeId = c.Int(nullable: false),
-                    })
-                .PrimaryKey(t => new { t.EntityTypeId, t.EntityId, t.PersonalizationType, t.PersonalizationTypeId });
-            
+                {
+                    EntityTypeId = c.Int( nullable: false ),
+                    EntityId = c.Int( nullable: false ),
+                    PersonalizationType = c.Int( nullable: false ),
+                    PersonalizationTypeId = c.Int( nullable: false ),
+                } )
+                .PrimaryKey( t => new { t.EntityTypeId, t.EntityId, t.PersonalizationType, t.PersonalizationTypeId } );
+
             CreateTable(
                 "dbo.RequestFilter",
                 c => new
-                    {
-                        Id = c.Int(nullable: false, identity: true),
-                        Name = c.String(maxLength: 100),
-                        RequestFilterKey = c.String(),
-                        SiteId = c.Int(),
-                        IsActive = c.Boolean(nullable: false),
-                        FilterJson = c.String(),
-                        CreatedDateTime = c.DateTime(),
-                        ModifiedDateTime = c.DateTime(),
-                        CreatedByPersonAliasId = c.Int(),
-                        ModifiedByPersonAliasId = c.Int(),
-                        Guid = c.Guid(nullable: false),
-                        ForeignId = c.Int(),
-                        ForeignGuid = c.Guid(),
-                        ForeignKey = c.String(maxLength: 100),
-                    })
-                .PrimaryKey(t => t.Id)
-                .ForeignKey("dbo.PersonAlias", t => t.CreatedByPersonAliasId)
-                .ForeignKey("dbo.PersonAlias", t => t.ModifiedByPersonAliasId)
-                .Index(t => t.CreatedByPersonAliasId)
-                .Index(t => t.ModifiedByPersonAliasId)
-                .Index(t => t.Guid, unique: true);
-            
+                {
+                    Id = c.Int( nullable: false, identity: true ),
+                    Name = c.String( maxLength: 100 ),
+                    RequestFilterKey = c.String(),
+                    SiteId = c.Int(),
+                    IsActive = c.Boolean( nullable: false ),
+                    FilterJson = c.String(),
+                    CreatedDateTime = c.DateTime(),
+                    ModifiedDateTime = c.DateTime(),
+                    CreatedByPersonAliasId = c.Int(),
+                    ModifiedByPersonAliasId = c.Int(),
+                    Guid = c.Guid( nullable: false ),
+                    ForeignId = c.Int(),
+                    ForeignGuid = c.Guid(),
+                    ForeignKey = c.String( maxLength: 100 ),
+                } )
+                .PrimaryKey( t => t.Id )
+                .ForeignKey( "dbo.PersonAlias", t => t.CreatedByPersonAliasId )
+                .ForeignKey( "dbo.PersonAlias", t => t.ModifiedByPersonAliasId )
+                .Index( t => t.CreatedByPersonAliasId )
+                .Index( t => t.ModifiedByPersonAliasId )
+                .Index( t => t.Guid, unique: true );
+
             CreateTable(
                 "dbo.Segment",
                 c => new
-                    {
-                        Id = c.Int(nullable: false, identity: true),
-                        Name = c.String(maxLength: 100),
-                        SegmentKey = c.String(),
-                        IsActive = c.Boolean(nullable: false),
-                        FilterDataViewId = c.Int(),
-                        AdditionalFilterJson = c.String(),
-                        CreatedDateTime = c.DateTime(),
-                        ModifiedDateTime = c.DateTime(),
-                        CreatedByPersonAliasId = c.Int(),
-                        ModifiedByPersonAliasId = c.Int(),
-                        Guid = c.Guid(nullable: false),
-                        ForeignId = c.Int(),
-                        ForeignGuid = c.Guid(),
-                        ForeignKey = c.String(maxLength: 100),
-                    })
-                .PrimaryKey(t => t.Id)
-                .ForeignKey("dbo.PersonAlias", t => t.CreatedByPersonAliasId)
-                .ForeignKey("dbo.PersonAlias", t => t.ModifiedByPersonAliasId)
-                .Index(t => t.CreatedByPersonAliasId)
-                .Index(t => t.ModifiedByPersonAliasId)
-                .Index(t => t.Guid, unique: true);
-            
-            AddColumn("dbo.PersonAlias", "IsPrimaryAlias", c => c.Boolean(nullable: false));
-            AddColumn("dbo.PersonAlias", "AliasedDateTime", c => c.DateTime());
-            AddColumn("dbo.PersonAlias", "LastVisitDateTime", c => c.DateTime());
-            AddColumn("dbo.ContentChannel", "EnablePersonalization", c => c.Boolean(nullable: false));
-            AddColumn("dbo.Site", "EnableVisitorTracking", c => c.Boolean(nullable: false));
-            AddColumn("dbo.Site", "EnablePersonalization", c => c.Boolean(nullable: false));
+                {
+                    Id = c.Int( nullable: false, identity: true ),
+                    Name = c.String( maxLength: 100 ),
+                    SegmentKey = c.String(),
+                    IsActive = c.Boolean( nullable: false ),
+                    FilterDataViewId = c.Int(),
+                    AdditionalFilterJson = c.String(),
+                    CreatedDateTime = c.DateTime(),
+                    ModifiedDateTime = c.DateTime(),
+                    CreatedByPersonAliasId = c.Int(),
+                    ModifiedByPersonAliasId = c.Int(),
+                    Guid = c.Guid( nullable: false ),
+                    ForeignId = c.Int(),
+                    ForeignGuid = c.Guid(),
+                    ForeignKey = c.String( maxLength: 100 ),
+                } )
+                .PrimaryKey( t => t.Id )
+                .ForeignKey( "dbo.PersonAlias", t => t.CreatedByPersonAliasId )
+                .ForeignKey( "dbo.PersonAlias", t => t.ModifiedByPersonAliasId )
+                .Index( t => t.CreatedByPersonAliasId )
+                .Index( t => t.ModifiedByPersonAliasId )
+                .Index( t => t.Guid, unique: true );
+
+            AddColumn( "dbo.PersonAlias", "IsPrimaryAlias", c => c.Boolean( nullable: false ) );
+            AddColumn( "dbo.PersonAlias", "AliasedDateTime", c => c.DateTime() );
+            AddColumn( "dbo.PersonAlias", "LastVisitDateTime", c => c.DateTime() );
+            AddColumn( "dbo.ContentChannel", "EnablePersonalization", c => c.Boolean( nullable: false ) );
+            AddColumn( "dbo.Site", "EnableVisitorTracking", c => c.Boolean( nullable: false ) );
+            AddColumn( "dbo.Site", "EnablePersonalization", c => c.Boolean( nullable: false ) );
 
             Sql( @"
                WITH CTE AS
@@ -123,6 +123,13 @@ namespace Rock.Migrations
 
             RockMigrationHelper.UpdateDefinedValue( "26BE73A6-A9C5-4E94-AE00-3AFDCF8C9275", "Anonymous Visitor", "An Anonymous Visitor", "80007453-30A7-453C-BF0B-C82AAFE2BA12", true );
 
+            AddAnonymousVisitor_Up();
+
+            Sql( MigrationSQL._202205311816200_AddedPersonalizationEntities_spCrm_PersonMerge );
+        }
+
+        private void AddAnonymousVisitor_Up()
+        {
             Sql( @"
 DECLARE @personRecordType INT = ( SELECT [Id] FROM [DefinedValue] WHERE [Guid] = '36CF10D6-C695-413D-8E7C-4546EFEF385E' ),
 		@connectionStatusValueId INT = ( SELECT [Id] FROM [DefinedValue] WHERE [Guid] = '8EBC0CEB-474D-4C1B-A6BA-734C3A9AB061'),
@@ -300,35 +307,67 @@ VALUES (
 			            )) x
 
 " );
-
-            Sql( MigrationSQL._202205050737011_spCrm_PersonMerge );
         }
-        
+
         /// <summary>
         /// Operations to be performed during the downgrade process.
         /// </summary>
         public override void Down()
         {
-            DropForeignKey("dbo.Segment", "ModifiedByPersonAliasId", "dbo.PersonAlias");
-            DropForeignKey("dbo.Segment", "CreatedByPersonAliasId", "dbo.PersonAlias");
-            DropForeignKey("dbo.RequestFilter", "ModifiedByPersonAliasId", "dbo.PersonAlias");
-            DropForeignKey("dbo.RequestFilter", "CreatedByPersonAliasId", "dbo.PersonAlias");
-            DropIndex("dbo.Segment", new[] { "Guid" });
-            DropIndex("dbo.Segment", new[] { "ModifiedByPersonAliasId" });
-            DropIndex("dbo.Segment", new[] { "CreatedByPersonAliasId" });
-            DropIndex("dbo.RequestFilter", new[] { "Guid" });
-            DropIndex("dbo.RequestFilter", new[] { "ModifiedByPersonAliasId" });
-            DropIndex("dbo.RequestFilter", new[] { "CreatedByPersonAliasId" });
-            DropColumn("dbo.Site", "EnablePersonalization");
-            DropColumn("dbo.Site", "EnableVisitorTracking");
-            DropColumn("dbo.ContentChannel", "EnablePersonalization");
-            DropColumn("dbo.PersonAlias", "LastVisitDateTime");
-            DropColumn("dbo.PersonAlias", "AliasedDateTime");
-            DropColumn("dbo.PersonAlias", "IsPrimaryAlias");
-            DropTable("dbo.Segment");
-            DropTable("dbo.RequestFilter");
-            DropTable("dbo.PersonalizedEntity");
-            DropTable("dbo.PersonAliasPersonalization");
+            AddAnonymousVisitor_Down();
+
+            DropForeignKey( "dbo.Segment", "ModifiedByPersonAliasId", "dbo.PersonAlias" );
+            DropForeignKey( "dbo.Segment", "CreatedByPersonAliasId", "dbo.PersonAlias" );
+            DropForeignKey( "dbo.RequestFilter", "ModifiedByPersonAliasId", "dbo.PersonAlias" );
+            DropForeignKey( "dbo.RequestFilter", "CreatedByPersonAliasId", "dbo.PersonAlias" );
+            DropIndex( "dbo.Segment", new[] { "Guid" } );
+            DropIndex( "dbo.Segment", new[] { "ModifiedByPersonAliasId" } );
+            DropIndex( "dbo.Segment", new[] { "CreatedByPersonAliasId" } );
+            DropIndex( "dbo.RequestFilter", new[] { "Guid" } );
+            DropIndex( "dbo.RequestFilter", new[] { "ModifiedByPersonAliasId" } );
+            DropIndex( "dbo.RequestFilter", new[] { "CreatedByPersonAliasId" } );
+            DropColumn( "dbo.Site", "EnablePersonalization" );
+            DropColumn( "dbo.Site", "EnableVisitorTracking" );
+            DropColumn( "dbo.ContentChannel", "EnablePersonalization" );
+            DropColumn( "dbo.PersonAlias", "LastVisitDateTime" );
+            DropColumn( "dbo.PersonAlias", "AliasedDateTime" );
+            DropColumn( "dbo.PersonAlias", "IsPrimaryAlias" );
+            DropTable( "dbo.Segment" );
+            DropTable( "dbo.RequestFilter" );
+            DropTable( "dbo.PersonalizedEntity" );
+            DropTable( "dbo.PersonAliasPersonalization" );
+        }
+
+        private void AddAnonymousVisitor_Down()
+        {
+            Sql( @"UPDATE Person
+SET PrimaryFamilyId = NULL
+WHERE [Guid] = '7EBC167B-512D-4683-9D80-98B6BB02E1B9'
+
+DELETE
+FROM [Group]
+WHERE Id IN (
+        SELECT GroupId
+        FROM GroupMember
+        WHERE Personid IN (
+                SELECT Id
+                FROM Person
+                WHERE Guid = '7EBC167B-512D-4683-9D80-98B6BB02E1B9'
+                )
+        )
+
+DELETE
+FROM PersonAlias
+WHERE PersonId IN (
+        SELECT Id
+        FROM Person
+        WHERE Guid = '7EBC167B-512D-4683-9D80-98B6BB02E1B9'
+        )
+
+DELETE
+FROM Person
+WHERE [Guid] = '7EBC167B-512D-4683-9D80-98B6BB02E1B9'
+" );
         }
     }
 }
