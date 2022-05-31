@@ -74,15 +74,15 @@ namespace Rock.ViewModels.Entities
         public string Description { get; set; }
 
         /// <summary>
-        /// Gets or sets the EnablePersonalization.
+        /// Gets or sets a value indicating whether [enable personalization].
         /// </summary>
         /// <value>
-        /// The EnablePersonalization.
+        ///   true if [enable personalization]; otherwise, false.
         /// </value>
         public bool EnablePersonalization { get; set; }
 
         /// <summary>
-        /// Gets or sets the EnableRss.
+        /// Gets or sets a value indicating whether [enable RSS].
         /// </summary>
         /// <value>
         ///   true if [enable RSS]; otherwise, false.

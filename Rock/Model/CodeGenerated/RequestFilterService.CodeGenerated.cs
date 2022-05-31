@@ -81,9 +81,7 @@ namespace Rock.Model
 
             var viewModel = new RequestFilterBag
             {
-                Id = model.Id,
                 IdKey = model.IdKey,
-                Guid = model.Guid,
                 FilterJson = model.FilterJson,
                 IsActive = model.IsActive,
                 Name = model.Name,

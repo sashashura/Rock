@@ -1,4 +1,4 @@
-﻿// <copyright>
+// <copyright>
 // Copyright by the Spark Development Network
 //
 // Licensed under the Rock Community License (the "License");
@@ -31,6 +31,7 @@ namespace Rock.Model
     [RockDomain( "CRM" )]
     [Table( "RequestFilter" )]
     [DataContract]
+    [Rock.SystemGuid.EntityTypeGuid( "97FAC672-37A4-4185-B1D4-C68426C625B1")]
     public partial class RequestFilter : Model<RequestFilter>, ICacheable
     {
         #region Entity Properties

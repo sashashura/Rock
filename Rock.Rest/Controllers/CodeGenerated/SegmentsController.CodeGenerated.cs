@@ -22,12 +22,14 @@
 //
 
 using Rock.Model;
+using Rock.SystemGuid;
 
 namespace Rock.Rest.Controllers
 {
     /// <summary>
     /// Segments REST API
     /// </summary>
+    [RestControllerGuid( "" )]
     public partial class SegmentsController : Rock.Rest.ApiController<Rock.Model.Segment>
     {
         /// <summary>

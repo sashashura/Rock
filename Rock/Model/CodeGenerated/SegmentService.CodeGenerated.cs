@@ -81,9 +81,7 @@ namespace Rock.Model
 
             var viewModel = new SegmentBag
             {
-                Id = model.Id,
                 IdKey = model.IdKey,
-                Guid = model.Guid,
                 AdditionalFilterJson = model.AdditionalFilterJson,
                 FilterDataViewId = model.FilterDataViewId,
                 IsActive = model.IsActive,

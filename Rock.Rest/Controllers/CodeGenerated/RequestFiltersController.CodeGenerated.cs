@@ -22,12 +22,14 @@
 //
 
 using Rock.Model;
+using Rock.SystemGuid;
 
 namespace Rock.Rest.Controllers
 {
     /// <summary>
     /// RequestFilters REST API
     /// </summary>
+    [RestControllerGuid( "" )]
     public partial class RequestFiltersController : Rock.Rest.ApiController<Rock.Model.RequestFilter>
     {
         /// <summary>
