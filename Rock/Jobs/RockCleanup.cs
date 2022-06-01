@@ -128,9 +128,9 @@ namespace Rock.Jobs
         )]
 
     [IntegerField( "Stale Anonymous Visitor Record Retention Period in Days",
-        Description = "PersonAlias records (tied to the ‘Anonymous Visitor’ record) that are not connected to an actual person record which are older than this will be deleted.",
+        Description = "PersonAlias records (tied to the ‘Anonymous Visitor’ record) that are not connected to an actual person record which are older than this will be deleted. (default is 180 days)",
         IsRequired = false,
-        DefaultIntegerValue = 14,
+        DefaultIntegerValue = 180,
         Category = "General",
         Order = 9,
         Key = AttributeKey.StaleAnonymousVisitorRecordRetentionPeriodInDays )]
@@ -288,7 +288,7 @@ namespace Rock.Jobs
 
             RunCleanupTask( "upcoming event date", () => UpdateEventNextOccurrenceDates() );
 
-            RunCleanupTask( "stale anonymous visitor record", () => RemoveStaleAnonymousVisitorRecord( dataMap ) );
+            RunCleanupTask( "stale anonymous visitor", () => RemoveStaleAnonymousVisitorRecord( dataMap ) );
 
             /*
              * 21-APR-2022 DMV
@@ -2346,9 +2346,10 @@ where ISNULL(ValueAsNumeric, 0) != ISNULL((case WHEN LEN([value]) < (100)
             {
                 using ( var newRockContext = new RockContext() )
                 {
+                    newRockContext.Database.CommandTimeout = commandTimeout;
                     var deletePersonAliasService = new PersonAliasService( newRockContext );
                     var interactionQry = new InteractionService( newRockContext ).Queryable().Where( a => a.PersonAliasId == stalePersonAliasId );
-                    newRockContext.BulkDelete( interactionQry );
+                    var totalInteractionRowDeleted = BulkDeleteInChunks( interactionQry, batchAmount, commandTimeout );
 
                     var personAlias = deletePersonAliasService.Get( stalePersonAliasId );
                     string errorMessage;
