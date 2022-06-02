@@ -1,4 +1,4 @@
-// <copyright>
+﻿// <copyright>
 // Copyright by the Spark Development Network
 //
 // Licensed under the Rock Community License (the "License");
@@ -16,8 +16,10 @@
 //
 using Rock.Data;
 using Rock.Web.Cache;
+
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Data.Entity.ModelConfiguration;
 using System.Runtime.Serialization;
 
 namespace Rock.Model
@@ -30,7 +32,7 @@ namespace Rock.Model
     [RockDomain( "CRM" )]
     [Table( "Segment" )]
     [DataContract]
-    [Rock.SystemGuid.EntityTypeGuid( "368A3581-C8C4-4960-901A-9587864226F3")]
+    [Rock.SystemGuid.EntityTypeGuid( "368A3581-C8C4-4960-901A-9587864226F3" )]
     public partial class Segment : Model<Segment>, ICacheable
     {
         #region Entity Properties
@@ -61,7 +63,7 @@ namespace Rock.Model
         ///   <c>true</c> if this instance is active; otherwise, <c>false</c>.
         /// </value>
         [DataMember]
-        public bool IsActive { get; set; }
+        public bool IsActive { get; set; } = true;
 
         /// <summary>
         /// Gets or sets the filter data view identifier.
@@ -81,6 +83,36 @@ namespace Rock.Model
         [DataMember]
         public string AdditionalFilterJson { get; set; }
 
-        #endregion
+        #endregion Entity Properties
+
+
+        #region Navigation Properties
+
+        /// <summary>
+        /// Gets or sets the filter data view.
+        /// </summary>
+        /// <value>The filter data view.</value>
+        [DataMember]
+        public virtual DataView FilterDataView { get; set; }
+
+        #endregion Navigation Properties
     }
+
+    #region Entity Configuration
+
+    /// <summary>
+    /// Segment Configuration Class
+    /// </summary>
+    public partial class SegmentConfiguration : EntityTypeConfiguration<Segment>
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PersonAliasConfiguration"/> class.
+        /// </summary>
+        public SegmentConfiguration()
+        {
+            HasOptional( a => a.FilterDataView ).WithMany().HasForeignKey( a => a.FilterDataViewId ).WillCascadeOnDelete( false );
+        }
+    }
+
+    #endregion
 }

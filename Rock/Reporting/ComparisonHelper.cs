@@ -203,20 +203,32 @@ namespace Rock.Reporting
         /// <returns></returns>
         public static RockDropDownList ComparisonControl( ComparisonType supportedComparisonTypes, bool required = true )
         {
-            var ddl = new RockDropDownList();
+            var ddlComparisonControl = new RockDropDownList();
+            PopulateComparisonControl( ddlComparisonControl, supportedComparisonTypes, required );
+
+            return ddlComparisonControl;
+        }
+
+        /// <summary>
+        /// Populates the DropDownList with supported comparison types
+        /// </summary>
+        /// <param name="ddlComparisonControl">The DDL comparison control.</param>
+        /// <param name="supportedComparisonTypes">The supported comparison types.</param>
+        /// <param name="required">if set to <c>true</c> [required].</param>
+        public static void PopulateComparisonControl( RockDropDownList ddlComparisonControl, ComparisonType supportedComparisonTypes, bool required = true )
+        {
+            ddlComparisonControl.Items.Clear();
             if ( !required )
             {
-                ddl.Items.Add( new ListItem( string.Empty, "0" ) );
+                ddlComparisonControl.Items.Add( new ListItem( string.Empty, "0" ) );
             }
             foreach ( ComparisonType comparisonType in typeof( ComparisonType ).GetOrderedValues<ComparisonType>() )
             {
                 if ( ( supportedComparisonTypes & comparisonType ) == comparisonType )
                 {
-                    ddl.Items.Add( new ListItem( comparisonType.ConvertToString(), comparisonType.ConvertToInt().ToString() ) );
+                    ddlComparisonControl.Items.Add( new ListItem( comparisonType.ConvertToString(), comparisonType.ConvertToInt().ToString() ) );
                 }
             }
-
-            return ddl;
         }
 
         /// <summary>

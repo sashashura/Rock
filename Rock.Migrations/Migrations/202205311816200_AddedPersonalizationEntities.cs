@@ -130,13 +130,13 @@ namespace Rock.Migrations
 
         private void AddAnonymousVisitor_Up()
         {
-            Sql( @"
-DECLARE @personRecordType INT = ( SELECT [Id] FROM [DefinedValue] WHERE [Guid] = '36CF10D6-C695-413D-8E7C-4546EFEF385E' ),
-		@connectionStatusValueId INT = ( SELECT [Id] FROM [DefinedValue] WHERE [Guid] = '8EBC0CEB-474D-4C1B-A6BA-734C3A9AB061'),
-		@recordStatusValueId INT = (select [Id] from [DefinedValue] where [Guid] = '618F906C-C33D-4FA3-8AEF-E58CB7B63F1E'),
+            Sql( $@"
+DECLARE @personRecordType INT = ( SELECT [Id] FROM [DefinedValue] WHERE [Guid] = '{SystemGuid.DefinedValue.PERSON_RECORD_TYPE_PERSON}' ),
+		@connectionStatusValueId INT = ( SELECT [Id] FROM [DefinedValue] WHERE [Guid] = '{SystemGuid.DefinedValue.PERSON_CONNECTION_STATUS_PARTICIPANT}'),
+		@recordStatusValueId INT = (select [Id] from [DefinedValue] where [Guid] = '{SystemGuid.DefinedValue.PERSON_RECORD_STATUS_ACTIVE}'),
 		@personId INT,
 		@groupId INT,
-		@personGuid UNIQUEIDENTIFIER = '7EBC167B-512D-4683-9D80-98B6BB02E1B9',
+		@personGuid UNIQUEIDENTIFIER = '{SystemGuid.Person.ANONYMOUS_VISITOR}',
 		@familyGroupType INT = ( SELECT [Id] FROM [GroupType] WHERE [Guid] = '790E3215-3B10-442B-AF69-616C0DCB998E' ),
 		@adultRole INT = ( SELECT [Id] FROM [GroupTypeRole] WHERE [Guid] = '2639F9A5-2AAE-4E48-A8C3-4FFE86681E42' )
 
@@ -340,9 +340,9 @@ VALUES (
 
         private void AddAnonymousVisitor_Down()
         {
-            Sql( @"UPDATE Person
+            Sql( $@"UPDATE Person
 SET PrimaryFamilyId = NULL
-WHERE [Guid] = '7EBC167B-512D-4683-9D80-98B6BB02E1B9'
+WHERE [Guid] = '{SystemGuid.Person.ANONYMOUS_VISITOR}'
 
 DELETE
 FROM [Group]
@@ -352,7 +352,7 @@ WHERE Id IN (
         WHERE Personid IN (
                 SELECT Id
                 FROM Person
-                WHERE Guid = '7EBC167B-512D-4683-9D80-98B6BB02E1B9'
+                WHERE Guid = '{SystemGuid.Person.ANONYMOUS_VISITOR}'
                 )
         )
 
@@ -361,12 +361,12 @@ FROM PersonAlias
 WHERE PersonId IN (
         SELECT Id
         FROM Person
-        WHERE Guid = '7EBC167B-512D-4683-9D80-98B6BB02E1B9'
+        WHERE Guid = '{SystemGuid.Person.ANONYMOUS_VISITOR}'
         )
 
 DELETE
 FROM Person
-WHERE [Guid] = '7EBC167B-512D-4683-9D80-98B6BB02E1B9'
+WHERE [Guid] = '{SystemGuid.Person.ANONYMOUS_VISITOR}'
 " );
         }
     }

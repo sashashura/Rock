@@ -63,6 +63,17 @@ namespace Rock.Model
         [Key]
         [DatabaseGenerated( DatabaseGeneratedOption.None )]
         public int PersonalizationTypeId { get; set; }
+
+        #region Navigation Properties
+
+        /// <summary>
+        /// Gets or sets the person alias.
+        /// </summary>
+        /// <value>The person alias.</value>
+        [DataMember]
+        public virtual PersonAlias PersonAlias { get; set; }
+
+        #endregion Navigation Properties
     }
 
     #region Entity Configuration
@@ -78,6 +89,7 @@ namespace Rock.Model
         public PersonAliasPersonalizationConfiguration()
         {
             HasKey( a => new { a.PersonAliasId, a.PersonalizationType, a.PersonalizationTypeId } );
+            HasRequired( a => a.PersonAlias ).WithMany().HasForeignKey( a => a.PersonAliasId ).WillCascadeOnDelete( false );
         }
     }
 
