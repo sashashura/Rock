@@ -18,8 +18,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+
 using Rock.Data;
 using Rock.Model;
 using Rock.Web.Cache;
@@ -28,7 +27,10 @@ namespace Rock.Tasks
 {
     /// <summary>
     /// Launches multiple workflows and optionally sets the entity, name and/or attribute values
+    /// Or to use the Transaction Queue, use <seealso cref="Rock.Transactions.LaunchWorkflowsTransaction" />
     /// </summary>
+    [Obsolete( "This should not be used due to size limitations for BusStartedTask message. Use Rock.Transactions.LaunchWorkflowsTransaction instead." )]
+    [RockObsolete( "1.13" )]
     public sealed class LaunchWorkflows : BusStartedTask<LaunchWorkflows.Message>
     {
         /// <summary>

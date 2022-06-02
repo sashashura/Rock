@@ -62,6 +62,9 @@ namespace Rock.Client
         public string GatewayScheduleId { get; set; }
 
         /// <summary />
+        public DateTime? InactivateDateTime { get; set; }
+
+        /// <summary />
         public bool IsActive { get; set; } = true;
 
         /// <summary />
@@ -82,10 +85,19 @@ namespace Rock.Client
         public int? NumberOfPayments { get; set; }
 
         /// <summary />
+        public string PreviousGatewayScheduleIdsJson { get; set; }
+
+        /// <summary />
         public int? SourceTypeValueId { get; set; }
 
         /// <summary />
         public DateTime StartDate { get; set; }
+
+        /// <summary />
+        public Rock.Client.Enums.FinancialScheduledTransactionStatus? Status { get; set; }
+
+        /// <summary />
+        public string StatusMessage { get; set; }
 
         /// <summary />
         public string Summary { get; set; }
@@ -141,14 +153,18 @@ namespace Rock.Client
             this.ForeignGuid = source.ForeignGuid;
             this.ForeignKey = source.ForeignKey;
             this.GatewayScheduleId = source.GatewayScheduleId;
+            this.InactivateDateTime = source.InactivateDateTime;
             this.IsActive = source.IsActive;
             this.LastRemindedDate = source.LastRemindedDate;
             this.LastStatusUpdateDateTime = source.LastStatusUpdateDateTime;
             this.ModifiedAuditValuesAlreadyUpdated = source.ModifiedAuditValuesAlreadyUpdated;
             this.NextPaymentDate = source.NextPaymentDate;
             this.NumberOfPayments = source.NumberOfPayments;
+            this.PreviousGatewayScheduleIdsJson = source.PreviousGatewayScheduleIdsJson;
             this.SourceTypeValueId = source.SourceTypeValueId;
             this.StartDate = source.StartDate;
+            this.Status = source.Status;
+            this.StatusMessage = source.StatusMessage;
             this.Summary = source.Summary;
             this.TransactionCode = source.TransactionCode;
             this.TransactionFrequencyValueId = source.TransactionFrequencyValueId;
@@ -173,6 +189,9 @@ namespace Rock.Client
 
         /// <summary />
         public FinancialPaymentDetail FinancialPaymentDetail { get; set; }
+
+        /// <summary />
+        public DefinedValue ForeignCurrencyCodeValue { get; set; }
 
         /// <summary />
         public ICollection<FinancialScheduledTransactionDetail> ScheduledTransactionDetails { get; set; }

@@ -301,9 +301,7 @@ namespace Rock.Reporting
             {
                 int entityTypeId = entityTypeCache.Id;
 
-                var entityAttributesCache = AttributeCache.GetByEntity( entityTypeCache.Id );
-
-                List<AttributeCache> cacheAttributeList = entityAttributesCache.SelectMany( a => a.AttributeIds ).Distinct().Select( a => AttributeCache.Get( a ) ).ToList();
+                IEnumerable<AttributeCache> cacheAttributeList = AttributeCache.GetByEntityType( entityTypeCache.Id );
 
                 if ( entityType == typeof( Group ) || entityType == typeof( GroupMember ) )
                 {
@@ -312,17 +310,18 @@ namespace Rock.Reporting
                             .Where( a =>
                                 a.EntityTypeQualifierColumn == null ||
                                 a.EntityTypeQualifierColumn == string.Empty ||
-                                a.EntityTypeQualifierColumn == "GroupTypeId" ).ToList();
+                                a.EntityTypeQualifierColumn == "GroupTypeId" );
                 }
                 else if ( entityType == typeof( ConnectionRequest ) )
                 {
-                    // in the case of Connection Requests, show attributes that are entity global, but also ones that are qualified by ConnectionOpportunityId
+                    // in the case of Connection Requests, show attributes that are entity global, but also ones that are qualified by ConnectionOpportunityId or ConnectionTypeId
                     cacheAttributeList = cacheAttributeList
                             .Where( a =>
                                 a.EntityTypeQualifierColumn == null ||
                                 a.EntityTypeQualifierColumn == string.Empty ||
-                                a.EntityTypeQualifierColumn == "ConnectionOpportunityId"
-                                ).ToList();
+                                a.EntityTypeQualifierColumn == "ConnectionOpportunityId" ||
+                                a.EntityTypeQualifierColumn == "ConnectionTypeId"
+                                );
                 }
                 else if ( entityType == typeof( Registration ) )
                 {
@@ -332,7 +331,7 @@ namespace Rock.Reporting
                                 a.EntityTypeQualifierColumn == null ||
                                 a.EntityTypeQualifierColumn == string.Empty ||
                                 a.EntityTypeQualifierColumn == "RegistrationTemplateId"
-                                ).ToList();
+                                );
                 }
                 else if ( entityType == typeof( ContentChannelItem ) )
                 {
@@ -343,7 +342,7 @@ namespace Rock.Reporting
                                 a.EntityTypeQualifierColumn == string.Empty ||
                                 a.EntityTypeQualifierColumn == "ContentChannelTypeId" ||
                                 a.EntityTypeQualifierColumn == "ContentChannelId"
-                                ).ToList();
+                                );
                 }
                 else if ( entityType == typeof( Rock.Model.Workflow ) )
                 {
@@ -355,12 +354,22 @@ namespace Rock.Reporting
                                 a.EntityTypeQualifierColumn == string.Empty ||
                                 ( a.EntityTypeQualifierColumn == "WorkflowTypeId" && validWorkflowTypeIds.Contains( a.EntityTypeQualifierValue ) ) ).ToList();
                 }
+                else if ( entityType == typeof( Note ) )
+                {
+                    // in the case of notes, show attributes that are entity global, but also ones that are qualified by ConnectionOpportunityId
+                    cacheAttributeList = cacheAttributeList
+                            .Where( a =>
+                                a.EntityTypeQualifierColumn == null ||
+                                a.EntityTypeQualifierColumn == string.Empty ||
+                                a.EntityTypeQualifierColumn == "NoteTypeId"
+                                );
+                }
                 else
                 {
                     cacheAttributeList = cacheAttributeList.Where( a => string.IsNullOrEmpty( a.EntityTypeQualifierColumn ) && string.IsNullOrEmpty( a.EntityTypeQualifierValue ) ).ToList();
                 }
 
-                EntityHelper.AddEntityFieldsForAttributeList( entityFields, cacheAttributeList );
+                EntityHelper.AddEntityFieldsForAttributeList( entityFields, cacheAttributeList.ToList() );
 
             }
 
@@ -523,7 +532,6 @@ namespace Rock.Reporting
                 // Special processing for Entity Type "Group" or "GroupMember" to handle sub-types that are distinguished by GroupTypeId.
                 if ( ( attribute.EntityTypeId == EntityTypeCache.GetId( typeof( Group ) ) || attribute.EntityTypeId == EntityTypeCache.GetId( typeof( GroupMember ) ) && attribute.EntityTypeQualifierColumn == "GroupTypeId" ) )
                 {
-
                     var groupType = GroupTypeCache.Get( attribute.EntityTypeQualifierValue.AsInteger() );
                     if ( groupType != null )
                     {
@@ -531,7 +539,6 @@ namespace Rock.Reporting
                         entityField.AttributeEntityTypeQualifierName = groupType.Name;
                         entityField.Title = string.Format( "{0} ({1})", attribute.Name, groupType.Name );
                     }
-
                 }
 
                 // Special processing for Entity Type "ConnectionRequest" to handle sub-types that are distinguished by ConnectionOpportunityId.
@@ -588,6 +595,18 @@ namespace Rock.Reporting
                         // Append the Qualifier to the title
                         entityField.AttributeEntityTypeQualifierName = contentChannel.Name;
                         entityField.Title = string.Format( "{0} (Channel: {1})", attribute.Name, contentChannel.Name );
+                    }
+                }
+
+                // Special processing for Entity Type "Note" to handle sub-types that are distinguished by NoteTypeId.
+                if ( attribute.EntityTypeId == EntityTypeCache.GetId( typeof( Note ) ) && attribute.EntityTypeQualifierColumn == "NoteTypeId" )
+                {
+                    var noteType = NoteTypeCache.Get( attribute.EntityTypeQualifierValue.AsInteger() );
+                    if ( noteType != null )
+                    {
+                        // Append the Qualifier to the title
+                        entityField.AttributeEntityTypeQualifierName = noteType.Name;
+                        entityField.Title = string.Format( "{0} ({1})", attribute.Name, noteType.Name );
                     }
                 }
 

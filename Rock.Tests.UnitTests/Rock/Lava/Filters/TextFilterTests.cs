@@ -139,6 +139,15 @@ namespace Rock.Tests.UnitTests.Lava
             TestHelper.AssertTemplateOutput( "requests", "{{ 'requests' | Pluralize }}" );
         }
 
+        /// <summary>
+        /// Providing a collective noun as input produces unchanged output.
+        /// </summary>
+        [TestMethod]
+        public void Pluralize_EmptyInput_ProducesEmptyOutput()
+        {
+            TestHelper.AssertTemplateOutput( "", "{{ '' | Pluralize }}" );
+        }
+
         #endregion
 
         #region Filter Tests: PluralizeForQuantity
@@ -197,9 +206,9 @@ namespace Rock.Tests.UnitTests.Lava
             var template = "{{ '<content>' | ReadTime }}"
                 .Replace( "<content>", documentText );
 
-            TestHelper.ExecuteTestAction( ( engine ) =>
+            TestHelper.ExecuteForActiveEngines( ( engine ) =>
             {
-                var output = TestHelper.GetTemplateOutput( engine.EngineType, template );
+                var output = TestHelper.GetTemplateOutput( engine, template );
 
                 Assert.That.False( string.IsNullOrWhiteSpace( output ) );
 
@@ -221,9 +230,9 @@ namespace Rock.Tests.UnitTests.Lava
             var template = "{{ '<content>' | ReadTime:5,30 }}"
                 .Replace( "<content>", documentText );
 
-            TestHelper.ExecuteTestAction( ( engine ) =>
+            TestHelper.ExecuteForActiveEngines( ( engine ) =>
             {
-                var output = TestHelper.GetTemplateOutput( engine.EngineType, template );
+                var output = TestHelper.GetTemplateOutput( engine, template );
 
                 Assert.That.False( string.IsNullOrWhiteSpace( output ) );
 
@@ -245,9 +254,9 @@ namespace Rock.Tests.UnitTests.Lava
             var template = "{{ '<content>' | ReadTime:500,6 }}"
                 .Replace( "<content>", documentText );
 
-            TestHelper.ExecuteTestAction( ( engine ) =>
+            TestHelper.ExecuteForActiveEngines( ( engine ) =>
             {
-                var output = TestHelper.GetTemplateOutput( engine.EngineType, template );
+                var output = TestHelper.GetTemplateOutput( engine, template );
                 var readTime = TimeSpan.ParseExact( output, _timeSpanOutputFormats, CultureInfo.CurrentCulture );
 
                 Assert.That.AreProximate( 50, readTime.TotalSeconds, 10 );
@@ -409,6 +418,75 @@ namespace Rock.Tests.UnitTests.Lava
         public void Singularize_PluralTerm_ProducesSingularTerm()
         {
             TestHelper.AssertTemplateOutput( "goose", "{{ 'geese' | Singularize }}" );
+        }
+
+        #endregion
+
+        #region Filter Tests: Split
+
+        /// <summary>
+        /// Split filter should retain or remove zero-length items in accordance with the specified "removeEmpty" parameter.
+        /// </summary>
+        /// <remarks>
+        /// The default Liquid language behavior for this filter is to remove empty entries.
+        /// </remarks>
+        [DataTestMethod]
+        [DataRow( ",1,,3,4,5,6,7,,9,", "','", "1+3+4+5+6+7+9+" )]
+        [DataRow( ",1,,3,4,5,6,7,,9,", "',',true", "1+3+4+5+6+7+9+" )]
+        [DataRow( ",1,,3,4,5,6,7,,9,", "',','true'", "1+3+4+5+6+7+9+" )]
+        [DataRow( ",1,,3,4,5,6,7,,9,", "',',false", "+1++3+4+5+6+7++9++" )]
+        [DataRow( ",1,,3,4,5,6,7,,9,", "',','false'", "+1++3+4+5+6+7++9++" )]
+        public void Split_WithRemoveEmptyEntriesOption_RetainsOrRemovesEmptyEntries( string inputString, string filterArgsString, string expectedOutput )
+        {
+            var template = @"
+{% assign items = '<inputString>' | Split:<args> %}
+{% for item in items %}
+{{ item }}+
+{% endfor %}
+";
+
+            template = template.Replace( "<inputString>", inputString );
+            template = template.Replace( "<args>", filterArgsString );
+
+            TestHelper.AssertTemplateOutput( expectedOutput, template, ignoreWhitespace: true );
+        }
+
+        /// <summary>
+        /// Split filter applied with option to remove empty entries should eliminate zero-length items.
+        /// </summary>
+        [TestMethod]
+        public void Split_DocumentationExamples_ProduceExpectedSampleOutput()
+        {
+            var expected = "1 and 3 and 4 and 5 and 6 and 7 and 9";
+
+            var template = @"
+{{ '1,,3,4,5,6,7,,9' | Split:',',true | Join:' and ' }}
+";
+
+            TestHelper.AssertTemplateOutput( expected, template, ignoreWhitespace: true );
+        }
+
+        #endregion
+
+        #region Filter Tests: ToCssClass
+
+        /// <summary>
+        /// ToCssClass filter returns expected output.
+        /// </summary>
+        ///
+        [DataTestMethod]
+        [DataRow( "Community Participant", "community-participant" )]
+        [DataRow( "community--participant", "community-participant" )]
+        [DataRow( "1234", "-x-1234" )]
+        [DataRow( "abc$$!!123", "abc-123" )]
+        [DataRow( "   ", "" )]
+        [DataRow( "", "" )]
+        [DataRow( null, "" )]
+        public void ToCssClass_VariousInputs_ReturnExpectedOutput( string input, string expected )
+        {
+            var template = "{{ '" + input + "' | ToCssClass }}";
+
+            TestHelper.AssertTemplateOutput( expected, template );
         }
 
         #endregion

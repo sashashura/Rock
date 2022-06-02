@@ -22,7 +22,7 @@
 
                     <div class="row">
                         <div class="col-md-12">
-                            <Rock:RockDropDownList ID="ddlContentChannel" runat="server" Required="true" Label="Content Channel" Help="Limits content channel items to a specific channel and enables Social Media Settings to be configurable." AutoPostBack="true" OnSelectedIndexChanged="ddlContentChannel_SelectedIndexChanged" />
+                            <Rock:RockDropDownList ID="ddlContentChannel" runat="server" Label="Content Channel" Help="Limits content channel items to a specific channel and enables Social Media Settings to be configurable." AutoPostBack="true" OnSelectedIndexChanged="ddlContentChannel_SelectedIndexChanged" />
                             <Rock:RockCheckBoxList ID="cblStatus" runat="server" Label="Status" RepeatDirection="Horizontal" Help="Include items with the following status." />
                             <Rock:CodeEditor ID="ceLavaTemplate" runat="server" Label="Lava Template" Help="The template to use when formatting the content channel item." EditorMode="Lava" EditorTheme="Rock" EditorHeight="200" />
                         </div>
@@ -74,7 +74,7 @@
                             <div class="col-md-6">
                                 <Rock:RockDropDownList ID="ddlTwitterTitleAttribute" Label="Twitter Title Attribute" Help="If you don't want to use the post title for sharing the post on Twitter but instead want another title." runat="server" />
                                 <Rock:RockDropDownList ID="ddlTwitterDescriptionAttribute" Label="Twitter Description Attribute" Help="If you don't want to use the meta description for sharing the post on Twitter but instead want another title." runat="server" />
-                                <Rock:RockDropDownList ID="ddlTwitterImageAttribute" Label="Twitter Image Attribute" Help="If you want to override the image used on Facebook for this post." runat="server" />
+                                <Rock:RockDropDownList ID="ddlTwitterImageAttribute" Label="Twitter Image Attribute" Help="If you want to override the image used on Twitter for this post." runat="server" />
                                 <Rock:RockDropDownList ID="ddlTwitterCard" Label="Twitter Card Type" runat="server">
                                     <asp:ListItem Text="" Value="none" />
                                     <asp:ListItem Text="Summary" Value="summary" />

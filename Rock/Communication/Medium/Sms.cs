@@ -261,11 +261,9 @@ namespace Rock.Communication.Medium
                 workflowAttributeValues.Add( "ToPerson", personAliasService.Get( toPersonAliasId.Value ).Guid.ToString() ?? string.Empty );
             }
 
-            new LaunchWorkflow.Message
-            {
-                WorkflowTypeId = workflowType.Id,
-                WorkflowAttributeValues = workflowAttributeValues
-            }.Send();
+            var launchWorkflowTransaction = new Rock.Transactions.LaunchWorkflowTransaction( workflowType.Id );
+            launchWorkflowTransaction.WorkflowAttributeValues = workflowAttributeValues;
+            launchWorkflowTransaction.Enqueue();
         }
 
         /// <summary>
@@ -315,7 +313,7 @@ namespace Rock.Communication.Medium
             rockContext.SaveChanges();
 
             // Now that we have a communication response ID we can add the attachments
-            if ( attachments.IsNotNull() && attachments.Any() )
+            if ( attachments != null && attachments.Any() )
             {
                 foreach( var attachment in attachments )
                 {
@@ -406,11 +404,24 @@ namespace Rock.Communication.Medium
             string communicationName = fromPerson != null ? string.Format( "From: {0}", fromPerson.FullName ) : "From: unknown person";
 
             var communicationService = new CommunicationService( rockContext );
-            var communication = communicationService.CreateSMSCommunication( fromPerson, toPersonAliasId, message, fromPhone, responseCode, communicationName );
+
+            var createSMSCommunicationArgs = new CommunicationService.CreateSMSCommunicationArgs
+            {
+                FromPerson = fromPerson,
+                ToPersonAliasId = toPersonAliasId,
+                Message = message,
+                FromPhone = fromPhone,
+                CommunicationName = communicationName,
+                ResponseCode = responseCode,
+                SystemCommunicationId = null,
+            };
+
+            Rock.Model.Communication communication = communicationService.CreateSMSCommunication( createSMSCommunicationArgs );
+            
             rockContext.SaveChanges();
 
             // Now that we have a communication ID we can add the attachments
-            if ( attachments.IsNotNull() && attachments.Any() )
+            if ( attachments != null && attachments.Any() )
             {
                 foreach( var attachment in attachments )
                 {

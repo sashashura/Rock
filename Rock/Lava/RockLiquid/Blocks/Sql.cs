@@ -73,7 +73,6 @@ namespace Rock.Lava.RockLiquid.Blocks
             if ( !this.IsAuthorized( context ) )
             {
                 result.Write( string.Format( RockLavaBlockBase.NotAuthorizedMessage, this.Name ) );
-                base.Render( context, result );
                 return;
             }
 
@@ -88,13 +87,13 @@ namespace Rock.Lava.RockLiquid.Blocks
                 {
                     sqlTimeout = parms["timeout"].AsIntegerOrNull();
                 }
-                
+
                 switch ( parms["statement"] )
                 {
                     case "select":
                         var results = DbService.GetDataSet( sql.ToString(), CommandType.Text, parms.ToDictionary( i => i.Key, i => ( object ) i.Value ), sqlTimeout );
 
-                        context.Scopes.Last()[parms["return"]] = results.Tables[0].ToDynamic();
+                        context.Scopes.Last()[parms["return"]] = results.Tables[0].ToDynamicTypeCollection();
                         break;
                     case "command":
                         var sqlParameters = new List<System.Data.SqlClient.SqlParameter>();
@@ -153,7 +152,7 @@ namespace Rock.Lava.RockLiquid.Blocks
             var parms = new Dictionary<string, string>();
             parms.Add( "return", "results" );
             parms.Add( "statement", "select" );
-            
+
             var markupItems = Regex.Matches( markup, @"(\S*?:'[^']+')" )
                 .Cast<Match>()
                 .Select( m => m.Value )
@@ -166,7 +165,7 @@ namespace Rock.Lava.RockLiquid.Blocks
                 {
                     var value = itemParts[1];
 
-                    if ( value.HasMergeFields() )
+                    if ( value.IsLavaTemplate() )
                     {
                         value = value.ResolveMergeFields( internalMergeFields );
                     }

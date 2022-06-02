@@ -15,6 +15,7 @@
 // </copyright>
 //
 using System;
+using System.Globalization;
 
 namespace Rock.Lava
 {
@@ -25,14 +26,28 @@ namespace Rock.Lava
     {
         #region Factory Methods
 
+        /// <summary>
+        /// Create a new instance with a specified render context.
+        /// </summary>
+        /// <param name="context"></param>
+        /// <returns></returns>
         public static LavaRenderParameters WithContext( ILavaRenderContext context )
         {
             return new LavaRenderParameters { Context = context };
         }
 
-        public static LavaRenderParameters Default()
+        private static readonly LavaRenderParameters _defaultValue = new LavaRenderParameters();
+
+        /// <summary>
+        /// Create a new default instance.
+        /// </summary>
+        /// <returns></returns>
+        public static LavaRenderParameters Default
         {
-            return new LavaRenderParameters();
+            get
+            {
+                return _defaultValue;
+            }
         }
 
         #endregion
@@ -43,7 +58,7 @@ namespace Rock.Lava
         public ILavaRenderContext Context { get; set; }
 
         /// <summary>
-        /// Should string values be XML encoded?
+        /// Should string values be XML/HTML encoded during the rendering process?
         /// </summary>
         public bool ShouldEncodeStringsAsXml { get; set; }
 
@@ -52,5 +67,37 @@ namespace Rock.Lava
         /// If not specified, the template content is used to calculate the cache key.
         /// </summary>
         public string CacheKey { get; set; } = null;
+
+        /// <summary>
+        /// Gets or sets the strategy for handling exceptions encountered during the rendering process.
+        /// </summary>
+        public ExceptionHandlingStrategySpecifier? ExceptionHandlingStrategy { get; set; }
+
+        /// <summary>
+        /// Gets or sets the culture with which to render the template.
+        /// </summary>
+        public CultureInfo Culture { get; set; }
+
+        /// <summary>
+        /// Gets or sets the timezone for rendering dates and times.
+        /// </summary>
+        public TimeZoneInfo TimeZone { get; set; }
+
+        /// <summary>
+        /// Returns a new object with the same properties as the current object.
+        /// </summary>
+        /// <returns></returns>
+        public LavaRenderParameters Clone()
+        {
+            var clone = new LavaRenderParameters();
+            clone.CacheKey = CacheKey;
+            clone.Context = Context;
+            clone.Culture = Culture;
+            clone.ExceptionHandlingStrategy = ExceptionHandlingStrategy;
+            clone.ShouldEncodeStringsAsXml = ShouldEncodeStringsAsXml;
+            clone.TimeZone = TimeZone;
+
+            return clone;
+        }
     }
 }

@@ -51,6 +51,9 @@ namespace RockWeb.Blocks.CheckIn
 
     public partial class ActionSelect : CheckInBlock
     {
+        /* 2021-05/07 ETD
+         * Use new here because the parent CheckInBlock also has inherited class AttributeKey.
+         */
         private new static class AttributeKey
         {
             public const string Caption = "Caption";
@@ -64,12 +67,6 @@ namespace RockWeb.Blocks.CheckIn
             base.OnLoad( e );
 
             RockPage.AddScriptLink( "~/Scripts/CheckinClient/checkin-core.js" );
-
-            var bodyTag = this.Page.Master.FindControl( "bodyTag" ) as HtmlGenericControl;
-            if ( bodyTag != null )
-            {
-                bodyTag.AddCssClass( "checkin-actionselect-bg" );
-            }
 
             if ( CurrentWorkflow == null || CurrentCheckInState == null )
             {

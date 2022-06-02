@@ -19,8 +19,23 @@
                     </div>
                     <div class="panel-body">
                         <div class="row">
-                            <asp:Panel CssClass="col-md-4" runat="server" ID="pnlCampus">
-                                <Rock:CampusPicker ID="cpCampus" runat="server" CssClass="input-width-lg" Label="Campus" OnSelectedIndexChanged="cpCampus_SelectedIndexChanged" AutoPostBack="true" />
+                            <asp:Panel CssClass="col-md-4 pb-2" runat="server" ID="pnlCampus">
+                                <div class="row pl-3">
+                                    <Rock:CampusPicker ID="cpCampus" runat="server" CssClass="input-width-lg" Label="Campus" OnSelectedIndexChanged="cpCampus_SelectedIndexChanged" AutoPostBack="true" />
+                                    <asp:Panel ID="pnlCampusInfo" runat="server">
+                                        <div class="row">
+                                            <div id="divCampusStatus" runat="server" class="col-md-6 col-sm-2 col-xs-5 col-lg-5">
+                                                <h6>Campus Status</h6>
+                                                <asp:Label ID="lblCampusStatus" runat="server" Text="CampusStatus" CssClass="label label-info"></asp:Label>
+                                            </div>
+                                            <div id="divCampusType" runat="server" class="col-md-6 col-sm-6 col-xs-6 col-lg-6">
+                                                <h6>Campus Type</h6>
+                                                <asp:Literal ID="litCampusTypeIcon" runat="server"></asp:Literal>
+                                                <asp:Label ID="lblCampusType" runat="server" Text="CampusType"></asp:Label>
+                                            </div>
+                                        </div>
+                                    </asp:Panel>
+                                </div>
                             </asp:Panel>
                             <asp:Panel CssClass="col-md-5" runat="server" ID="pnlPlannedDate" Visible="true">
                                 <Rock:DatePicker ID="dpPlannedDate" runat="server" Label="Planned Visit Date" AllowPastDateSelection="false" />
@@ -68,7 +83,7 @@
                                 <Rock:DefinedValuePicker ID="dvpSuffix1" runat="server" Label="Suffix" />
                             </asp:Panel>
                             <asp:Panel runat="server" ID="pnlBirthDate1">
-                                <Rock:BirthdayPicker ID="bpBirthDate1" runat="server" Label="Birthday" />
+                                <Rock:BirthdayPicker ID="bpBirthDate1" runat="server" Label="Birth Date" />
                             </asp:Panel>
                             <asp:Panel runat="server" ID="pnlMaritalStatus1">
                                 <Rock:DefinedValuePicker ID="dvpMaritalStatus1" runat="server" Label="Marital Status" />
@@ -113,7 +128,7 @@
                                     <Rock:DefinedValuePicker ID="dvpSuffix2" runat="server" Label="Suffix" />
                                 </asp:Panel>
                                 <asp:Panel runat="server" ID="pnlBirthDate2">
-                                    <Rock:BirthdayPicker ID="bpBirthDate2" runat="server" Label="Birthday" />
+                                    <Rock:BirthdayPicker ID="bpBirthDate2" runat="server" Label="Birth Date" />
                                 </asp:Panel>
                                 <asp:Panel runat="server" ID="pnlMaritalStatus2">
                                     <Rock:DefinedValuePicker ID="dvpMaritalStatus2" runat="server" Label="Marital Status" />
@@ -159,7 +174,7 @@
 
                 <div class="actions">
                     <asp:LinkButton ID="lbSave" runat="server" Text="Save" CssClass="btn btn-primary" OnClick="btnSave_Click" />
-                    <asp:LinkButton ID="lbCancel" runat="server" Text="Cancel" CssClass="btn btn-link" CausesValidation="false" />
+                    <asp:LinkButton ID="lbCancel" runat="server" Text="Clear" CssClass="btn btn-link" CausesValidation="false" OnClick="lbCancel_Click" />
                 </div>
 
             </div>

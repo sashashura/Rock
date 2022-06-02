@@ -15,9 +15,6 @@
 // </copyright>
 //
 
-using System;
-using System.Collections.Generic;
-
 namespace Rock.Lava
 {
     /// <summary>
@@ -25,53 +22,9 @@ namespace Rock.Lava
     /// </summary>
     public interface ILavaTemplate
     {
-        /// <summary>
-        /// Render the template output.
-        /// </summary>
-        /// <returns></returns>
-        string Render();
-
-        /// <summary>
-        /// Try to render the template using the provided context values.
-        /// Errors will be included in the rendered output.
-        /// </summary>
-        /// <param name="values"></param>
-        /// <returns></returns>
-        string Render( IDictionary<string, object> values );
-
-        /// <summary>
-        /// Try to render the template using the provided context.
-        /// Errors will be included in the rendered output.
-        /// </summary>
-        /// <param name="context"></param>
-        /// <returns></returns>
-        string Render( ILavaRenderContext context );
-
-        /// <summary>
-        /// Try to render the template using the provided context values.
-        /// </summary>
-        /// <param name="values"></param>
-        /// <param name="output"></param>
-        /// <param name="errors"></param>
-        /// <returns></returns>
-        bool TryRender( IDictionary<string, object> values, out string output, out List<Exception> errors );
-
-        /// <summary>
-        /// Try to render the template using the provided context values.
-        /// </summary>
-        /// <param name="context"></param>
-        /// <param name="output"></param>
-        /// <param name="errors"></param>
-        /// <returns></returns>
-        bool TryRender( ILavaRenderContext context, out string output, out List<Exception> errors );
-
-        /// <summary>
-        /// Try to render the template using the provided render parameters.
-        /// </summary>
-        /// <param name="parameters"></param>
-        /// <param name="output"></param>
-        /// <param name="errors"></param>
-        /// <returns></returns>
-        bool TryRender( LavaRenderParameters parameters, out string output, out List<Exception> errors );
+        /*
+         * This interface has no properties or methods.
+         * It is used to strong-type parameters for properties and methods in the Lava library.
+         */
     }
 }

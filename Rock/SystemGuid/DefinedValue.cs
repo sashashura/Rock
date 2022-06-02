@@ -14,6 +14,8 @@
 // limitations under the License.
 // </copyright>
 //
+using System;
+
 namespace Rock.SystemGuid
 {
     /// <summary>
@@ -22,6 +24,31 @@ namespace Rock.SystemGuid
     public static class DefinedValue
     {
         #region Block Template
+
+        /// <summary>
+        /// The block template for the mobile group schedule preference landing page.
+        /// </summary>
+        public const string BLOCK_TEMPLATE_MOBILE_GROUP_SCHEDULE_SIGNUP_LANDING_PAGE = "7F89AE4D-BD8B-49ED-B8EC-F883D43505F2";
+
+        /// <summary>
+        /// The block template for the mobile group schedule preference landing page.
+        /// </summary>
+        public const string BLOCK_TEMPLATE_MOBILE_GROUP_SCHEDULE_PREFERENCE_LANDING_PAGE = "D39CCB65-2444-48E4-9DE1-7A01AB20CB61";
+
+        /// <summary>
+        /// The block template for mobile group schedule unavailability block. 
+        /// </summary>
+        public const string BLOCK_TEMPLATE_MOBILE_GROUP_SCHEDULE_UNAVAILABILITY = "48EE4803-66BE-43A0-A7CF-E2D669DB2D21";
+
+        /// <summary>
+        /// The block template for mobile group schedule toolbox block.
+        /// </summary>
+        public const string BLOCK_TEMPLATE_MOBILE_GROUP_SCHEDULE_TOOLBOX = "7E11BEF1-F6F7-49E3-8804-90AC1CB9AD25";
+
+        /// <summary>
+        /// The block template for mobile group schedule toolbox decline modal.
+        /// </summary>
+        public const string BLOCK_TEMPLATE_MOBILE_GROUP_SCHEDULE_TOOLBOX_DECLINE_MODAL = "68ACFE34-C1D9-40C6-9AB1-9E6F4DA846EE";
 
         /// <summary>
         /// The block template for mobile answer to prayer block.
@@ -44,6 +71,36 @@ namespace Rock.SystemGuid
         public const string BLOCK_TEMPLATE_MOBILE_COMMUNICATION_VIEW = "0D588D84-111C-4350-98DE-460C194F5DE5";
 
         /// <summary>
+        /// The block template for the Mobile > Connection > Connection Type List block.
+        /// </summary>
+        public const string BLOCK_TEMPLATE_MOBILE_CONNECTION_CONNECTION_TYPE_LIST = "FECAD08A-570F-434E-BEED-412C4F2A3159";
+
+        /// <summary>
+        /// The block template for the Mobile > Connection > Connection Opportunity List block.
+        /// </summary>
+        public const string BLOCK_TEMPLATE_MOBILE_CONNECTION_CONNECTION_OPPORTUNITY_LIST = "167465D9-E8D2-413C-BA99-FDA529B14E6C";
+
+        /// <summary>
+        /// The block template for the Mobile > Connection > Connection Request List block.
+        /// </summary>
+        public const string BLOCK_TEMPLATE_MOBILE_CONNECTION_CONNECTION_REQUEST_LIST = "4A45926C-5571-414C-8C69-8203FDBF4AE7";
+
+        /// <summary>
+        /// The block template for the Mobile > Connection > Connection Request Detail block.
+        /// </summary>
+        public const string BLOCK_TEMPLATE_MOBILE_CONNECTION_CONNECTION_REQUEST_DETAIL = "44538702-5157-489A-B256-217F5D1F53F4";
+
+        /// <summary>
+        /// The block template for <see cref="Rock.Blocks.Types.Mobile.Core.Search"/> block.
+        /// </summary>
+        public const string BLOCK_TEMPLATE_MOBILE_CORE_SEARCH = "CFEB7FA6-0F19-496B-8DCC-4D200AEEE866";
+
+        /// <summary>
+        /// The block template mobile daily challenge entry
+        /// </summary>
+        public const string BLOCK_TEMPLATE_MOBILE_DAILY_CHALLENGE_ENTRY = "30ECA4B6-0869-4656-A4CD-B8729CB29E76";
+
+        /// <summary>
         /// The block template mobile event item occurrence list by audience
         /// </summary>
         public const string BLOCK_TEMPLATE_MOBILE_EVENT_ITEM_OCCURRENCE_LIST_BY_AUDIENCE = "26944B71-7B69-4943-8EC2-3506F728D943";
@@ -64,9 +121,19 @@ namespace Rock.SystemGuid
         public const string BLOCK_TEMPLATE_MOBILE_GROUP_VIEW = "559346FB-C684-42CF-8F4C-CF4A1C278AD6";
 
         /// <summary>
+        /// The block template for the mobile group finder.
+        /// </summary>
+        public const string BLOCK_TEMPLATE_MOBILE_GROUPS_GROUP_FINDER = "1B6D540A-2E40-44F6-8AE9-2857DE913459";
+
+        /// <summary>
         /// The block template for mobile my prayer requests.
         /// </summary>
         public const string BLOCK_TEMPLATE_MOBILE_MY_PRAYER_REQUESTS = "198F3006-5F0F-48AB-9EA0-2FA56F633753";
+
+        /// <summary>
+        /// The block template for Mobile > Prayer > Prayer Card View block.
+        /// </summary>
+        public const string BLOCK_TEMPLATE_MOBILE_PRAYER_PRAYER_CARD_VIEW = "DCFECA8C-CDF5-4863-851E-7EFEE6758EE9";
 
         /// <summary>
         /// The block template for the mobile prayer session block.
@@ -293,7 +360,7 @@ namespace Rock.SystemGuid
         /// <summary>
         /// The credit card type JCB
         /// </summary>
-        public const string CREDITCARD_TYPE_JCB = "	4DD7F0C2-F6B7-4510-90E6-287ADC25FD05";
+        public const string CREDITCARD_TYPE_JCB = "4DD7F0C2-F6B7-4510-90E6-287ADC25FD05";
 
         /// <summary>
         /// The credit card type MasterCard
@@ -374,7 +441,7 @@ namespace Rock.SystemGuid
         public const string FINANCIAL_SOURCE_TYPE_MOBILE_APPLICATION = "8ADCEC72-63FC-4F08-A4CC-72BCE470172C";
 
         /// <summary>
-        /// The financial source of On-site Collection
+        /// The financial source of On-Site
         /// </summary>
         public const string FINANCIAL_SOURCE_TYPE_ONSITE_COLLECTION = "BE7ECF50-52BC-4774-808D-574BA842DB98";
 
@@ -673,8 +740,15 @@ namespace Rock.SystemGuid
         public const string PERSON_CONNECTION_STATUS_PARTICIPANT = "8EBC0CEB-474D-4C1B-A6BA-734C3A9AB061";
 
         /// <summary>
+        /// Person Connection Status - Prospect
+        /// </summary>
+        public const string PERSON_CONNECTION_STATUS_PROSPECT = "368DD475-242C-49C4-A42C-7278BE690CC2";
+
+        /// <summary>
         /// Person Connection Status - Web Prospect
         /// </summary>
+        [Obsolete( "This is the same as the old Web Prospect but it is renamed to just Prospect." )]
+        [RockObsolete( "1.13" )]
         public const string PERSON_CONNECTION_STATUS_WEB_PROSPECT = "368DD475-242C-49C4-A42C-7278BE690CC2";
 
         #endregion
@@ -700,6 +774,10 @@ namespace Rock.SystemGuid
         /// </summary>
         public const string PERSONAL_DEVICE_TYPE_COMPUTER = "828ADECE-EFE7-49DF-BA8C-B3F132509A95";
 
+        /// <summary>
+        /// Personal Device Type - TV
+        /// </summary>
+        public const string PERSONAL_DEVICE_TYPE_TV = "CA45FC83-2B1C-51AC-4B46-F3427F57116B";
         #endregion
 
         #region Personal Device Platform
@@ -726,7 +804,12 @@ namespace Rock.SystemGuid
         /// <summary>
         /// Default Structure Content Editor
         /// </summary>
-        public const string STRUCTURE_CONTENT_EDITOR_DEFAULT = "31C63FB9-1365-4EEF-851D-8AB9A188A06C";
+        public const string STRUCTURE_CONTENT_EDITOR_DEFAULT = "09B25845-B879-4E69-87E9-003F9380B8DD";
+
+        /// <summary>
+        /// Structure Content Editor Message Notes
+        /// </summary>
+        public const string STRUCTURE_CONTENT_EDITOR_MESSAGE_NOTES = "31C63FB9-1365-4EEF-851D-8AB9A188A06C";
 
         #endregion
 
@@ -820,6 +903,16 @@ namespace Rock.SystemGuid
         /// Interaction Channel Type: System Events
         /// </summary>
         public const string INTERACTIONCHANNELTYPE_SYSTEM_EVENTS = "5919214F-9C59-4913-BE4E-0DFB6A05F528";
+
+        /// <summary>
+        /// Interaction Channel Type: Challenges
+        /// </summary>
+        public const string INTERACTIONCHANNELTYPE_CHALLENGES = "593607DC-4537-46E4-939F-60E0F74A1518";
+
+        /// <summary>
+        /// Interaction Channel Type: Challenge Progress
+        /// </summary>
+        public const string INTERACTIONCHANNELTYPE_CHALLENGE_PROGRESS = "6AA529BD-9FA5-43AD-A98E-B8DF5F997146";
 
         /// <summary>
         /// The PBX CDR medium value
@@ -1195,5 +1288,49 @@ namespace Rock.SystemGuid
         public const string CHECK_IN_ATTENDANCE_TYPE_VIRTUAL = "DF1C89D0-7D8A-48C2-B251-DFF3376C2931";
 
         #endregion
+
+        #region Schedule Types
+
+        /// <summary>
+        /// Schedule Type:  Weekend Service
+        /// </summary>
+        public const string SCHEDULE_TYPE_WEEKEND_SERVICE = "033FC160-2650-4C97-8075-0C0114FA7A8D";
+
+        #endregion Schedule Types
+
+        #region Map Markers
+
+        /// <summary>
+        /// The map marker pin
+        /// </summary>
+        public const string MAP_MARKER_PIN = "52DEB4F4-7D2C-4BB0-9A70-80CCA536E3EB";
+        /// <summary>
+        /// The map marker marker
+        /// </summary>
+        public const string MAP_MARKER_MARKER = "D9841DDB-BD34-45A7-97DC-141C8D6D9E84";
+        /// <summary>
+        /// The map marker marker with dot
+        /// </summary>
+        public const string MAP_MARKER_MARKER_WITH_DOT = "C0FF9C66-8232-41E8-A9C0-DC9D0ECAF932";
+        /// <summary>
+        /// The map marker circle
+        /// </summary>
+        public const string MAP_MARKER_CIRCLE = "66C27E88-6BC5-4B57-A981-0AD58481C66A";
+
+        #endregion Map Markers
+
+        #region Languages
+
+        /// <summary>
+        /// Translation Languages - English
+        /// </summary>
+        public const string LANGUAGE_ENGLISH = "DF0A29A7-A61E-E4A7-4F3D-58CFDD3D3871";
+
+        /// <summary>
+        /// Translation Languages - Spanish
+        /// </summary>
+        public const string LANGUAGE_SPANISH = "C93CB430-8554-E599-4F49-D7F3CED2B2C7";
+
+        #endregion Languages
     }
 }

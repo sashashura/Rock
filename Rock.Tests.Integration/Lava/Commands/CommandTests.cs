@@ -17,7 +17,7 @@
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Rock.Lava;
-using Rock.Tests.Shared;
+using Rock.Lava.RockLiquid;
 
 namespace Rock.Tests.Integration.Lava
 {
@@ -104,7 +104,7 @@ TedDecker<br/>
         /// This behavior differs from the standard scoping behavior for Liquid blocks.
         /// </summary>
         [TestMethod]
-        public void Cache_InnerScopeAssign_DoesNotModifyOuterVariable()
+        public void CacheBlock_InnerScopeAssign_DoesNotModifyOuterVariable()
         {
             var input = @"
 {% assign color = 'blue' %}
@@ -117,6 +117,41 @@ Color 1: {{ color }}
 {% endcache %}
 
 Color 4: {{ color }}
+";
+
+            var expectedOutput = @"
+Color 1: blue
+Color 2: blue
+Color 3: red
+Color 4: blue
+";
+
+            var options = new LavaTestRenderOptions() { EnabledCommands = "Cache" };
+
+            TestHelper.AssertTemplateOutput( expectedOutput, input, options );
+        }
+
+        /// <summary>
+        /// Verifies the variable scoping behavior of the Cache block.
+        /// Within the scope of a Cache block, an Assign statement should not affect the value of a same-named variable in the outer scope.
+        /// This behavior differs from the standard scoping behavior for Liquid blocks.
+        /// </summary>
+        [TestMethod]
+        public void CacheBlock_InsideNewScope_HasAccessToOuterVariable()
+        {
+            var input = @"
+{% if 1 == 1 %}
+    {% assign color = 'blue' %}
+    Color 1: {{ color }}
+
+    {% cache key:'fav-color' duration:'0' %}
+        Color 2: {{ color }}
+        {% assign color = 'red' %}
+        Color 3: {{color }}
+    {% endcache %}
+
+    Color 4: {{ color }}
+{% endif %}
 ";
 
             var expectedOutput = @"
@@ -196,14 +231,16 @@ Color 4: blue
 
                 context.SetEnabledCommands( "RockEntity" );
 
-                var output = TestHelper.GetTemplateOutput( engine.EngineType, input, context );
+                var output = TestHelper.GetTemplateOutput( engine, input, context );
 
-                TestHelper.DebugWriteRenderResult( engine.EngineType, input, output );
+                TestHelper.DebugWriteRenderResult( engine, input, output );
 
                 Assert.IsTrue( output.Contains( "Ted Decker" ), "Expected person not found." );
                 Assert.IsTrue( output.Contains( "Cindy Decker" ), "Expected person not found." );
             } );
         }
+
+        #region Cache
 
         [TestMethod]
         public void CacheBlock_WithTwoPassOptionEnabled_EmitsCorrectOutput()
@@ -228,15 +265,92 @@ Color 4: blue
 
             input = input.Replace( "`", "\"" );
 
-            var options = new LavaTestRenderOptions() { EnabledCommands = "Cache;RockEntity" };
+            var options = new LavaTestRenderOptions
+            {
+                EnabledCommands = "Cache,RockEntity",
+                OutputMatchType = LavaTestOutputMatchTypeSpecifier.Contains
+            };
+
+            var expectedOutput = @"
+<divid=`mbb-1`data-topbar-name=`dismiss1Topbar`data-topbar-value=`dismissed`class=`topbar`style=`background-color:;color:;`><ahref=``><spanclass=`topbar-text`></span></a><buttontype=`button`class=`close`data-dismiss=`alert`aria-label=`Close`><spanaria-hidden=`true`>&times;</span></button></div>
+<divid=`mbb-2`data-topbar-name=`dismiss2Topbar`data-topbar-value=`dismissed`class=`topbar`style=`background-color:;color:;`><ahref=``><spanclass=`topbar-text`></span></a><buttontype=`button`class=`close`data-dismiss=`alert`aria-label=`Close`><spanaria-hidden=`true`>&times;</span></button></div>
+<divid=`mbb-3`data-topbar-name=`dismiss3Topbar`data-topbar-value=`dismissed`class=`topbar`style=`background-color:;color:;`><ahref=``><spanclass=`topbar-text`></span></a><buttontype=`button`class=`close`data-dismiss=`alert`aria-label=`Close`><spanaria-hidden=`true`>&times;</span></button></div>
+";
+
+            expectedOutput = expectedOutput.Replace( "`", @"""" );
 
             TestHelper.ExecuteForActiveEngines( ( engine ) =>
             {
-                var output = TestHelper.GetTemplateOutput( engine.EngineType, input, options );
-
-                TestHelper.DebugWriteRenderResult( engine.EngineType, input, output );
+                TestHelper.AssertTemplateOutput( engine, expectedOutput, input, options );
             } );
         }
+
+        [TestMethod]
+        public void CacheBlock_MultipleRenderingPasses_ProducesSameOutput()
+        {
+            var input = @"
+{%- cache key:'duplicate-test' duration:'10' -%}
+This is the cache content.
+{%- endcache -%}
+";
+
+            input = input.Replace( "`", "\"" );
+
+            var options = new LavaTestRenderOptions { EnabledCommands = "Cache" };
+
+            var expectedOutput = @"This is the cache content.";
+
+            TestHelper.ExecuteForActiveEngines( ( engine ) =>
+            {
+                // Render the template twice to ensure the result is the same.
+                // The result is rendered and cached on the first pass and the same result should be rendered from the cache on the second pass.
+                TestHelper.AssertTemplateOutput( engine, expectedOutput, input, options );
+                TestHelper.AssertTemplateOutput( engine, expectedOutput, input, options );
+            } );
+        }
+
+        /// <summary>
+        /// Verify that multiple cached Sql blocks on the same page maintain their individual contexts and output.
+        /// </summary>
+        [TestMethod]
+        public void CacheBlock_MultipleInstancesOfCachedSqlBlocks_RendersCorrectOutput()
+        {
+            var input = @"
+{% cache key:'test1' duration:'10' %}
+{% sql %}
+    SELECT 1 AS [Count]
+{% endsql %}
+{% assign item = results | First %}
+Cache #{{ item.Count }}
+{% endcache %}
+
+{%- cache key:'test2' duration:'10' -%}
+{% sql %}
+    SELECT 2 AS [Count]
+{% endsql %}
+{% assign item = results | First %}
+Cache #{{ item.Count }}
+{% endcache %}
+
+{%- cache key:'test3' duration:'10' -%}
+{% sql %}
+    SELECT 3 AS [Count]
+{% endsql %}
+{% assign item = results | First %}
+Cache #{{ item.Count }}
+{% endcache %}
+";
+
+            input = input.Replace( "`", "\"" );
+
+            var options = new LavaTestRenderOptions { EnabledCommands = "Cache,Sql" };
+
+            var expectedOutput = @"Cache #1 Cache #2 Cache #3";
+
+            TestHelper.AssertTemplateOutput( expectedOutput, input, options );
+        }
+
+        #endregion
 
         #endregion
 
@@ -530,6 +644,81 @@ Color 4: blue
             TestHelper.AssertTemplateOutput( expectedOutput, input, options );
         }
 
+        [TestMethod]
+        public void SqlBlock_NullColumnValueInResult_IsRenderedAsEmptyString()
+        {
+            var input = @"
+{% sql %}
+    SELECT   [NickName], [LastName]
+    FROM     [Person] 
+    WHERE    [LastName] = 'Decker'
+    AND      [NickName] IN ('Ted', 'Alex')
+UNION
+    SELECT   null as [NickName], null as [LastName]
+    ORDER BY [NickName]
+{% endsql %}
+
+{% for item in results %}{{ item.NickName }}_{{ item.LastName }};{% endfor %}
+";
+
+            var expectedOutput = @"_;Alex_Decker;Ted_Decker;";
+
+            var options = new LavaTestRenderOptions { EnabledCommands = "Sql" };
+
+            TestHelper.AssertTemplateOutput( expectedOutput, input, options );
+        }
+
+        /// <summary>
+        /// Verify that a nullable database column is mapped to a Nullable<> System.Type.
+        /// </summary>
+        [TestMethod]
+        public void SqlBlock_NullableDatabaseColumn_IsReturnedAsNullableType()
+        {
+            var input = @"
+{% sql return:'Items' %}
+    SELECT TOP 1 p.[PhotoId] FROM [Person] as p WHERE [PhotoId] IS NULL
+{% endsql %}
+{% for item in Items %}
+    {% if item.PhotoId == null %}
+    Is Null
+    {% endif %}
+{% endfor %}
+";
+
+            var expectedOutput = @"Is Null";
+
+            var options = new LavaTestRenderOptions { EnabledCommands = "Sql" };
+
+            TestHelper.AssertTemplateOutput( expectedOutput, input, options );
+        }
+
+        /// <summary>
+        /// Verify that the Select filter operates correctly on the result set returned by the Sql Lava block.
+        /// Verifies Issue #4938 ⁃ Select Lava Filter Does Not See Values In A SQL Results Array.
+        /// Refer https://github.com/SparkDevNetwork/Rock/issues/4938.
+        /// </summary>
+        [TestMethod]
+        public void SqlBlock_SelectFilterAppliedToResultSet_ReturnsSelectedField()
+        {
+            var input = @"
+{% sql %}
+SELECT * FROM Campus
+{% endsql %}
+{% assign campusNames = results | Select:'Name' | Uniq %}
+{% for campusName in campusNames %}
+{{ campusName }};
+{% endfor %}
+";
+
+            var expectedOutput = @"
+Main Campus;Stepping Stone;
+";
+
+            var options = new LavaTestRenderOptions { EnabledCommands = "Sql" };
+
+            TestHelper.AssertTemplateOutput( expectedOutput, input, options );
+        }
+
         #endregion
 
         #region Stylesheet
@@ -570,13 +759,22 @@ Color 4: blue
             {
                 var result = engine.RenderTemplate( input );
 
-                TestHelper.DebugWriteRenderResult( engine.EngineType, input, result.Text );
+                TestHelper.DebugWriteRenderResult( engine, input, result.Text );
 
                 var output = result.Text.Replace( " ", string.Empty );
 
-                Assert.IsTrue( output.Contains( "person-Rock.Lava.Blocks.RockEntity" ), "Expected Entity Tag not found." );
-                Assert.IsTrue( output.Contains( "cache-Rock.Lava.Blocks.Cache" ), "Expected Command Block not found." );
-                Assert.IsTrue( output.Contains( "interactionwrite-Rock.Lava.Blocks.InteractionWrite" ), "Expected Command Tag not found." );
+                if ( engine.GetType() == typeof ( RockLiquidEngine ) )
+                {
+                    Assert.IsTrue( output.Contains( "person-Rock.Lava.RockLiquid.Blocks.RockEntity" ), "Expected Entity Tag not found." );
+                    Assert.IsTrue( output.Contains( "cache-Rock.Lava.RockLiquid.Blocks.Cache" ), "Expected Command Block not found." );
+                    Assert.IsTrue( output.Contains( "interactionwrite-Rock.Lava.RockLiquid.Blocks.InteractionWrite" ), "Expected Command Tag not found." );
+                }
+                else
+                {
+                    Assert.IsTrue( output.Contains( "person-Rock.Lava.Blocks.RockEntity" ), "Expected Entity Tag not found." );
+                    Assert.IsTrue( output.Contains( "cache-Rock.Lava.Blocks.Cache" ), "Expected Command Block not found." );
+                    Assert.IsTrue( output.Contains( "interactionwrite-Rock.Lava.Blocks.InteractionWrite" ), "Expected Command Tag not found." );
+                }
             } );
         }
 
@@ -650,5 +848,67 @@ Color 4: blue
         }
 
         #endregion
+
+
+        /// <summary>
+        /// The "return" tag can be used at the root level of a document.
+        /// </summary>
+        [TestMethod]
+        public void ReturnTag_AtRootLevel_TerminatesRenderingImmediately()
+        {
+            var template = @"
+12345
+{% return %}
+67890
+";
+
+            var expectedOutput = @"12345";
+
+            TestHelper.AssertTemplateOutput( expectedOutput, template );
+        }
+
+        /// <summary>
+        /// The "return" tag can be used to exit immediately from a nested block.
+        /// </summary>
+        [TestMethod]
+        public void ReturnTag_InNestedBlock_TerminatesRenderingImmediately()
+        {
+            var template = @"
+{% assign isTrue = true %}
+{% assign isFalse = false %}
+Step 1
+{% if isTrue == false %}
+    {% return %}
+{% endif %}
+<hr>
+Step 2
+{% if isTrue == true %}
+    {% return %}
+{% endif %}
+<hr>
+Step 3
+";
+
+            var expectedOutput = @"Step1<hr>Step2";
+
+            TestHelper.AssertTemplateOutput( expectedOutput, template );
+        }
+
+        /// <summary>
+        /// The "return" tag can be used to exit immediately from within a loop.
+        /// </summary>
+        [TestMethod]
+        public void ReturnTag_InForLoop_TerminatesDocumentRenderImmediately()
+        {
+            var template = @"
+{% assign list = '10,9,8,7,6,5,4,3,2,1' | Split: ',' %}
+{% for i in list %}{{ i }}...{% if i == 1 %}{% return %}{% endif %}{% endfor %}
+Lift-Off!
+";
+
+            var expectedOutput = @"10...9...8...7...6...5...4...3...2...1...";
+
+            TestHelper.AssertTemplateOutput( expectedOutput, template );
+        }
     }
 }

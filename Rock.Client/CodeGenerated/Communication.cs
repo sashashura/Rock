@@ -77,11 +77,6 @@ namespace Rock.Client
         public int? ListGroupId { get; set; }
 
         /// <summary />
-        // Made Obsolete in Rock "1.7"
-        [Obsolete( "MediumDataJson is no longer used.", true )]
-        public string MediumDataJson { get; set; }
-
-        /// <summary />
         public string Message { get; set; }
 
         /// <summary />
@@ -151,6 +146,9 @@ namespace Rock.Client
 
         /// <summary />
         public string Subject { get; set; }
+
+        /// <summary />
+        public int? SystemCommunicationId { get; set; }
 
         /// <summary />
         public string UrlReferrer { get; set; }
@@ -225,6 +223,7 @@ namespace Rock.Client
             this.SMSMessage = source.SMSMessage;
             this.Status = source.Status;
             this.Subject = source.Subject;
+            this.SystemCommunicationId = source.SystemCommunicationId;
             this.UrlReferrer = source.UrlReferrer;
             this.CreatedDateTime = source.CreatedDateTime;
             this.ModifiedDateTime = source.ModifiedDateTime;
@@ -270,6 +269,9 @@ namespace Rock.Client
 
         /// <summary />
         public DefinedValue SMSFromDefinedValue { get; set; }
+
+        /// <summary />
+        public SystemCommunication SystemCommunication { get; set; }
 
         /// <summary>
         /// NOTE: Attributes are only populated when ?loadAttributes is specified. Options for loadAttributes are true, false, 'simple', 'expanded' 

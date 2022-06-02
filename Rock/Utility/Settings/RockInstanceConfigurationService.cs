@@ -40,6 +40,8 @@ namespace Rock.Utility.Settings
         {
             get
             {
+                /* This property intentionally returns the system date of the local server.  This property should
+                 * be used whenever it is necessary to use the local server clock instead of RockDateTime.Now. */
                 return DateTime.Now;
             }
         }
@@ -51,7 +53,25 @@ namespace Rock.Utility.Settings
         {
             get
             {
-                return Rock.RockDateTime.Now;
+                // RockDateTime represents Rock organization time rather than a local system time, so set the Kind to reflect this and avoid confusion.
+                var rockDateTime = DateTime.SpecifyKind( Rock.RockDateTime.Now, DateTimeKind.Unspecified );
+
+                return rockDateTime;
+            }
+        }
+
+        /// <summary>
+        /// Returns the date and time of the application host server, localised according to the timezone specified in the Rock application settings.
+        /// </summary>
+        public DateTimeOffset RockDateTimeOffset
+        {
+            get
+            {
+                var dtoRock = new DateTimeOffset( DateTime.UtcNow );
+
+                dtoRock = dtoRock.ToOffset( Rock.RockDateTime.OrgTimeZoneInfo.GetUtcOffset( dtoRock ) );
+
+                return dtoRock;
             }
         }
 
@@ -119,7 +139,7 @@ namespace Rock.Utility.Settings
         public RockInstanceDatabaseConfiguration Database { get; }
 
         /// <summary>
-        /// Gets a value indicating whether this instance is clustered.
+        /// Gets a value indicating whether this instance is clustered using RockWebFarm or Redis.
         /// </summary>
         /// <value>
         ///   <c>true</c> if this instance is clustered; otherwise, <c>false</c>.
@@ -128,6 +148,11 @@ namespace Rock.Utility.Settings
         {
             get
             {
+                if ( Rock.WebFarm.RockWebFarm.IsEnabled() )
+                {
+                    return true;
+                }
+
                 return Rock.Web.SystemSettings.GetValueFromWebConfig( Rock.SystemKey.SystemSetting.REDIS_ENABLE_CACHE_CLUSTER ).AsBooleanOrNull() ?? false;
             }
         }
@@ -139,7 +164,23 @@ namespace Rock.Utility.Settings
         {
             get
             {
-                return LavaEngine.CurrentEngine.EngineName;
+                var engine = LavaService.GetCurrentEngine();
+
+                if ( engine == null )
+                {
+                    return "DotLiquid";
+                }
+                else
+                {
+                    var engineName = engine.EngineName;
+
+                    if ( LavaService.RockLiquidIsEnabled )
+                    {
+                        engineName = $"DotLiquid (with {engineName} verification)";
+                    }
+
+                    return engineName;
+                }
             }
         }
     }

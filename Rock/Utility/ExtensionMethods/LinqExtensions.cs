@@ -25,6 +25,7 @@ using System.Web.UI.WebControls;
 using Rock.Attribute;
 using Rock.Data;
 using Rock.Model;
+using Rock.Utility;
 using Rock.Web.Cache;
 
 namespace Rock
@@ -132,6 +133,23 @@ namespace Rock
         public static List<int> AsIntegerList( this IEnumerable<string> items )
         {
             return items.Select( a => a.AsIntegerOrNull() ).Where( a => a.HasValue ).Select( a => a.Value ).ToList();
+        }
+
+        /// <summary>
+        /// Converts a <see cref="IEnumerable{T}"/> of <see cref="string"/> values into
+        /// their enumeration type. Only returns values that can be converted
+        /// to <typeparamref name="T"/>.
+        /// </summary>
+        /// <typeparam name="T">The enumeration type to be converted to.</typeparam>
+        /// <param name="items">The items to be converted.</param>
+        /// <returns>A list of <typeparamref name="T"/> enumeration values.</returns>
+        public static List<T> AsEnumList<T>( this IEnumerable<string> items )
+            where T : struct
+        {
+            return items.Select( a => a.ConvertToEnumOrNull<T>() )
+                .Where( a => a.HasValue )
+                .Select( a => a.Value )
+                .ToList();
         }
 
         /// <summary>
@@ -555,6 +573,120 @@ namespace Rock
         }
 
         /// <summary>
+        /// Filters the query to only those values that match the specified time
+        /// period. The filtering is applied to a TimeSpan value that represents
+        /// the time of day.
+        /// </summary>
+        /// <typeparam name="T">The type of the queryable.</typeparam>
+        /// <param name="source">The query to be filtered.</param>
+        /// <param name="timePeriod">The time period.</param>
+        /// <param name="predicate">The predicate to access the <see cref="TimeSpan"/> value.</param>
+        /// <returns>A queryable filtered to only items matching the time period.</returns>
+        /// <exception cref="System.ArgumentOutOfRangeException">timePeriod</exception>
+        /// <example>
+        /// This method takes a predicate that directs it to the TimeSpan
+        /// value:
+        /// <code>
+        /// var query = new GroupService( rockContext ).Queryable().Where( g => g.Schedule.WeeklyTimeOfDay.HasValue );
+        /// query = qry.WhereTimePeriodIs( TimePeriodOfDay.Morning, g => g.Schedule.WeeklyTimeOfDay.Value );
+        /// </code>
+        /// </example>
+        public static IQueryable<T> WhereTimePeriodIs<T>( this IQueryable<T> source, TimePeriodOfDay timePeriod, Expression<Func<T, TimeSpan>> predicate )
+        {
+            Expression timePeriodExpression;
+            var hourExpression = Expression.Property( predicate.Body, "Hours" );
+
+            switch ( timePeriod )
+            {
+                case TimePeriodOfDay.Morning:
+                    // hour < 12pm
+                    timePeriodExpression = Expression.LessThan( hourExpression, Expression.Constant( 12 ) );
+                    break;
+
+                case TimePeriodOfDay.Afternoon:
+                    // hour >= 12pm && hour < 5pm
+                    timePeriodExpression = Expression.And(
+                        Expression.GreaterThanOrEqual( hourExpression, Expression.Constant( 12 ) ),
+                        Expression.LessThan( hourExpression, Expression.Constant( 17 ) ) );
+                    break;
+
+                case TimePeriodOfDay.Evening:
+                    // hour >= 6pm
+                    timePeriodExpression = Expression.GreaterThanOrEqual( hourExpression, Expression.Constant( 17 ) );
+                    break;
+
+                default:
+                    throw new ArgumentOutOfRangeException( nameof( timePeriod ) );
+            }
+
+            return source.Where( predicate.Parameters[0], timePeriodExpression );
+        }
+
+        /// <summary>
+        /// Filters the query to only those values that match one of the time
+        /// periods. The filtering is applied to a TimeSpan value that represents
+        /// the time of day.
+        /// </summary>
+        /// <typeparam name="T">The type of the queryable.</typeparam>
+        /// <param name="source">The query to be filtered.</param>
+        /// <param name="timePeriods">The time periods.</param>
+        /// <param name="predicate">The predicate to access the <see cref="TimeSpan"/> value.</param>
+        /// <returns>A queryable filtered to only items matching the time periods.</returns>
+        /// <exception cref="System.ArgumentOutOfRangeException">timePeriods</exception>
+        /// <example>
+        /// This method takes a predicate that directs it to the TimeSpan
+        /// value:
+        /// <code>
+        /// var query = new GroupService( rockContext ).Queryable().Where( g => g.Schedule.WeeklyTimeOfDay.HasValue );
+        /// query = qry.WhereTimePeriodIsOneOf( new[] { TimePeriodOfDay.Morning }, g => g.Schedule.WeeklyTimeOfDay.Value )
+        /// </code>
+        /// </example>
+        public static IQueryable<T> WhereTimePeriodIsOneOf<T>( this IQueryable<T> source, IEnumerable<TimePeriodOfDay> timePeriods, Expression<Func<T, TimeSpan>> predicate )
+        {
+            Expression timePeriodExpression = null;
+            var hourExpression = Expression.Property( predicate.Body, "Hours" );
+
+            foreach ( var timePeriod in timePeriods )
+            {
+                Expression expr;
+
+                switch ( timePeriod )
+                {
+                    case TimePeriodOfDay.Morning:
+                        // hour < 12pm
+                        expr = Expression.LessThan( hourExpression, Expression.Constant( 12 ) );
+                        break;
+
+                    case TimePeriodOfDay.Afternoon:
+                        // hour >= 12pm && hour < 5pm
+                        expr = Expression.And(
+                            Expression.GreaterThanOrEqual( hourExpression, Expression.Constant( 12 ) ),
+                            Expression.LessThan( hourExpression, Expression.Constant( 17 ) ) );
+                        break;
+
+                    case TimePeriodOfDay.Evening:
+                        // hour >= 5pm
+                        expr = Expression.GreaterThanOrEqual( hourExpression, Expression.Constant( 17 ) );
+                        break;
+
+                    default:
+                        throw new ArgumentOutOfRangeException( nameof( timePeriods ) );
+                }
+
+                timePeriodExpression = timePeriodExpression != null ? Expression.Or( timePeriodExpression, expr ) : expr;
+            }
+
+            if ( timePeriodExpression != null )
+            {
+                return source.Where( predicate.Parameters[0], timePeriodExpression );
+            }
+            else
+            {
+                return source;
+            }
+        }
+
+        /// <summary>
         /// Forces an Inner Join to the Person table using the specified key selector expression.
         /// Handy for optimizing a query that would have normally done an outer join 
         /// </summary>
@@ -571,5 +703,178 @@ namespace Rock
         }
 
         #endregion IQueryable extensions
+
+        #region Expression extensions
+
+        /// <summary>
+        /// Replaces a parameter in the expression.
+        /// </summary>
+        /// <param name="expression">The expression.</param>
+        /// <param name="parameterName">Name of the parameter to be replaced.</param>
+        /// <param name="parameterExpression">The parameter expression to use in the replacement.</param>
+        /// <returns>A new Expression if the original expression was modified; otherwise the original expression.</returns>
+        public static Expression ReplaceParameter( this Expression expression, string parameterName, ParameterExpression parameterExpression )
+        {
+                var filterExpressionVisitor = new ParameterExpressionVisitor( parameterExpression, parameterName );
+
+                return filterExpressionVisitor.Visit( expression );
+        }
+
+        #endregion
+
+        #region Support Classes
+
+        /// <summary>
+        /// Helps rewrite the expression by replacing the parameter expression
+        /// in the expression with another parameterExpression.
+        /// </summary>
+        private class ParameterExpressionVisitor : ExpressionVisitor
+        {
+            #region Fields
+
+            /// <summary>
+            /// The new parameter expression to use when replacing existing ones.
+            /// </summary>
+            private readonly ParameterExpression _parameterExpression;
+
+            /// <summary>
+            /// The name of the parameter expression to be replaced.
+            /// </summary>
+            private readonly string _parameterName;
+
+            #endregion
+
+            #region Constructors
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="ParameterExpressionVisitor"/> class.
+            /// </summary>
+            /// <param name="parameterExpression">The parameter expression to use in replacement.</param>
+            /// <param name="parameterName">Name of the parameter to be replaced.</param>
+            public ParameterExpressionVisitor( ParameterExpression parameterExpression, string parameterName )
+            {
+                this._parameterExpression = parameterExpression;
+                this._parameterName = parameterName;
+            }
+
+            #endregion
+
+            #region Methods
+
+            /// <summary>
+            /// Visits the parameter.
+            /// </summary>
+            /// <param name="p">The application.</param>
+            /// <returns></returns>
+            protected override Expression VisitParameter( ParameterExpression p )
+            {
+                if ( p.Name == _parameterName )
+                {
+                    p = _parameterExpression;
+                }
+
+                return base.VisitParameter( p );
+            }
+
+            #endregion
+        }
+
+        #endregion
+    }
+
+    /// <summary>
+    /// Provides additional logical operations to simplify the process of constructing Linq predicates.
+    /// </summary>
+    /// <remarks>
+    /// Adapted from https://petemontgomery.wordpress.com/2011/02/10/a-universal-predicatebuilder/.
+    /// </remarks>
+    public static class LinqPredicateBuilder
+    {
+        /// <summary>
+        /// Creates a predicate that evaluates to true.
+        /// </summary>
+        public static Expression<Func<T, bool>> True<T>() { return param => true; }
+
+        /// <summary>
+        /// Creates a predicate that evaluates to false.
+        /// </summary>
+        public static Expression<Func<T, bool>> False<T>() { return param => false; }
+
+        /// <summary>
+        /// Creates a predicate expression from the specified lambda expression.
+        /// </summary>
+        public static Expression<Func<T, bool>> Create<T>( Expression<Func<T, bool>> predicate ) { return predicate; }
+
+        /// <summary>
+        /// Combines the first predicate with the second using the logical "and".
+        /// </summary>
+        public static Expression<Func<T, bool>> And<T>( this Expression<Func<T, bool>> first, Expression<Func<T, bool>> second )
+        {
+            return first.Compose( second, Expression.AndAlso );
+        }
+
+        /// <summary>
+        /// Combines the first predicate with the second using the logical "or".
+        /// </summary>
+        public static Expression<Func<T, bool>> Or<T>( this Expression<Func<T, bool>> first, Expression<Func<T, bool>> second )
+        {
+            return first.Compose( second, Expression.OrElse );
+        }
+
+        /// <summary>
+        /// Negates the predicate.
+        /// </summary>
+        public static Expression<Func<T, bool>> Not<T>( this Expression<Func<T, bool>> expression )
+        {
+            var negated = Expression.Not( expression.Body );
+            return Expression.Lambda<Func<T, bool>>( negated, expression.Parameters );
+        }
+
+        /// <summary>
+        /// Combines the first expression with the second using the specified merge function.
+        /// </summary>
+        static Expression<T> Compose<T>( this Expression<T> first, Expression<T> second, Func<Expression, Expression, Expression> merge )
+        {
+            // Map expression parameters of second to parameters of first.
+            var map = first.Parameters
+                .Select( ( f, i ) => new { f, s = second.Parameters[i] } )
+                .ToDictionary( p => p.s, p => p.f );
+
+            // Replace parameters in the second lambda expression with the parameters in the first.
+            var secondBody = ParameterRebinder.ReplaceParameters( map, second.Body );
+
+            // Create a merged lambda expression with parameters from the first expression.
+            return Expression.Lambda<T>( merge( first.Body, secondBody ), first.Parameters );
+        }
+
+        /// <summary>
+        /// An Expression Visitor that replaces one parameter with another in an Expression.
+        /// </summary>
+        private class ParameterRebinder : ExpressionVisitor
+        {
+            readonly Dictionary<ParameterExpression, ParameterExpression> map;
+
+            ParameterRebinder( Dictionary<ParameterExpression, ParameterExpression> map )
+            {
+                this.map = map ?? new Dictionary<ParameterExpression, ParameterExpression>();
+            }
+
+            public static Expression ReplaceParameters( Dictionary<ParameterExpression, ParameterExpression> map, Expression exp )
+            {
+                return new ParameterRebinder( map ).Visit( exp );
+            }
+
+            protected override Expression VisitParameter( ParameterExpression p )
+            {
+                ParameterExpression replacement;
+
+                if ( map.TryGetValue( p, out replacement ) )
+                {
+                    p = replacement;
+                }
+
+                return base.VisitParameter( p );
+            }
+        }
     }
 }

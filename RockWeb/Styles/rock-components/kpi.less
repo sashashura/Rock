@@ -44,18 +44,18 @@
 }
 
 .kpi {
+  position: relative;
   display: flex;
   flex-basis: 100%;
   flex-grow: 1;
   align-items: center;
   margin: 0 8px 16px;
-  font-size: 26px;
-  color: #aeaeae;
   overflow-y: hidden;
+  font-size: 26px;
+  color: @persondetails-badge-color;
 }
 
 .kpi-card {
-  color: #c0cbd1;
   background: @white;
   border: 1px solid #000;
   border-color: currentColor;
@@ -63,13 +63,19 @@
 }
 
 .kpi-stat {
-  flex: 1 1 auto;
+  flex: 1 1 0;
   align-self: flex-start;
-  padding: 8px 16px;
+  min-width: 0;
+  padding: 8px 0;
   overflow: hidden;
 
   .kpi-icon + & {
     align-self: center;
+    padding: 8px 16px;
+  }
+
+  .kpi-card & {
+    padding: 8px 16px;
   }
 }
 
@@ -89,7 +95,7 @@
 .kpi-label,
 .kpi-secondary-label {
   display: block;
-  font-size: .538em;
+  font-size: .53846em;
   line-height: 1.1;
   color: @text-muted;
 }
@@ -106,7 +112,7 @@
   align-items: center;
   justify-content: center;
   // min-width: 50px;
-  // max-width: 35%;
+  max-width: 35%;
   height: 100%;
   font-size: 32px;
   vertical-align: top;
@@ -119,6 +125,17 @@
     display: block;
     width: max-content;
     margin-left: 0;
+
+    .kpi-content {
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
   }
 
   // Force 48px BG for kpi-sm
@@ -139,7 +156,7 @@
     opacity: 0;
 
     .kpi-card > & {
-      width: auto;
+      //width: 100%;
       height: 100%;
       border-radius: 0;
     }
@@ -147,20 +164,6 @@
     .has-icon-bg & {
       display: block;
       opacity: .2;
-    }
-  }
-
-
-  .has-icon-bg & {
-    .kpi-content {
-      position: absolute;
-      top: 0;
-      right: 0;
-      bottom: 0;
-      left: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
     }
   }
 }
@@ -173,18 +176,18 @@
   }
 
   .has-icon-bg .kpi-icon {
-    height: 100%;
     min-width: 57px;
+    height: 100%;
 
-    &:before {
+    &::before {
       position: absolute;
-      display: block;
-      opacity: .2;
-      content: ' ';
       top: 0;
       bottom: 0;
+      display: block;
       width: 100%;
+      content: " ";
       background: currentColor;
+      opacity: .2;
     }
 
     .svg-placeholder {
@@ -210,9 +213,11 @@
   .kpi-stat {
     padding: 16px 10px;
   }
+
   .kpi-label {
     padding: 3px 0;
     font-size: 17px;
+    font-weight: @font-weight-base;
   }
 
   .kpi-icon {
@@ -220,6 +225,12 @@
     font-size: 48px;
     text-align: center;
   }
+}
+
+.kpi-lg-label {
+  &:extend(.kpi-label);
+  &:extend(.kpi-lg .kpi-label);
+  font-size: 17px;
 }
 
 .kpi-xl {
@@ -230,9 +241,9 @@
   }
 }
 
-.stat-value-lg {
-  display: block;
-  font-size: 45px;
+.stat-value {
+  display: inline-block;
+  font-size: 26px;
   font-weight: 700;
   line-height: 1;
 }

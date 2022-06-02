@@ -159,7 +159,10 @@ namespace RockWeb.Blocks.Administration
             // Check for any unregistered entity types, field types, and block types
             EntityTypeService.RegisterEntityTypes();
             FieldTypeService.RegisterFieldTypes();
+
+            BlockTypeService.FlushRegistrationCache();
             BlockTypeService.RegisterBlockTypes( webAppPath, Page, false );
+
             msgs.Add( "EntityTypes, FieldTypes, BlockTypes have been re-registered" );
 
             // Delete all cached files
@@ -515,24 +518,23 @@ namespace RockWeb.Blocks.Administration
         {
             lDatabase.Text = GetDbInfo();
 
-            var systemDataTime = RockInstanceConfig.SystemDateTime;
+            lSystemDateTime.Text = new DateTimeOffset( RockInstanceConfig.SystemDateTime ).ToString();
 
-            lSystemDateTime.Text = systemDataTime.ToString( "G" ) + " " + systemDataTime.ToString( "zzz" );
-
-            var rockDateTime = RockInstanceConfig.RockDateTime;
-
-            lRockTime.Text = rockDateTime.ToString( "G" ) + " " + Rock.RockDateTime.OrgTimeZoneInfo.BaseUtcOffset.ToString();
+            lRockTime.Text = RockInstanceConfig.RockDateTimeOffset.ToString();
 
             var currentProcess = System.Diagnostics.Process.GetCurrentProcess();
 
             if ( currentProcess != null && currentProcess.StartTime != null )
             {
-                lProcessStartTime.Text = currentProcess.StartTime.ToString( "G" ) + " " + DateTime.Now.ToString( "zzz" );
+                // Display Process StartTime (iis.exe) in Server TimeZone
+                lProcessStartTime.Text = new DateTimeOffset( currentProcess.StartTime ).ToString();
             }
             else
             {
                 lProcessStartTime.Text = "-";
             }
+
+            lRockApplicationStartTime.Text = new DateTimeOffset( RockInstanceConfig.ApplicationStartedDateTime ).ToString();
 
             lExecLocation.Text = "Machine Name: " + RockInstanceConfig.MachineName;
             lExecLocation.Text += "<br>" + Assembly.GetExecutingAssembly().Location + "<br>" + RockInstanceConfig.PhysicalDirectory;

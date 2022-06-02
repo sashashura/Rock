@@ -15,6 +15,7 @@
 // </copyright>
 //
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Web.UI;
 using System.Web.UI.WebControls;
@@ -56,6 +57,8 @@ namespace Rock.Web.UI.Controls
         HtmlEditor _htmlAdditionalConfirmationDetails;
         RockDropDownList _ddlGatewayMerchants;
         RockDropDownList _ddlGatewayFunds;
+        NumberBox _nbTimeoutLengthMinutes;
+        NumberBox _nbTimeoutThreshold;
 
         /// <summary>
         /// Gets or sets a value indicating whether active checkbox should be displayed
@@ -573,6 +576,46 @@ namespace Rock.Web.UI.Controls
         }
 
         /// <summary>
+        /// Gets or sets the timeout length minutes.
+        /// </summary>
+        /// <value>
+        /// The timeout length minutes.
+        /// </value>
+        public int? TimeoutLengthMinutes
+        {
+            get
+            {
+                EnsureChildControls();
+                return _nbTimeoutLengthMinutes.IntegerValue;
+            }
+            set
+            {
+                EnsureChildControls();
+                _nbTimeoutLengthMinutes.IntegerValue = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the timeout threshold.
+        /// </summary>
+        /// <value>
+        /// The timeout threshold.
+        /// </value>
+        public int? TimeoutThreshold
+        {
+            get
+            {
+                EnsureChildControls();
+                return _nbTimeoutThreshold.IntegerValue;
+            }
+            set
+            {
+                EnsureChildControls();
+                _nbTimeoutThreshold.IntegerValue = value;
+            }
+        }
+
+        /// <summary>
         /// Gets or sets the gateway entity type identifier.
         /// </summary>
         /// <value>
@@ -618,6 +661,8 @@ namespace Rock.Web.UI.Controls
                 _htmlAdditionalReminderDetails.ValidationGroup = value;
                 _ddlGatewayFunds.ValidationGroup = value;
                 _ddlGatewayMerchants.ValidationGroup = value;
+                _nbTimeoutThreshold.ValidationGroup = value;
+                _nbTimeoutLengthMinutes.ValidationGroup = value;
             }
         }
 
@@ -675,36 +720,60 @@ namespace Rock.Web.UI.Controls
                 _htmlRegistrationInstructions.Text = instance.RegistrationInstructions;
                 _htmlAdditionalReminderDetails.Text = instance.AdditionalReminderDetails;
                 _htmlAdditionalConfirmationDetails.Text = instance.AdditionalConfirmationDetails;
+                _nbTimeoutThreshold.IntegerValue = instance.TimeoutThreshold;
+                _nbTimeoutLengthMinutes.IntegerValue = instance.TimeoutLengthMinutes;
 
                 if ( instance.RegistrationTemplate.FinancialGateway.IsRedirectionGateway() )
                 {
                     GatewayEntityTypeId = instance.RegistrationTemplate.FinancialGateway.EntityTypeId;
-                    var gateway = instance.RegistrationTemplate.FinancialGateway.GetGatewayComponent() as IRedirectionGateway;
+                    var gateway = instance.RegistrationTemplate.FinancialGateway.GetGatewayComponent() as IRedirectionGatewayComponent;
                     _ddlGatewayMerchants.Label = gateway.MerchantFieldLabel;
                     _ddlGatewayMerchants.Visible = true;
                     _ddlGatewayMerchants.Items.Clear();
                     _ddlGatewayMerchants.Items.Add( new ListItem( string.Empty, string.Empty ) );
-                    _ddlGatewayMerchants.Items.AddRange( gateway.GetMerchants().Select( x => new ListItem( x.Value, x.Key ) ).ToArray() );
+
+                    var merchants = gateway.GetMerchants().ToDictionary( x => x.Key, x => x.Value );
+                    var merchantListItems = merchants.Select( x => new ListItem( x.Value, x.Key ) ).ToArray();
+                    _ddlGatewayMerchants.Items.AddRange( merchantListItems );
 
                     _ddlGatewayFunds.Label = gateway.FundFieldLabel;
                     _ddlGatewayFunds.Visible = true;
 
-                    _ddlGatewayMerchants.SelectedValue = instance.ExternalGatewayMerchantId.ToString();
-                    if ( instance.ExternalGatewayMerchantId != null )
+                    // Only set the merchant value (in _ddlGatewayMerchants.SelectedValue) if the instance has a value
+                    // and the value is in the list of merchants in the database (avoids hitting a null reference if
+                    // the merchant has been deleted from the database).
+                    bool shouldSetMerchant = instance.ExternalGatewayMerchantId.HasValue
+                        && merchants.ContainsKey( instance.ExternalGatewayMerchantId.ToString() );
+
+                    var merchantFunds = new Dictionary<string, string>();
+                    bool shouldSetFund = false;
+
+                    if ( shouldSetMerchant )
                     {
+                        _ddlGatewayMerchants.SelectedValue = instance.ExternalGatewayMerchantId.ToString();
+
+                        merchantFunds = gateway.GetMerchantFunds( instance.ExternalGatewayMerchantId.ToString() )
+                            .ToDictionary( x => x.Key, x => x.Value );
+
+                        // Only set the merchant fund value (in _ddlGatewayFunds.SelectedValue) if we have already set
+                        // the merchant, the instance has a value, and the value is in the list of funds for the selected
+                        // merchant.
+                        shouldSetFund = instance.ExternalGatewayFundId.HasValue
+                            && merchantFunds.ContainsKey( instance.ExternalGatewayFundId.ToString() );
+
+                        // Add gateway merchant fund options.
+                        var fundListItems = merchantFunds.Select( x => new ListItem( x.Value, x.Key ) ).ToArray();
                         _ddlGatewayFunds.Items.Clear();
                         _ddlGatewayFunds.Items.Add( new ListItem( string.Empty, string.Empty ) );
-                        _ddlGatewayFunds
-                            .Items
-                            .AddRange(
-                                gateway.GetMerchantFunds( instance.ExternalGatewayMerchantId.ToString() )
-                                .Select( x => new ListItem( x.Value, x.Key )
-                            ).ToArray() );
+                        _ddlGatewayFunds.Items.AddRange( fundListItems );
+                    }
+
+                    if ( shouldSetFund )
+                    {
                         _ddlGatewayFunds.SelectedValue = instance.ExternalGatewayFundId.ToString();
                     }
 
-                    _apAccount.SetValue( null );
-                    _apAccount.Visible = false;
+                    _apAccount.Visible = true;
                 }
                 else
                 {
@@ -731,6 +800,8 @@ namespace Rock.Web.UI.Controls
                 _apAccount.SetValue( null );
                 _dtpSendReminder.SelectedDateTime = null;
                 _cbReminderSent.Checked = false;
+                _nbTimeoutLengthMinutes.IntegerValue = null;
+                _nbTimeoutThreshold.IntegerValue = null;
                 _htmlRegistrationInstructions.Text = string.Empty;
                 _htmlAdditionalReminderDetails.Text = string.Empty;
                 _htmlAdditionalConfirmationDetails.Text = string.Empty;
@@ -772,9 +843,12 @@ namespace Rock.Web.UI.Controls
                 instance.RegistrationInstructions = _htmlRegistrationInstructions.Text;
                 instance.AdditionalReminderDetails = _htmlAdditionalReminderDetails.Text;
                 instance.AdditionalConfirmationDetails = _htmlAdditionalConfirmationDetails.Text;
+                instance.TimeoutIsEnabled = _nbTimeoutLengthMinutes.IntegerValue.HasValue;
+                instance.TimeoutLengthMinutes = _nbTimeoutLengthMinutes.IntegerValue;
+                instance.TimeoutThreshold = _nbTimeoutThreshold.IntegerValue;
 
                 var gateway = new FinancialGateway { EntityTypeId = GatewayEntityTypeId };
-                var gatewayComponent = gateway.GetGatewayComponent() as IRedirectionGateway;
+                var gatewayComponent = gateway.GetGatewayComponent() as IRedirectionGatewayComponent;
                 if ( gatewayComponent != null )
                 {
                     instance.ExternalGatewayMerchantId = _ddlGatewayMerchants.SelectedValue.AsIntegerOrNull();
@@ -834,7 +908,6 @@ namespace Rock.Web.UI.Controls
                 _cbIsActive = new RockCheckBox();
                 _cbIsActive.ID = this.ID + "_cbIsActive";
                 _cbIsActive.Label = "Active";
-                _cbIsActive.Text = "Yes";
                 Controls.Add( _cbIsActive );
 
                 _tbUrlSlug = new RockTextBox();
@@ -930,6 +1003,20 @@ namespace Rock.Web.UI.Controls
                 _cbReminderSent.Text = "Yes";
                 Controls.Add( _cbReminderSent );
 
+                _nbTimeoutLengthMinutes = new NumberBox();
+                _nbTimeoutLengthMinutes.ID = ID + "_nbTimeoutLengthMinutes";
+                _nbTimeoutLengthMinutes.Label = "Timeout Length";
+                _nbTimeoutLengthMinutes.AppendText = "minutes";
+                _nbTimeoutLengthMinutes.Help = "To help with registrations with limited slots a timeout can be applied to registration sessions. When applied, individuals will have the configured timeout duration to complete each page of the registration. Their spots are reserved until the timeout elapses, or they advance in the registration process.";
+                Controls.Add( _nbTimeoutLengthMinutes );
+
+                _nbTimeoutThreshold = new NumberBox();
+                _nbTimeoutThreshold.ID = ID + "_nbTimeoutThreshold";
+                _nbTimeoutThreshold.Label = "Timeout Threshold";
+                _nbTimeoutThreshold.AppendText = "registrants";
+                _nbTimeoutThreshold.Help = "The use of registration sessions can add stress to the registration experience. The Timeout Threshold determines the lower limit of spots available before the session feature is enabled. This allows early registrations to proceed without worrying about a session since they are not in danger of being in an oversell situation.";
+                Controls.Add( _nbTimeoutThreshold );
+
                 _htmlRegistrationInstructions = new HtmlEditor();
                 _htmlRegistrationInstructions.ID = this.ID + "_htmlRegistrationInstructions";
                 _htmlRegistrationInstructions.Toolbar = HtmlEditor.ToolbarConfig.Light;
@@ -979,7 +1066,7 @@ namespace Rock.Web.UI.Controls
         private void _ddlGatewayMerchants_SelectedIndexChanged( object sender, EventArgs e )
         {
             var gateway = new FinancialGateway { EntityTypeId = GatewayEntityTypeId };
-            var gatewayComponent = gateway.GetGatewayComponent() as IRedirectionGateway;
+            var gatewayComponent = gateway.GetGatewayComponent() as IRedirectionGatewayComponent;
             if ( gatewayComponent != null )
             {
                 _ddlGatewayFunds.Items.Clear();
@@ -1186,6 +1273,24 @@ namespace Rock.Web.UI.Controls
                 _htmlAdditionalReminderDetails.RenderControl( writer );
 
                 _htmlAdditionalConfirmationDetails.RenderControl( writer );
+            } );
+
+            RockControlHelper.RenderSection( "Registration Session", CssClass, writer, ( HtmlTextWriter ) =>
+            {
+                writer.AddAttribute( HtmlTextWriterAttribute.Class, "row" );
+                writer.RenderBeginTag( HtmlTextWriterTag.Div );
+
+                writer.AddAttribute( HtmlTextWriterAttribute.Class, "col-md-6" );
+                writer.RenderBeginTag( HtmlTextWriterTag.Div );
+                _nbTimeoutLengthMinutes.RenderControl( writer );
+                writer.RenderEndTag();
+
+                writer.AddAttribute( HtmlTextWriterAttribute.Class, "col-md-6" );
+                writer.RenderBeginTag( HtmlTextWriterTag.Div );
+                _nbTimeoutThreshold.RenderControl( writer );
+                writer.RenderEndTag();
+
+                writer.RenderEndTag();
             } );
         }
     }

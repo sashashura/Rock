@@ -13,9 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 // </copyright>
-using DotLiquid;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Rock.Lava;
+using Rock.Lava.Fluid;
 using Rock.Tests.Shared;
 
 namespace Rock.Tests.Integration.Lava
@@ -24,8 +24,19 @@ namespace Rock.Tests.Integration.Lava
     /// Tests for Lava Template comments.
     /// </summary>
     [TestClass]
-    public class LavaCommentsFilterTests
+    public class LavaCommentsFilterTests : LavaIntegrationTestBase
     {
+        /// <summary>
+        /// Verify that an empty comment block can be parsed correctly.
+        /// This test validates a Rock-specific change to the Fluid Parser.
+        /// </summary>
+        [TestMethod]
+        public void CommentBlock_WithEmptyContent_ParsesCorrectly()
+        {
+            // This Lava template would throw an error in the default Fluid parser, but should process successfully here.
+            TestHelper.AssertTemplateOutput( string.Empty, "{% comment %}{% endcomment %}" );
+        }
+
         [TestMethod]
         public void RemoveLavaCommentsReturnsEmptyStringForNullInput()
         {
@@ -49,11 +60,7 @@ Line 2<br>
 Line 3<br>
 ";
 
-            var templateUncommented = LavaHelper.RemoveLavaComments( input );
-
-            var output = templateUncommented.ResolveMergeFields( null );
-
-            Assert.That.AreEqual( expectedOutput, output );
+            TestHelper.AssertTemplateOutput( expectedOutput, input );
         }
 
         [TestMethod]
@@ -81,13 +88,8 @@ or '/- Block Comment 2...
 -- End Example --
 ";
 
-            var templateUncommented = LavaHelper.RemoveLavaComments( input );
-
-            var output = templateUncommented.ResolveMergeFields( null );
-
-            Assert.That.AreEqual( expectedOutput, output );
+            TestHelper.AssertTemplateOutput( expectedOutput, input );
         }
-
 
         [TestMethod]
         public void LavaHelperRemoveComments_LineCommentContainingQuotedString_IsRemoved()
@@ -104,11 +106,7 @@ Line 2<br>
 Line 3<br>
 ";
 
-            var templateUncommented = LavaHelper.RemoveLavaComments( input );
-
-            var output = templateUncommented.ResolveMergeFields( null );
-
-            Assert.That.AreEqual( expectedOutput, output );
+            TestHelper.AssertTemplateOutput( expectedOutput, input );
         }
 
         public void LavaHelperRemoveComments_BlockCommentContainingQuotedString_IsRemoved()
@@ -129,11 +127,7 @@ Line 2<br>
 Line 3<br>
 ";
 
-            var templateUncommented = LavaHelper.RemoveLavaComments( input );
-
-            var output = templateUncommented.ResolveMergeFields( null );
-
-            Assert.That.AreEqual( expectedOutput, output );
+            TestHelper.AssertTemplateOutput( expectedOutput, input );
         }
 
         [TestMethod]
@@ -159,12 +153,9 @@ or
 Example End<br>
 ";
 
-            var templateUncommented = LavaHelper.RemoveLavaComments( input );
-
-            var output = templateUncommented.ResolveMergeFields( null );
-
-            Assert.That.AreEqual( expectedOutput, output );
+            TestHelper.AssertTemplateOutput( expectedOutput, input );
         }
+
         [TestMethod]
         public void LavaHelperRemoveComments_BlockCommentSpanningMultipleLines_RemovesNewLinesContainedInComment()
         {
@@ -183,11 +174,38 @@ Line 2 Start<br>Line 2 End<br>
 Line 3<br>
 ";
 
-            var templateUncommented = LavaHelper.RemoveLavaComments( input );
+            TestHelper.AssertTemplateOutput( expectedOutput, input );
+        }
 
-            var output = templateUncommented.ResolveMergeFields( null );
+        [TestMethod]
+        public void LavaHelperRemoveComments_CommentsInIncludeFile_AreRemoved()
+        {
+            var fileProvider = GetFileProviderWithComments();
 
-            Assert.That.AreEqual( expectedOutput, output );
+            var input = @"
+{%- include '_comments.lava' -%}
+";
+
+            var expectedOutput = @"
+Line 1<br>
+Line 2<br>
+Line 3<br>
+Line 4<br>
+";
+
+            var options = new LavaEngineConfigurationOptions
+            {
+                FileSystem = GetFileProviderWithComments()
+            };
+
+            TestHelper.ExecuteForActiveEngines( ( engine ) =>
+            {
+                // Create a new engine instance of the same type, but with a test file system configuration.
+                var testEngine = LavaService.NewEngineInstance( engine.GetType(), options );
+
+                TestHelper.AssertTemplateOutput( testEngine, expectedOutput, input );
+            } );
+
         }
 
         [TestMethod]
@@ -205,11 +223,54 @@ Line 2 Start<br>Line 2 End<br>
 Line 3<br>
 ";
 
-            var templateUncommented = LavaHelper.RemoveLavaComments( input );
+            TestHelper.AssertTemplateOutput( expectedOutput, input );
+        }
 
-            var output = templateUncommented.ResolveMergeFields( null );
+        [TestMethod]
+        public void LavaHelperRemoveComments_SingleLineCommentAsFinalElement_RendersCorrectLineContent()
+        {
+            // Input template terminating with a comment, no new line character.
+            var input = @"
+Line 1<br>
+//- Lava single line comment";
 
-            Assert.That.AreEqual( expectedOutput, output );
+            var expectedOutput = @"Line 1<br>";
+
+            TestHelper.AssertTemplateOutput( typeof(FluidEngine), expectedOutput, input );
+        }
+
+        [TestMethod]
+        public void LavaHelperRemoveComments_BlockCommentAsFinalElement_RendersCorrectLineContent()
+        {
+            // Input template terminating with a comment, no new line character.
+            var input = @"
+Line 1<br>
+/- Lava block comment -/";
+
+            var expectedOutput = @"Line 1<br>";
+
+            TestHelper.AssertTemplateOutput( typeof( FluidEngine ), expectedOutput, input );
+        }
+
+        private MockFileProvider GetFileProviderWithComments()
+        {
+            var fileProvider = new MockFileProvider();
+
+            // Add a lava template that includes Lava-specific comments.
+            var commentsTemplate = @"
+Line 1<br>
+//- Lava single line comment
+Line 2<br>
+/- Lava multi-line
+   comment -/
+Line 3<br>
+{%- comment -%} Liquid comment {%- endcomment -%}
+Line 4<br>
+";
+
+            fileProvider.Add( "_comments.lava", commentsTemplate );
+
+            return fileProvider;
         }
     }
 }

@@ -58,7 +58,7 @@ namespace RockWeb.Blocks.Crm
     [CustomDropdownListField(
         "Planned Visit Date",
         Key = AttributeKey.PlannedVisitDate,
-        Description = "How should the Planned Visit Date field be displayed. The date selected by the user is only used for the workflow. If the 'Campus Schedule Attribute' block setting has a selection this will control if schedule date/time are required or not but not if it shows or not.",
+        Description = "How should the Planned Visit Date field be displayed. The date selected by the user is only used for the workflow. If the 'Campus Schedule Attribute' block setting has a selection this will control if schedule date/time are required or not but not if it shows or not. The Lava merge field for this in workflows is 'PlannedVisitDate'.",
         ListSource = ListSource.HIDE_OPTIONAL_REQUIRED,
         IsRequired = false,
         DefaultValue = "Optional",
@@ -67,7 +67,7 @@ namespace RockWeb.Blocks.Crm
     [AttributeField(
         "Campus Schedule Attribute",
         Key = AttributeKey.CampusScheduleAttribute,
-        Description = "Allows you select a campus attribute that contains schedules for determining which dates and times for which pre-registration is available. This requries the creation of an Entity attribute for 'Campus' using a Field Type of 'Schedules'. The schedules can then be selected in the 'Edit Campus' block.",
+        Description = "Allows you select a campus attribute that contains schedules for determining which dates and times for which pre-registration is available. This requires the creation of an Entity attribute for 'Campus' using a Field Type of 'Schedules'. The schedules can then be selected in the 'Edit Campus' block. The Lava merge field for this in workflows is 'ScheduleId'.",
         EntityTypeGuid = Rock.SystemGuid.EntityType.CAMPUS,
         IsRequired = false,
         Order = 3 )]
@@ -134,6 +134,22 @@ namespace RockWeb.Blocks.Crm
         IsRequired = false,
         Order = 10 )]
 
+    [WorkflowTypeField(
+        "Parent Workflow",
+        Key = AttributeKey.ParentWorkflow,
+        Description = BlockAttributeDescription.ParentWorkflow,
+        AllowMultiple = false,
+        IsRequired = false,
+        Order = 11 )]
+
+    [WorkflowTypeField(
+        "Child Workflow",
+        Key = AttributeKey.ChildWorkflow,
+        Description = BlockAttributeDescription.ChildWorkflow,
+        AllowMultiple = false,
+        IsRequired = false,
+        Order = 12 )]
+
     [CodeEditorField(
         "Redirect URL",
         Key = AttributeKey.RedirectURL,
@@ -142,14 +158,14 @@ namespace RockWeb.Blocks.Crm
         EditorTheme = CodeEditorTheme.Rock,
         EditorHeight = 200,
         IsRequired = true,
-        Order = 11 )]
+        Order = 13 )]
 
     [BooleanField(
         "Require Campus",
         Key = AttributeKey.RequireCampus,
         Description = "Require that a campus be selected",
         DefaultBooleanValue = true,
-        Order = 12 )]
+        Order = 14 )]
 
     [CustomDropdownListField(
         "Number of Columns",
@@ -158,7 +174,21 @@ namespace RockWeb.Blocks.Crm
         ListSource = ListSource.COLUMNS,
         IsRequired = false,
         DefaultValue = "4",
-        Order = 11 )]
+        Order = 15 )]
+
+    [BooleanField(
+        "Show Campus Type",
+        Key = AttributeKey.ShowCampusType,
+        Description = "Display the campus type.",
+        DefaultBooleanValue = true,
+        Order = 16 )]
+
+    [BooleanField(
+        "Show Campus Status",
+        Key = AttributeKey.ShowCampusStatus,
+        Description = "Display the campus status.",
+        DefaultBooleanValue = true,
+        Order = 17 )]
 
     #region Adult Category
 
@@ -241,6 +271,16 @@ namespace RockWeb.Blocks.Crm
         DefaultValue = "Hide",
         Category = CategoryKey.AdultFields,
         Order = 7 )]
+
+    [CustomDropdownListField(
+        "Address",
+        Key = AttributeKey.AdultAddress,
+        Description = "How should Address be displayed for adults?",
+        ListSource = ListSource.HIDE_OPTIONAL_REQUIRED,
+        IsRequired = false,
+        DefaultValue = "Optional",
+        Category = CategoryKey.AdultFields,
+        Order = 8 )]
 
     #endregion
 
@@ -367,6 +407,8 @@ namespace RockWeb.Blocks.Crm
         private static class AttributeKey
         {
             public const string ShowCampus = "ShowCampus";
+            public const string ShowCampusType = "ShowCampusType";
+            public const string ShowCampusStatus = "ShowCampusStatus";
             public const string DefaultCampus = "DefaultCampus";
             public const string PlannedVisitDate = "PlannedVisitDate";
             public const string CampusScheduleAttribute = "CampusScheduleAttribute";
@@ -377,6 +419,8 @@ namespace RockWeb.Blocks.Crm
             public const string ConnectionStatus = "ConnectionStatus";
             public const string RecordStatus = "RecordStatus";
             public const string WorkflowTypes = "WorkflowTypes";
+            public const string ParentWorkflow = "ParentWorkflow";
+            public const string ChildWorkflow = "ChildWorkflow";
             public const string RedirectURL = "RedirectURL";
             public const string RequireCampus = "RequireCampus";
             public const string Columns = "Columns";
@@ -389,6 +433,7 @@ namespace RockWeb.Blocks.Crm
             public const string AdultMobilePhone = "AdultMobilePhone";
             public const string AdultAttributeCategories = "AdultAttributeCategories";
             public const string AdultDisplayCommunicationPreference = "AdultDisplayCommunicationPreference";
+            public const string AdultAddress = "AdultAddress";
 
             public const string ChildSuffix = "ChildSuffix";
             public const string ChildGender = "ChildGender";
@@ -402,8 +447,6 @@ namespace RockWeb.Blocks.Crm
             public const string Relationships = "Relationships";
             public const string FamilyRelationships = "FamilyRelationships";
             public const string CanCheckinRelationships = "CanCheckinRelationships";
-
-
         }
 
         private static class CategoryKey
@@ -415,16 +458,10 @@ namespace RockWeb.Blocks.Crm
 
         private static class BlockAttributeDescription
         {
-            public const string WorkflowTypes = @"
-The workflow type(s) to launch when a family is added. The primary family will be passed to each workflow as the entity. Additionally if the workflow type has any of the 
-following attribute keys defined, those attribute values will also be set: ParentIds, ChildIds, PlannedVisitDate.
-";
-            public const string RedirectURL = @"
-The URL to redirect user to when they have completed the registration. The merge fields that are available includes 'Family', which is an object for the primary family 
-that is created/updated; 'RelatedChildren', which is a list of the children who have a relationship with the family, but are not in the family; 'ParentIds' which is a
-comma-delimited list of the person ids for each adult; 'ChildIds' which is a comma-delimited list of the person ids for each child; and 'PlannedVisitDate' which is 
-the value entered for the Planned Visit Date field if it was displayed.
-";
+            public const string WorkflowTypes = @"The workflow type(s) to launch when a family is added. The primary family will be passed to each workflow as the entity. Additionally if the workflow type has any of the following attribute keys defined, those attribute values will also be set: ParentIds, ChildIds, PlannedVisitDate.";
+            public const string ParentWorkflow = @"If set, this workflow type will launch for each parent provided. The parent will be passed to the workflow as the Entity.";
+            public const string ChildWorkflow = @"If set, this workflow type will launch for each child provided. The child will be passed to the workflow as the Entity.";
+            public const string RedirectURL = @"The URL to redirect user to when they have completed the registration. The merge fields that are available includes 'Family', which is an object for the primary family that is created/updated; 'RelatedChildren', which is a list of the children who have a relationship with the family, but are not in the family; 'ParentIds' which is a comma-delimited list of the person ids for each adult; 'ChildIds' which is a comma-delimited list of the person ids for each child; and 'PlannedVisitDate' which is the value entered for the Planned Visit Date field if it was displayed.";
         }
 
         private static class ListSource
@@ -433,40 +470,40 @@ the value entered for the Planned Visit Date field if it was displayed.
             public const string HIDE_OPTIONAL_REQUIRED = "Hide,Optional,Required";
             public const string HIDE_OPTIONAL = "Hide,Optional";
             public const string SQL_RELATIONSHIP_TYPES = @"
-SELECT 
-	R.[Id] AS [Value],
-	R.[Name] AS [Text]
-FROM [GroupType] T
-INNER JOIN [GroupTypeRole] R ON R.[GroupTypeId] = T.[Id]
-WHERE T.[Guid] = 'E0C5A0E2-B7B3-4EF4-820D-BBF7F9A374EF'
-AND R.[Name] <> 'Child'
-UNION ALL
-SELECT 0, 'Child'
-ORDER BY [Text]";
+                SELECT 
+	                R.[Id] AS [Value],
+	                R.[Name] AS [Text]
+                FROM [GroupType] T
+                INNER JOIN [GroupTypeRole] R ON R.[GroupTypeId] = T.[Id]
+                WHERE T.[Guid] = 'E0C5A0E2-B7B3-4EF4-820D-BBF7F9A374EF'
+                AND R.[Name] <> 'Child'
+                UNION ALL
+                SELECT 0, 'Child'
+                ORDER BY [Text]";
 
             public const string SQL_SAME_IMMEDIATE_FAMILY_RELATIONSHIPS = @"
-SELECT 
-	R.[Id] AS [Value],
-	R.[Name] AS [Text]
-FROM [GroupType] T
-INNER JOIN [GroupTypeRole] R ON R.[GroupTypeId] = T.[Id]
-WHERE T.[Guid] = 'E0C5A0E2-B7B3-4EF4-820D-BBF7F9A374EF'
-AND R.[Name] <> 'Child'
-UNION ALL
-SELECT 0, 'Child'
-ORDER BY [Text]";
+                SELECT 
+	                R.[Id] AS [Value],
+	                R.[Name] AS [Text]
+                FROM [GroupType] T
+                INNER JOIN [GroupTypeRole] R ON R.[GroupTypeId] = T.[Id]
+                WHERE T.[Guid] = 'E0C5A0E2-B7B3-4EF4-820D-BBF7F9A374EF'
+                AND R.[Name] <> 'Child'
+                UNION ALL
+                SELECT 0, 'Child'
+                ORDER BY [Text]";
 
             public const string SQL_CAN_CHECKIN_RELATIONSHIP = @"
-SELECT 
-	R.[Id] AS [Value],
-	R.[Name] AS [Text]
-FROM [GroupType] T
-INNER JOIN [GroupTypeRole] R ON R.[GroupTypeId] = T.[Id]
-WHERE T.[Guid] = 'E0C5A0E2-B7B3-4EF4-820D-BBF7F9A374EF'
-AND R.[Name] <> 'Child'
-UNION ALL
-SELECT 0, 'Child'
-ORDER BY [Text]";
+                SELECT 
+	                R.[Id] AS [Value],
+	                R.[Name] AS [Text]
+                FROM [GroupType] T
+                INNER JOIN [GroupTypeRole] R ON R.[GroupTypeId] = T.[Id]
+                WHERE T.[Guid] = 'E0C5A0E2-B7B3-4EF4-820D-BBF7F9A374EF'
+                AND R.[Name] <> 'Child'
+                UNION ALL
+                SELECT 0, 'Child'
+                ORDER BY [Text]";
         }
 
         private static class PageParameterKey
@@ -551,6 +588,7 @@ ORDER BY [Text]";
                     .Where( r => selectedRelationshipTypeIds.Contains( r.Id ) )
                     .ToDictionary( k => k.Id, v => v.Name );
             }
+
             if ( selectedRelationshipTypeIds.Contains( 0 ) )
             {
                 _relationshipTypes.Add( 0, "Child" );
@@ -580,9 +618,11 @@ ORDER BY [Text]";
             {
                 GetChildrenData();
             }
-
         }
 
+        /// <summary>
+        /// Sets the panel styles.
+        /// </summary>
         private void SetPanelStyles()
         {
             pnlSuffix1.CssClass = GetColumnStyle( 3 );
@@ -789,6 +829,7 @@ ORDER BY [Text]";
                 var showChildMobilePhone = GetAttributeValue( AttributeKey.ChildMobilePhone ) != "Hide";
                 var showChildEmailAddress = GetAttributeValue( AttributeKey.ChildEmail ) != "Hide";
                 var showChildCommunicationPreference = GetAttributeValue( AttributeKey.ChildDisplayCommunicationPreference ) != "Hide";
+                var showAdultAddress = GetAttributeValue( AttributeKey.AdultAddress ) != "Hide";
 
                 // ...and some service objects
                 var personService = new PersonService( _rockContext );
@@ -882,50 +923,46 @@ ORDER BY [Text]";
                 }
 
                 // Save the family address
-                var homeLocationType = DefinedValueCache.Get( Rock.SystemGuid.DefinedValue.GROUP_LOCATION_TYPE_HOME.AsGuid() );
-                if ( homeLocationType != null )
+                if ( showAdultAddress )
                 {
-                    // Find a location record for the address that was entered
-                    var loc = new Location();
-                    acAddress.GetValues( loc );
-                    if ( acAddress.Street1.IsNotNullOrWhiteSpace() && loc.City.IsNotNullOrWhiteSpace() )
+                    var homeLocationType = DefinedValueCache.Get( Rock.SystemGuid.DefinedValue.GROUP_LOCATION_TYPE_HOME.AsGuid() );
+                    if ( homeLocationType != null )
                     {
-                        loc = new LocationService( _rockContext ).Get(
-                            loc.Street1, loc.Street2, loc.City, loc.State, loc.PostalCode, loc.Country, primaryFamily, true );
-                    }
-                    else
-                    {
-                        loc = null;
-                    }
-
-                    // Check to see if family has an existing home address
-                    var groupLocation = primaryFamily.GroupLocations
-                        .FirstOrDefault( l =>
-                            l.GroupLocationTypeValueId.HasValue &&
-                            l.GroupLocationTypeValueId.Value == homeLocationType.Id );
-
-                    if ( loc != null )
-                    {
-                        if ( groupLocation == null || groupLocation.LocationId != loc.Id )
+                        // Find a location record for the address that was entered
+                        var loc = new Location();
+                        acAddress.GetValues( loc );
+                        if ( acAddress.Street1.IsNotNullOrWhiteSpace() && loc.City.IsNotNullOrWhiteSpace() )
                         {
-                            // If family does not currently have a home address or it is different than the one entered, add a new address (move old address to prev)
-                            GroupService.AddNewGroupAddress( _rockContext, primaryFamily, homeLocationType.Guid.ToString(), loc, true, string.Empty, true, true );
+                            loc = new LocationService( _rockContext ).Get( loc.Street1, loc.Street2, loc.City, loc.State, loc.PostalCode, loc.Country, primaryFamily, true );
                         }
-                    }
-                    else
-                    {
-                        if ( groupLocation != null && saveEmptyValues )
+                        else
                         {
-                            // If an address was not entered, and family has one on record, update it to be a previous address
-                            var prevLocationType = DefinedValueCache.Get( Rock.SystemGuid.DefinedValue.GROUP_LOCATION_TYPE_PREVIOUS.AsGuid() );
-                            if ( prevLocationType != null )
+                            loc = null;
+                        }
+
+                        // Check to see if family has an existing home address
+                        var groupLocation = primaryFamily.GroupLocations.FirstOrDefault( l => l.GroupLocationTypeValueId.HasValue && l.GroupLocationTypeValueId.Value == homeLocationType.Id );
+
+                        if ( loc != null )
+                        {
+                            if ( groupLocation == null || groupLocation.LocationId != loc.Id )
                             {
-                                groupLocation.GroupLocationTypeValueId = prevLocationType.Id;
+                                // If family does not currently have a home address or it is different than the one entered, add a new address (move old address to prev)
+                                GroupService.AddNewGroupAddress( _rockContext, primaryFamily, homeLocationType.Guid.ToString(), loc, true, string.Empty, true, true );
                             }
                         }
-                    }
+                        else
+                        {
+                            if ( groupLocation != null && saveEmptyValues )
+                            {
+                                // If an address was not entered, and family has one on record, update it to be a previous address
+                                var prevLocationType = DefinedValueCache.Get( Rock.SystemGuid.DefinedValue.GROUP_LOCATION_TYPE_PREVIOUS.AsGuid() );
+                                groupLocation.GroupLocationTypeValueId = prevLocationType != null ? prevLocationType.Id : groupLocation.GroupLocationTypeValueId;
+                            }
+                        }
 
-                    _rockContext.SaveChanges();
+                        _rockContext.SaveChanges();
+                    }
                 }
 
                 // Save any family attribute values
@@ -1109,12 +1146,12 @@ ORDER BY [Text]";
                         EnsurePersonInOtherFamily( familyGroupType.Id, primaryFamily.Id, removedChild.Id, removedChild.Person.LastName, childRoleId, na );
                         groupMemberService.Delete( removedChild );
                     }
+
                     _rockContext.SaveChanges();
 
                     // Find all the existing relationships that were removed and delete them
                     var roleIds = _relationshipTypes.Select( r => r.Key ).ToList();
-                    foreach ( var groupMember in new PersonService( _rockContext )
-                        .GetRelatedPeople( adultIds, roleIds ) )
+                    foreach ( var groupMember in new PersonService( _rockContext ).GetRelatedPeople( adultIds, roleIds ) )
                     {
                         if ( !newRelationships.ContainsKey( groupMember.PersonId ) || !newRelationships[groupMember.PersonId].Contains( groupMember.GroupRoleId ) )
                         {
@@ -1130,15 +1167,59 @@ ORDER BY [Text]";
                     }
                 }
 
+                var parentWorkflowTypeGuid = GetAttributeValue( AttributeKey.ParentWorkflow ).AsGuidOrNull();
+                if ( parentWorkflowTypeGuid.HasValue )
+                {
+                    var workflowType = WorkflowTypeCache.Get( parentWorkflowTypeGuid.Value );
+                    if ( workflowType != null && ( workflowType.IsActive ?? true ) )
+                    {
+                        foreach ( var adult in adults )
+                        {
+                            try
+                            {
+                                var workflow = Workflow.Activate( workflowType, adult.FullName );
+                                List<string> workflowErrors;
+                                new WorkflowService( new RockContext() ).Process( workflow, adult, out workflowErrors );
+                            }
+                            catch ( Exception ex )
+                            {
+                                ExceptionLogService.LogException( ex, this.Context );
+                            }
+                        }
+                    }
+                }
+
+                var childIds = new List<int>( newChildIds );
+                childIds.AddRange( newRelationships.Select( r => r.Key ).ToList() );
+                var childWorkflowTypeGuid = GetAttributeValue( AttributeKey.ChildWorkflow ).AsGuidOrNull();
+                if ( childWorkflowTypeGuid.HasValue && childIds.Any() )
+                {
+                    var workflowType = WorkflowTypeCache.Get( childWorkflowTypeGuid.Value );
+                    if ( workflowType != null && ( workflowType.IsActive ?? true ) )
+                    {
+                        var childs = personService.Queryable().Where( p => childIds.Contains( p.Id ) ).ToList();
+                        foreach ( var child in childs )
+                        {
+                            try
+                            {
+                                var workflow = Workflow.Activate( workflowType, child.FullName );
+                                List<string> workflowErrors;
+                                new WorkflowService( new RockContext() ).Process( workflow, child, out workflowErrors );
+                            }
+                            catch ( Exception ex )
+                            {
+                                ExceptionLogService.LogException( ex, this.Context );
+                            }
+                        }
+                    }
+                }
+
                 List<Guid> workflows = GetAttributeValue( AttributeKey.WorkflowTypes ).SplitDelimitedValues().AsGuidList();
                 string redirectUrl = GetAttributeValue( AttributeKey.RedirectURL );
                 if ( workflows.Any() || redirectUrl.IsNotNullOrWhiteSpace() )
                 {
                     var family = groupService.Get( primaryFamily.Id );
                     var schedule = new ScheduleService( _rockContext ).Get( ddlScheduleTime.SelectedValue.AsGuid() );
-
-                    var childIds = new List<int>( newChildIds );
-                    childIds.AddRange( newRelationships.Select( r => r.Key ).ToList() );
 
                     // Create parameters
                     var parameters = new Dictionary<string, string>();
@@ -1168,7 +1249,7 @@ ORDER BY [Text]";
                         // Launch all the workflows
                         foreach ( var wfGuid in workflows )
                         {
-                            family.LaunchWorkflow( wfGuid, family.Name, parameters );
+                            family.LaunchWorkflow( wfGuid, family.Name, parameters, null );
                         }
                     }
 
@@ -1195,6 +1276,16 @@ ORDER BY [Text]";
             }
         }
 
+        /// <summary>
+        /// Handles the Click event of the lbCancel control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
+        protected void lbCancel_Click( object sender, EventArgs e )
+        {
+            NavigateToCurrentPageReference();
+        }
+
         #endregion
 
         #region Methods
@@ -1206,14 +1297,20 @@ ORDER BY [Text]";
         {
             pnlVisit.Visible = true;
 
-            // Campus 
+            // Campus
             if ( GetAttributeValue( AttributeKey.ShowCampus ).AsBoolean() )
             {
-                cpCampus.Campuses = CampusCache.All( false );
-                if ( CampusCache.All( false ).Count > 1 )
+                var campuses = CampusCache.All( false );
+                cpCampus.Campuses = campuses;
+
+                if ( campuses.Count >= 1 )
                 {
-                    pnlCampus.Visible = true;
+                    cpCampus.ForceVisible = true;
+                    cpCampus.SelectedCampusId = campuses.First().Id;
                     cpCampus.Required = GetAttributeValue( AttributeKey.RequireCampus ).AsBoolean();
+                    pnlCampus.Visible = true;
+
+                    SetCampusInfo();
                 }
                 else
                 {
@@ -1226,12 +1323,10 @@ ORDER BY [Text]";
             }
 
             ShowHidePlannedDatePanels();
-
-            //// Planned Visit Date
-            //dpPlannedDate.Required = SetControl( AttributeKey.PlannedVisitDate, pnlPlannedDate, null );
+            SetScheduleDateControl();
 
             // Visit Info
-            pnlVisit.Visible = pnlCampus.Visible || pnlPlannedDate.Visible;
+            pnlVisit.Visible = pnlCampus.Visible || pnlPlannedDate.Visible || pnlPlannedSchedule.Visible;
 
             // Adult Suffix
             bool isRequired = SetControl( AttributeKey.AdultSuffix, pnlSuffix1, pnlSuffix2 );
@@ -1274,6 +1369,10 @@ ORDER BY [Text]";
             // Adult Communication Preference
             SetControl( AttributeKey.AdultDisplayCommunicationPreference, pnlCommunicationPreference1, pnlCommunicationPreference2 );
 
+            // Adult Address
+            isRequired = SetControl( AttributeKey.AdultAddress, acAddress, null );
+            acAddress.Required = isRequired;
+
             // Check for Current Family
             SetCurrentFamilyValues();
 
@@ -1294,19 +1393,18 @@ ORDER BY [Text]";
             string scheduleGuid = GetAttributeValue( AttributeKey.CampusScheduleAttribute );
             if ( scheduleGuid.IsNullOrWhiteSpace() )
             {
-                pnlPlannedDate.Visible = true;
                 pnlPlannedSchedule.Visible = false;
                 return;
             }
 
             // Make sure the attribute uses the Schedules field type and display the date panel if not
             var campusScheduleAttribute = AttributeCache.Get( scheduleGuid );
-            if ( campusScheduleAttribute.FieldType.Guid != Rock.SystemGuid.FieldType.SCHEDULES.AsGuidOrNull() )
+            if ( campusScheduleAttribute?.FieldType == null || campusScheduleAttribute.FieldType.Guid != Rock.SystemGuid.FieldType.SCHEDULES.AsGuidOrNull() )
             {
                 // If the user has edit permission then display an error message so the configuration can be fixed
                 if ( IsUserAuthorized( Authorization.EDIT ) )
                 {
-                    nbError.Text = "The campus attribute for schedules is not using the field type of 'Schedules'. Please adjust this.";
+                    nbError.Text = "The campus attribute for schedules is not using the field type of 'Schedules' or a value was not specified. Please adjust this.";
                     nbError.Visible = true;
                 }
 
@@ -1331,6 +1429,7 @@ ORDER BY [Text]";
                     // Since the campus is not available for the campusScheduleAttribute just display the date panel
                     pnlPlannedDate.Visible = true;
                     pnlPlannedSchedule.Visible = false;
+                    litCampusTypeIcon.Text = "";
                     return;
                 }
             }
@@ -1341,6 +1440,88 @@ ORDER BY [Text]";
         }
 
         /// <summary>
+        /// Sets the campus information.
+        /// </summary>
+        private void SetCampusInfo()
+        {
+            var showCampusStatus = GetAttributeValue( AttributeKey.ShowCampusStatus ).AsBoolean();
+            var showCampusType = GetAttributeValue( AttributeKey.ShowCampusType ).AsBoolean();
+
+            if ( !showCampusStatus && !showCampusType )
+            {
+                pnlCampusInfo.Visible = false;
+            }
+            else
+            {
+                pnlCampusInfo.Visible = true;
+
+                divCampusStatus.Visible = showCampusStatus;
+                divCampusType.Visible = showCampusType;
+            }
+
+            if ( cpCampus.SelectedCampusId.HasValue && cpCampus.SelectedCampusId.Value > 0 )
+            {
+                using ( var rockContext = new RockContext() )
+                {
+                    var campusService = new CampusService( rockContext );
+
+                    var thisCampus = campusService.Get( cpCampus.SelectedCampusId.Value );
+                    if ( thisCampus != null )
+                    {
+                        var campusStatusValue = thisCampus.CampusStatusValue?.Value;
+                        var campusTypeValue = thisCampus.CampusTypeValue?.Value;
+
+                        lblCampusStatus.Text = campusStatusValue;
+                        lblCampusType.Text = campusTypeValue;
+
+                        if ( campusStatusValue.IsNotNullOrWhiteSpace() )
+                        {
+                            switch ( campusStatusValue.ToUpper() )
+                            {
+                                case "CLOSED":
+                                    lblCampusStatus.CssClass = "label label-default";
+                                    break;
+                                case "OPEN":
+                                    lblCampusStatus.CssClass = "label label-success";
+                                    break;
+                                case "PENDING":
+                                    lblCampusStatus.CssClass = "label label-warning";
+                                    break;
+                                default:
+                                    lblCampusStatus.CssClass = "label label-info";
+                                    break;
+                            }
+                        }
+                        else
+                        {
+                            lblCampusStatus.CssClass = "label label-info";
+                        }
+
+                        if ( campusTypeValue.IsNotNullOrWhiteSpace() )
+                        {
+                            switch ( campusTypeValue.ToUpper() )
+                            {
+                                case "ONLINE":
+                                    litCampusTypeIcon.Text = "<i class='fa fa-globe fa-fw'></i>";
+                                    break;
+                                case "PHYSICAL":
+                                    litCampusTypeIcon.Text = "<i class='fa fa-home fa-fw'></i>";
+                                    break;
+                                default:
+                                    litCampusTypeIcon.Text = "<i class='fa fa-home fa-fw'></i>";
+                                    break;
+                            }
+                        }
+                        else
+                        {
+                            litCampusTypeIcon.Text = "";
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>
         /// Populates ddlScheduleDate with a set of dates for the campus schedules and the configured number of days. The display is formatted but the value is unformated so it can easily be used to get schedules that match it.
         /// </summary>
         private void SetScheduleDateControl()
@@ -1348,14 +1529,74 @@ ORDER BY [Text]";
             ddlScheduleDate.Items.Clear();
             ddlScheduleTime.Items.Clear();
 
-            if ( !pnlPlannedSchedule.Visible || cpCampus.SelectedValue.IsNullOrWhiteSpace() )
+            if ( !pnlPlannedSchedule.Visible || (cpCampus.Visible && cpCampus.SelectedValue.IsNullOrWhiteSpace() ) )
             {
+                if ( cpCampus.SelectedValue.IsNullOrWhiteSpace() )
+                {
+                    litCampusTypeIcon.Text = "";
+                }
+
                 return;
             }
 
             OccurrenceSchedules = new List<OccurrenceSchedule>();
+            int? selectedCampusId = null;
+            if ( cpCampus.Visible )
+            {
+                selectedCampusId = cpCampus.SelectedCampusId.Value;
+            }
+            else
+            {
+                if ( CampusCache.All( false ).Count == 1 )
+                {
+                    // If there is just one active campus then use that one.
+                    selectedCampusId = CampusCache.All( false )[0].Id;
+                }
+                else
+                {
+                    // Rock should show an error before getting here, but just in case... If there are multiple campuses then we will need the campus to get the schedule.
+                    // If the user has edit permission display an error message so the configuration can be fixed
+                    if ( IsUserAuthorized( Authorization.EDIT ) )
+                    {
+                        nbError.Title = "Must Show Campus";
+                        nbError.Text = "In order to show campus schedules the campus has to be shown so it can be selected. Change the this block's 'Show Campus' attribute to 'Yes'. A user without edit permission to this block will just see \"Planned Visit Date\".";
+                        nbError.Visible = true;
+                        litCampusTypeIcon.Text = "";
+
+                        return;
+                    }
+
+                    // Since we can't show the schedules and this is not a user authorized to edit the block just show the date.
+                    pnlPlannedDate.Visible = true;
+                    pnlPlannedSchedule.Visible = false;
+
+                    return;
+                }
+            }
+
             var campusScheduleAttributeKey = AttributeCache.Get( GetAttributeValue( AttributeKey.CampusScheduleAttribute ) ).Key;
-            var campusScheduleAttributeValue = CampusCache.Get( cpCampus.SelectedCampusId.Value )?.GetAttributeValue( campusScheduleAttributeKey );
+            var campusScheduleAttributeValue = CampusCache.Get( selectedCampusId.Value )?.GetAttributeValue( campusScheduleAttributeKey );
+
+            if ( campusScheduleAttributeValue.IsNullOrWhiteSpace() )
+            {
+                // If the user has edit permission then display an error message so the configuration can be fixed
+                if ( IsUserAuthorized( Authorization.EDIT ) )
+                {
+                    nbError.Title = "Missing Campus Schedule attribute.";
+                    nbError.Text = "This requires the creation of an Entity attribute for 'Campus' using a Field Type of 'Schedules'. The schedules can then be selected in the 'Edit Campus' block. A user without edit permission to this block will just see \"Planned Visit Date\".";
+                    nbError.Visible = true;
+                    litCampusTypeIcon.Text = "";
+
+                    return;
+                }
+
+                // Since we can't show the schedules and this is not a user authorized to edit the block just show the date.
+                pnlPlannedDate.Visible = true;
+                pnlPlannedSchedule.Visible = false;
+
+                return;
+            }
+
             var schedules = campusScheduleAttributeValue.Split( ',' ).Select( g => new ScheduleService( _rockContext ).Get( g.AsGuid() ) );
             int daysAhead = GetAttributeValue( AttributeKey.ScheduledDaysAhead ).AsIntegerOrNull() ?? 28;
             HashSet<DateTime> scheduleDates = new HashSet<DateTime>();
@@ -2408,6 +2649,8 @@ ORDER BY [Text]";
 
         protected void cpCampus_SelectedIndexChanged( object sender, EventArgs e )
         {
+            SetCampusInfo();
+
             SetScheduleDateControl();
         }
         protected void ddlScheduleDate_SelectedIndexChanged( object sender, EventArgs e )

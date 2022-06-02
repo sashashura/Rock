@@ -21,6 +21,7 @@ using System.Text;
 using System.Web;
 
 using Rock.Attribute;
+using Rock.Blocks;
 using Rock.Common.Mobile;
 using Rock.Common.Mobile.Enums;
 using Rock.Data;
@@ -294,7 +295,7 @@ namespace Rock.Mobile
             string applicationRoot = GlobalAttributesCache.Value( "PublicApplicationRoot" );
             var additionalSettings = site.AdditionalSettings.FromJsonOrNull<AdditionalSiteSettings>();
 
-            if ( additionalSettings.IsNull() )
+            if ( additionalSettings == null )
             {
                 throw new Exception( "Invalid or non-existing AdditionalSettings property on site." );
             }
@@ -374,7 +375,8 @@ namespace Rock.Mobile
                 TabsOnBottomOnAndroid = additionalSettings.TabLocation == TabLocation.Bottom,
                 HomepageRoutingLogic = additionalSettings.HomepageRoutingLogic,
                 DoNotEnableNotificationsAtLaunch = !additionalSettings.EnableNotificationsAutomatically,
-                TimeZone = timeZoneName
+                TimeZone = timeZoneName,
+                PushTokenUpdateValue = additionalSettings.PushTokenUpdateValue
             };
 
             //
@@ -384,16 +386,22 @@ namespace Rock.Mobile
             package.AppearanceSettings.MenuButtonColor = additionalSettings.MenuButtonColor;
             package.AppearanceSettings.ActivityIndicatorColor = additionalSettings.ActivityIndicatorColor;
             package.AppearanceSettings.FlyoutXaml = additionalSettings.FlyoutXaml;
+            package.AppearanceSettings.ToastXaml = additionalSettings.ToastXaml;
             package.AppearanceSettings.NavigationBarActionsXaml = additionalSettings.NavigationBarActionXaml;
             package.AppearanceSettings.LockedPhoneOrientation = additionalSettings.LockedPhoneOrientation;
             package.AppearanceSettings.LockedTabletOrientation = additionalSettings.LockedTabletOrientation;
+            package.AppearanceSettings.PaletteColors.Add( "text-color", additionalSettings.DownhillSettings.TextColor );
+            package.AppearanceSettings.PaletteColors.Add( "heading-color", additionalSettings.DownhillSettings.HeadingColor );
+            package.AppearanceSettings.PaletteColors.Add( "background-color", additionalSettings.DownhillSettings.BackgroundColor );
             package.AppearanceSettings.PaletteColors.Add( "app-primary", additionalSettings.DownhillSettings.ApplicationColors.Primary );
             package.AppearanceSettings.PaletteColors.Add( "app-secondary", additionalSettings.DownhillSettings.ApplicationColors.Secondary );
             package.AppearanceSettings.PaletteColors.Add( "app-success", additionalSettings.DownhillSettings.ApplicationColors.Success );
+            package.AppearanceSettings.PaletteColors.Add( "app-info", additionalSettings.DownhillSettings.ApplicationColors.Info );
             package.AppearanceSettings.PaletteColors.Add( "app-danger", additionalSettings.DownhillSettings.ApplicationColors.Danger );
             package.AppearanceSettings.PaletteColors.Add( "app-warning", additionalSettings.DownhillSettings.ApplicationColors.Warning );
             package.AppearanceSettings.PaletteColors.Add( "app-light", additionalSettings.DownhillSettings.ApplicationColors.Light );
             package.AppearanceSettings.PaletteColors.Add( "app-dark", additionalSettings.DownhillSettings.ApplicationColors.Dark );
+            package.AppearanceSettings.PaletteColors.Add( "app-brand", additionalSettings.DownhillSettings.ApplicationColors.Brand );
 
             if ( site.FavIconBinaryFileId.HasValue )
             {
@@ -418,19 +426,27 @@ namespace Rock.Mobile
             //
             // Load all the pages.
             //
+            var blockIds = new List<int>();
             using ( var rockContext = new RockContext() )
             {
                 AddPagesToUpdatePackage( package, applicationRoot, rockContext, new[] { PageCache.Get( site.DefaultPageId.Value ) } );
+
+                blockIds = new BlockService( rockContext ).Queryable()
+                    .Where( b => b.Page != null && b.Page.Layout.SiteId == site.Id && b.BlockType.EntityTypeId.HasValue )
+                    .OrderBy( b => b.Order )
+                    .Select( b => b.Id )
+                    .ToList();
             }
 
             //
             // Load all the blocks.
             //
-            foreach ( var block in BlockCache.All().Where( b => b.Page != null && b.Page.SiteId == site.Id && b.BlockType.EntityTypeId.HasValue ).OrderBy( b => b.Order ) )
+            foreach ( var blockId in blockIds )
             {
-                var blockEntityType = block.BlockType.EntityType.GetEntityType();
+                var block = BlockCache.Get( blockId );
+                var blockEntityType = block?.BlockType.EntityType.GetEntityType();
 
-                if ( typeof( Rock.Blocks.IRockMobileBlockType ).IsAssignableFrom( blockEntityType ) )
+                if ( blockEntityType != null && typeof( Rock.Blocks.IRockMobileBlockType ).IsAssignableFrom( blockEntityType ) )
                 {
                     var additionalBlockSettings = block.AdditionalSettings.FromJsonOrNull<AdditionalBlockSettings>() ?? new AdditionalBlockSettings();
 
@@ -451,7 +467,7 @@ namespace Rock.Mobile
                         BlockGuid = block.Guid,
                         RequiredAbiVersion = mobileBlockEntity.RequiredMobileAbiVersion,
                         BlockType = mobileBlockEntity.MobileBlockType,
-                        ConfigurationValues = mobileBlockEntity.GetMobileConfigurationValues(),
+                        ConfigurationValues = mobileBlockEntity.GetBlockInitialization( Blocks.RockClientType.Mobile ),
                         Order = block.Order,
                         AttributeValues = GetMobileAttributeValues( block, attributes ),
                         PreXaml = block.PreHtml,
@@ -540,7 +556,10 @@ namespace Rock.Mobile
                     CssStyles = additionalPageSettings.CssStyles,
                     AuthorizationRules = string.Join( ",", GetOrderedExplicitAuthorizationRules( page ) ),
                     HideNavigationBar = additionalPageSettings.HideNavigationBar,
-                    ShowFullScreen = additionalPageSettings.ShowFullScreen
+                    ShowFullScreen = additionalPageSettings.ShowFullScreen,
+                    AutoRefresh = additionalPageSettings.AutoRefresh,
+                    PageType = additionalPageSettings.PageType,
+                    WebPageUrl = additionalPageSettings.WebPageUrl
                 };
 
                 package.Pages.Add( mobilePage );
@@ -822,7 +841,7 @@ namespace Rock.Mobile
         /// <returns></returns>
         public static string GetCheckBoxFieldXaml( string name, string label, bool isChecked )
         {
-            return $"<Rock:CheckBox x:Name=\"{name}\" Label=\"{label.EncodeXml( true )}\" IsRequired=\"true\" IsChecked=\"{isChecked}\" />";
+            return $"<Rock:CheckBox x:Name=\"{name}\" Label=\"{label.EncodeXml( true )}\" IsRequired=\"false\" IsChecked=\"{isChecked}\" />";
         }
 
         #endregion

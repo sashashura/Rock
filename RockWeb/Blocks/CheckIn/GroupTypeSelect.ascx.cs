@@ -68,6 +68,9 @@ namespace RockWeb.Blocks.CheckIn
 
     public partial class GroupTypeSelect : CheckInBlockMultiPerson
     {
+        /* 2021-05/07 ETD
+         * Use new here because the parent CheckInBlockMultiPerson also has inherited class AttributeKey.
+         */
         private new static class AttributeKey
         {
             public const string SelectAll = "SelectAll";
@@ -172,12 +175,6 @@ namespace RockWeb.Blocks.CheckIn
             base.OnLoad( e );
 
             RockPage.AddScriptLink( "~/Scripts/CheckinClient/checkin-core.js" );
-
-            var bodyTag = this.Page.Master.FindControl( "bodyTag" ) as HtmlGenericControl;
-            if ( bodyTag != null )
-            {
-                bodyTag.AddCssClass( "checkin-grouptypeselect-bg" );
-            }
 
             if ( CurrentWorkflow == null || CurrentCheckInState == null )
             {
@@ -291,12 +288,12 @@ namespace RockWeb.Blocks.CheckIn
         {
             var mergeFields = new Dictionary<string, object>
             {
-                { LavaMergeFieldName.Family, CurrentCheckInState.CheckIn.CurrentFamily },
-                { LavaMergeFieldName.Individual, CurrentCheckInState.CheckIn.CurrentPerson },
-                { LavaMergeFieldName.SelectedSchedule, CurrentCheckInState.CheckIn.CurrentPerson.CurrentSchedule.Schedule }
+                { LavaMergeFieldName.Family, CurrentCheckInState.CheckIn.CurrentFamily?.Group },
+                { LavaMergeFieldName.Individual, CurrentCheckInState.CheckIn.CurrentPerson?.Person },
+                { LavaMergeFieldName.SelectedSchedule, CurrentCheckInState.CheckIn.CurrentPerson.CurrentSchedule?.Schedule }
             };
 
-            var personSelectHeaderLavaTemplate = CurrentCheckInState.CheckInType.PersonSelectHeaderLavaTemplate ?? string.Empty;
+            var personSelectHeaderLavaTemplate = CurrentCheckInState.CheckInType.GroupTypeSelectHeaderLavaTemplate ?? string.Empty;
             return personSelectHeaderLavaTemplate.ResolveMergeFields( mergeFields );
         }
 

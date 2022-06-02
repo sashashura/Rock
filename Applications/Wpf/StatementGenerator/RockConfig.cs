@@ -16,11 +16,13 @@
 //
 using System;
 using System.Configuration;
+using Newtonsoft.Json;
 
 namespace Rock.Apps.StatementGenerator
 {
     /// <summary>
-    /// 
+    /// Class RockConfig. This class cannot be inherited.
+    /// Implements the <see cref="System.Configuration.ApplicationSettingsBase" />
     /// </summary>
     internal sealed partial class RockConfig : ApplicationSettingsBase
     {
@@ -28,11 +30,11 @@ namespace Rock.Apps.StatementGenerator
         /// The password, stored for the session, but not in the config file
         /// </summary>
         private static string sessionPassword = null;
-        
+
         /// <summary>
         /// The default instance
         /// </summary>
-        private static RockConfig defaultInstance = ( (RockConfig)( ApplicationSettingsBase.Synchronized( new RockConfig() ) ) );
+        private static RockConfig defaultInstance = ( ( RockConfig ) ( ApplicationSettingsBase.Synchronized( new RockConfig() ) ) );
 
         /// <summary>
         /// Gets the default.
@@ -46,7 +48,7 @@ namespace Rock.Apps.StatementGenerator
             {
                 return defaultInstance;
             }
-        }        
+        }
 
         /// <summary>
         /// Gets or sets the rock base URL.
@@ -54,9 +56,10 @@ namespace Rock.Apps.StatementGenerator
         /// <value>
         /// The rock base URL.
         /// </value>
-        [DefaultSettingValueAttribute("")]
+        [DefaultSettingValue( "" )]
         [UserScopedSetting]
-        public string RockBaseUrl 
+        [JsonIgnore]
+        public string RockBaseUrl
         {
             get
             {
@@ -75,8 +78,9 @@ namespace Rock.Apps.StatementGenerator
         /// <value>
         /// The username.
         /// </value>
-        [DefaultSettingValueAttribute( "" )]
+        [DefaultSettingValue( "" )]
         [UserScopedSetting]
+        [JsonIgnore]
         public string Username
         {
             get
@@ -96,6 +100,7 @@ namespace Rock.Apps.StatementGenerator
         /// <value>
         /// The password.
         /// </value>
+        [JsonIgnore]
         public string Password
         {
             get
@@ -110,36 +115,76 @@ namespace Rock.Apps.StatementGenerator
         }
 
         /// <summary>
+        /// Gets or sets the temporary directory.
+        /// </summary>
+        /// <value>
+        /// The temporary directory.
+        /// </value>
+        [DefaultSettingValue( "" )]
+        [UserScopedSetting]
+        public string TemporaryDirectory
+        {
+            get
+            {
+                return this["TemporaryDirectory"] as string;
+            }
+
+            set
+            {
+                this["TemporaryDirectory"] = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the individual save options json.
+        /// </summary>
+        /// <value>
+        /// The individual save options json.
+        /// </value>
+        [DefaultSettingValue( "" )]
+        [UserScopedSetting]
+        [JsonConverter( typeof( ConfigSettingsStringConverter ) )]
+        public string IndividualSaveOptionsJson
+        {
+            get => this["IndividualSaveOptionsJson"] as string;
+            set => this["IndividualSaveOptionsJson"] = value;
+        }
+
+        /// <summary>
+        /// Gets or sets the report configuration list json.
+        /// </summary>
+        /// <value>
+        /// The report configuration list json.
+        /// </value>
+        [DefaultSettingValue( "" )]
+        [UserScopedSetting]
+        [JsonConverter( typeof( ConfigSettingsStringConverter ) )]
+        public string ReportConfigurationListJson
+        {
+            get => this["ReportConfigurationListJson"] as string;
+            set => this["ReportConfigurationListJson"] = value;
+        }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether [enable page count predetermination].
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if [enable page count predetermination]; otherwise, <c>false</c>.
+        /// </value>
+        [UserScopedSetting]
+        public bool EnablePageCountPredetermination
+        {
+            get => this["EnablePageCountPredetermination"] as bool? ?? false;
+            set => this["EnablePageCountPredetermination"] = value;
+        }
+
+        /// <summary>
         /// Gets or sets the person selection option.
         /// </summary>
         /// <value>
         /// The person selection option.
         /// </value>
         public PersonSelectionOption PersonSelectionOption { get; set; } = PersonSelectionOption.AllIndividuals;
-
-        /// <summary>
-        /// Gets or sets a value indicating whether [show tax deductible accounts].
-        /// </summary>
-        /// <value>
-        ///   <c>true</c> if [show tax deductible accounts]; otherwise, <c>false</c>.
-        /// </value>
-        public bool ShowTaxDeductibleAccounts { get; set; } = true;
-
-        /// <summary>
-        /// Gets or sets a value indicating whether [show non tax deductible accounts].
-        /// </summary>
-        /// <value>
-        ///   <c>true</c> if [show non tax deductible accounts]; otherwise, <c>false</c>.
-        /// </value>
-        public bool ShowNonTaxDeductibleAccounts { get; set; } = false;
-
-        /// <summary>
-        /// Gets or sets a value indicating whether [show inactive accounts].
-        /// </summary>
-        /// <value>
-        ///   <c>true</c> if [show inactive accounts]; otherwise, <c>false</c>.
-        /// </value>
-        public bool ShowInactiveAccounts { get; set; } = false;
 
         /// <summary>
         /// Gets or sets the layout defined value unique identifier.
@@ -149,19 +194,89 @@ namespace Rock.Apps.StatementGenerator
         /// </value>
         [DefaultSettingValueAttribute( "" )]
         [UserScopedSetting]
-        public Guid? LayoutDefinedValueGuid
+        public Guid? FinancialStatementTemplateGuid
         {
             get
             {
-                return this["LayoutDefinedValueGuid"] as Guid?;
+                return this["FinancialStatementTemplateGuid"] as Guid?;
             }
 
             set
             {
-                this["LayoutDefinedValueGuid"] = value;
+                this["FinancialStatementTemplateGuid"] = value;
             }
         }
 
+        /// <summary>
+        /// Gets or sets the name of the result summary file.
+        /// </summary>
+        /// <value>The name of the result summary file.</value>
+        [DefaultSettingValue( "@Summary of Results.txt" )]
+        [UserScopedSetting]
+        public string ResultSummaryFileName
+        {
+            get
+            {
+                return this["ResultSummaryFileName"] as string;
+            }
+
+            set
+            {
+                this["ResultSummaryFileName"] = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the last report options.
+        /// </summary>
+        /// <value>The last report options.</value>
+        [DefaultSettingValue( null )]
+        [UserScopedSetting]
+        public Rock.Client.FinancialStatementGeneratorOptions LastReportOptions
+        {
+            get
+            {
+                return this["LastReportOptions"] as Rock.Client.FinancialStatementGeneratorOptions;
+            }
+
+            set
+            {
+                this["LastReportOptions"] = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets the collection of settings properties in the wrapper.
+        /// </summary>
+        /// <value>The properties.</value>
+        [JsonIgnore]
+        public override SettingsPropertyCollection Properties => base.Properties;
+
+        /// <summary>
+        /// Gets a collection of property values.
+        /// </summary>
+        /// <value>The property values.</value>
+        [JsonIgnore]
+        public override SettingsPropertyValueCollection PropertyValues => base.PropertyValues;
+
+        /// <summary>
+        /// Gets the collection of application settings providers used by the wrapper.
+        /// </summary>
+        /// <value>The providers.</value>
+        [JsonIgnore]
+        public override SettingsProviderCollection Providers => base.Providers;
+
+        /// <summary>
+        /// Gets the application settings context associated with the settings group.
+        /// </summary>
+        /// <value>The context.</value>
+        [JsonIgnore]
+        public override SettingsContext Context => base.Context;
+
+        /// <summary>
+        /// Loads this instance.
+        /// </summary>
+        /// <returns></returns>
         public static RockConfig Load()
         {
             return RockConfig.Default;
@@ -169,7 +284,7 @@ namespace Rock.Apps.StatementGenerator
     }
 
     /// <summary>
-    /// 
+    ///
     /// </summary>
     public enum PersonSelectionOption
     {

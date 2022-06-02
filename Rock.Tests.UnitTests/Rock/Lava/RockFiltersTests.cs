@@ -685,41 +685,6 @@ namespace Rock.Tests.Rock.Lava
 
         #endregion
 
-        #region AsDateTime
-
-        /// <summary>
-        /// For use in Lava -- should not cast the null to an datetime.
-        /// </summary>
-        [TestMethod]
-        public void AsDateTime_Null()
-        {
-            var output = RockFilters.AsDateTime( null );
-            Assert.That.IsNull( output );
-        }
-
-        /// <summary>
-        /// For use in Lava -- should not cast the string to an datetime.
-        /// </summary>
-        [TestMethod]
-        public void AsDateTime_InvalidString()
-        {
-            var output = RockFilters.AsDateTime( "1/1/1 50:00" );
-            Assert.That.IsNull( output );
-        }
-
-        /// <summary>
-        /// For use in Lava -- should cast the string to an datetime.
-        /// </summary>
-        [TestMethod]
-        public void AsDateTime_ValidString()
-        {
-            DateTime dt = new DateTime( 2017, 3, 7, 15, 4, 33 );
-            var output = RockFilters.AsDateTime( dt.ToString() );
-            Assert.That.AreEqual( dt, output );
-        }
-
-        #endregion
-
         /// <summary>
         /// For use in Lava -- should return the IP address of the Client
         /// </summary>
@@ -1095,117 +1060,6 @@ namespace Rock.Tests.Rock.Lava
         #region Date Filters
 
         /// <summary>
-        /// For use in Lava -- adding default days to 'Now' should be equal.
-        /// </summary>
-        [TestMethod]
-        public void DateAdd_AddDaysDefaultViaNow()
-        {
-            var output = RockFilters.DateAdd( "Now", 5 );
-            DateTimeAssert.AreEqual( output, RockDateTime.Now.AddDays( 5 ) );
-        }
-
-        /// <summary>
-        /// For use in Lava -- adding days (default) to a given date should be equal.
-        /// </summary>
-        [TestMethod]
-        public void DateAdd_AddDaysDefaultToGivenDate()
-        {
-            var output = RockFilters.DateAdd( "2018-5-1", 3 );
-            DateTimeAssert.AreEqual( output, DateTime.Parse( "2018-5-4" ) );
-        }
-
-        /// <summary>
-        /// For use in Lava -- adding days (d parameter) to a given date should be equal.
-        /// </summary>
-        [TestMethod]
-        public void DateAdd_AddDaysIntervalToGivenDate()
-        {
-            var output = RockFilters.DateAdd( "2018-5-1", 3, "d" );
-            DateTimeAssert.AreEqual( output, DateTime.Parse( "2018-5-4" ) );
-        }
-
-        /// <summary>
-        /// For use in Lava -- adding hours (h parameter) to a given date should be equal.
-        /// </summary>
-        [TestMethod]
-        public void DateAdd_AddHoursIntervalToGivenDate()
-        {
-            var output = RockFilters.DateAdd( "2018-5-1 3:00 PM", 1, "h" );
-            DateTimeAssert.AreEqual( output, DateTime.Parse( "2018-5-1 4:00 PM" ) );
-        }
-
-        /// <summary>
-        /// For use in Lava -- adding minutes (m parameter) to a given date should be equal.
-        /// </summary>
-        [TestMethod]
-        public void DateAdd_AddMinutesIntervalToGivenDate()
-        {
-            var output = RockFilters.DateAdd( "2018-5-1 3:00 PM", 120, "m" );
-            DateTimeAssert.AreEqual( output, DateTime.Parse( "2018-5-1 5:00 PM" ) );
-        }
-
-        /// <summary>
-        /// For use in Lava -- adding seconds (s parameter) to a given date should be equal.
-        /// </summary>
-        [TestMethod]
-        public void DateAdd_AddSecondsIntervalToGivenDate()
-        {
-            var output = RockFilters.DateAdd( "2018-5-1 3:00 PM", 300, "s" );
-            DateTimeAssert.AreEqual( output, DateTime.Parse( "2018-5-1 3:05 PM" ) );
-        }
-
-        /// <summary>
-        /// For use in Lava -- adding years (y parameter) to a given date should be equal.
-        /// </summary>
-        [TestMethod]
-        public void DateAdd_AddYearsIntervalToGivenDate()
-        {
-            var output = RockFilters.DateAdd( "2018-5-1 3:00 PM", 2, "y" );
-            DateTimeAssert.AreEqual( output, DateTime.Parse( "2020-5-1 3:00 PM" ) );
-        }
-
-        /// <summary>
-        /// For use in Lava -- adding years (y parameter) to a given leap-year date should be equal.
-        /// </summary>
-        [TestMethod]
-        public void DateAdd_AddYearsIntervalToGivenLeapDate()
-        {
-            var output = RockFilters.DateAdd( "2016-2-29 3:00 PM", 1, "y" );
-            DateTimeAssert.AreEqual( output, DateTime.Parse( "2017-2-28 3:00 PM" ) );
-        }
-
-        /// <summary>
-        /// For use in Lava -- adding months (M parameter) to a given date should be equal.
-        /// </summary>
-        [TestMethod]
-        public void DateAdd_AddMonthsIntervalToGivenDate()
-        {
-            var output = RockFilters.DateAdd( "2018-5-1 3:00 PM", 1, "M" );
-            DateTimeAssert.AreEqual( output, DateTime.Parse( "2018-6-1 3:00 PM" ) );
-        }
-
-        /// <summary>
-        /// For use in Lava -- adding months (M parameter) to a given date with more days in the month
-        /// should be equal to the month's last day.
-        /// </summary>
-        [TestMethod]
-        public void DateAdd_AddMonthsIntervalToGivenLongerMonthDate()
-        {
-            var output = RockFilters.DateAdd( "2018-5-31 3:00 PM", 1, "M" );
-            DateTimeAssert.AreEqual( output, DateTime.Parse( "2018-6-30 3:00 PM" ) );
-        }
-
-        /// <summary>
-        /// For use in Lava -- adding weeks (w parameter) to a given date should be equal.
-        /// </summary>
-        [TestMethod]
-        public void DateAdd_AddWeeksIntervalToGivenDate()
-        {
-            var output = RockFilters.DateAdd( "2018-5-1 3:00 PM", 2, "w" );
-            DateTimeAssert.AreEqual( output, DateTime.Parse( "2018-5-15 3:00 PM" ) );
-        }
-
-        /// <summary>
         /// Tests the next day of the week using the simplest format.
         /// Uses May 1, 2018 which was a Tuesday.
         /// </summary>
@@ -1322,114 +1176,6 @@ namespace Rock.Tests.Rock.Lava
             output = RockFilters.NextDayOfTheWeek( "2018-5-1 3:00 PM", "Monday", false, -1 );
             DateTimeAssert.AreEqual( output, DateTime.Parse( "2018-4-30 3:00 PM" ) );
         }
-
-        /// <summary>
-        /// Tests the To Midnight using a string.
-        /// </summary>
-        [TestMethod]
-        public void ToMidnight_TextString()
-        {
-            var output = RockFilters.ToMidnight( "2018-5-1 3:00 PM" );
-            DateTimeAssert.AreEqual( output, DateTime.Parse( "2018-5-1 12:00 AM" ) );
-        }
-
-        /// <summary>
-        /// Tests the To Midnight using a string of "Now".
-        /// </summary>
-        [TestMethod]
-        public void ToMidnight_Now()
-        {
-            var output = RockFilters.ToMidnight( "Now" );
-            DateTimeAssert.AreEqual( output, RockDateTime.Now.Date );
-        }
-
-        /// <summary>
-        /// Tests the To Midnight using a datetime.
-        /// </summary>
-        [TestMethod]
-        public void ToMidnight_DateTime()
-        {
-            var output = RockFilters.ToMidnight( RockDateTime.Now );
-            DateTimeAssert.AreEqual( output, RockDateTime.Now.Date );
-        }
-
-        #region DatesFromICal
-
-        /// <summary>
-        /// For use in Lava -- should return next occurrence for Rock's standard Saturday 4:30PM service datetime.
-        /// </summary>
-        [TestMethod]
-        public void DatesFromICal_OneNextSaturday()
-        {
-            DateTime today = RockDateTime.Today;
-            int daysUntilSaturday = ( ( int ) DayOfWeek.Saturday - ( int ) today.DayOfWeek + 7 ) % 7;
-            DateTime nextSaturday = today.AddDays( daysUntilSaturday );
-
-            List<DateTime> expected = new List<DateTime>() { nextSaturday.AddHours( 16.5 ) }; // 4:30:00 PM
-
-            var output = RockFilters.DatesFromICal( iCalStringSaturday430, 1 );
-
-            Assert.That.AreEqual( expected, output );
-        }
-
-        /// <summary>
-        /// For use in Lava -- should return the current Saturday for next year's occurrence for Rock's standard Saturday 4:30PM service datetime.
-        /// </summary>
-        [TestMethod]
-        public void DatesFromICal_NextYearSaturday()
-        {
-            // Get the previous Saturday from today's date, one year on.
-            // The DatesFromICal function only returns occurrences for a maximum of 1 year, so this ensures that our test date will be in the sequence.
-            DateTime today = RockDateTime.Today;
-
-            int daysAfterSaturday = ( int ) today.DayOfWeek + 1;
-            DateTime previousSaturday = today.AddDays( -daysAfterSaturday );
-            DateTime nextYearSaturday = previousSaturday.AddDays( 7 * 52 );
-
-            DateTime expected = nextYearSaturday.AddHours( 16.5 ); // 4:30:00 PM
-
-            var output = RockFilters.DatesFromICal( iCalStringSaturday430, "all" );
-
-            // Test if the output exists in the list of dates, because it may be entry 52 or 53 in the sequence.
-            Assert.That.IsTrue( output.Contains( expected ) );
-        }
-
-        /// <summary>
-        /// For use in Lava -- should return the end datetime for the next occurrence for Rock's standard Saturday 4:30PM service datetime (which ends at 5:30PM).
-        /// </summary>
-        [TestMethod]
-        public void DatesFromICal_NextEndOccurrenceSaturday()
-        {
-            DateTime today = RockDateTime.Today;
-            int daysUntilSaturday = ( ( int ) DayOfWeek.Saturday - ( int ) today.DayOfWeek + 7 ) % 7;
-            DateTime nextSaturday = today.AddDays( daysUntilSaturday );
-
-            List<DateTime> expected = new List<DateTime>() { DateTime.Parse( nextSaturday.ToShortDateString() + " 5:30:00 PM" ) };
-
-            var output = RockFilters.DatesFromICal( iCalStringSaturday430, null, "enddatetime" );
-            CollectionAssert.AreEquivalent( expected, output );
-        }
-
-        /// <summary>
-        /// For use in Lava -- should find the end datetime (10 AM) occurrence for the fictitious, first Saturday of the month event for Saturday a year from today.
-        /// </summary>
-        [TestMethod]
-        public void DatesFromICal_NextYearsEndOccurrenceSaturday()
-        {
-            // Next year's Saturday (from last month). iCal can only get 12 months of data starting from the current month. So 12 months from now would be the previous month next year.
-            DateTime nextYearSaturday = RockDateTime.Now
-                .AddMonths( -1 )
-                .StartOfMonth()
-                .AddYears( 1 )
-                .GetNextWeekday( DayOfWeek.Saturday )
-                .AddHours( 10 );
-
-            // Get the end datetime of the 11th event in the "First Saturday of the Month" schedule.
-            var output = RockFilters.DatesFromICal( iCalStringFirstSaturdayOfMonth, 12, "enddatetime" )[10];
-            Assert.That.AreEqual( nextYearSaturday, output );
-        }
-
-        #endregion
 
         #endregion
 
@@ -1591,7 +1337,7 @@ namespace Rock.Tests.Rock.Lava
             // If/when these tests are reworked for the Fluid engine, they should be moved to the Rock.Tests.UnitTests.Lava namespace.
             if ( _lavaEngine == null )
             {
-                _lavaEngine = LavaEngine.NewEngineInstance( LavaEngineTypeSpecifier.DotLiquid, new LavaEngineConfigurationOptions() );
+                _lavaEngine = LavaService.NewEngineInstance( typeof( global::Rock.Lava.DotLiquid.DotLiquidEngine ), new LavaEngineConfigurationOptions() );
             }
 
             var result = _lavaEngine.RenderTemplate( template );

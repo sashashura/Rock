@@ -58,6 +58,12 @@ You can view an online version of this email here:
         Category = "",
         Order = 3,
         Key = "DefaultPlainText" )]
+
+    [BooleanField( "CSS Inlining Enabled",
+        Description = "Enable to move CSS styles to inline attributes. This can help maximize compatibility with email clients.",
+        DefaultBooleanValue = true,
+        Key = "CSSInliningEnabled",
+        Order = 4)]
     public class Email : MediumComponent
     {
         /// <summary>
@@ -66,7 +72,12 @@ You can view an online version of this email here:
         /// <value>
         /// The type of the communication.
         /// </value>
-        public override CommunicationType CommunicationType { get { return CommunicationType.Email; } }
+        public override CommunicationType CommunicationType {
+            get
+            {
+                return CommunicationType.Email;
+            }
+        }
 
         /// <summary>
         /// Gets the control.

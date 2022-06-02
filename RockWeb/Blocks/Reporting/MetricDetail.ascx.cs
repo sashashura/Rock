@@ -39,7 +39,7 @@ using Rock.Web.UI.Controls;
 namespace RockWeb.Blocks.Reporting
 {
     /// <summary>
-    /// 
+    ///
     /// </summary>
     [DisplayName( "Metric Detail" )]
     [Category( "Reporting" )]
@@ -72,7 +72,14 @@ namespace RockWeb.Blocks.Reporting
         Key = AttributeKey.CombineChartSeries,
         Order = 3 )]
 
-    public partial class MetricDetail : RockBlock, IDetailBlock
+    [LinkedPage( "Data View Page",
+        Key = AttributeKey.DataViewPage,
+        Description = "The page to edit data views",
+        IsRequired = true,
+        Order = 4 )]
+    #endregion Block Attributes
+
+    public partial class MetricDetail : RockBlock
     {
         #region Attribute Keys
 
@@ -85,6 +92,7 @@ namespace RockWeb.Blocks.Reporting
             public const string SlidingDateRange = "SlidingDateRange";
             public const string CombineChartSeries = "CombineChartSeries";
             public const string ChartStyle = "ChartStyle";
+            public const string DataViewPage = "DataViewPage";
         }
 
         #endregion
@@ -206,9 +214,20 @@ Example: Let's say you have a DataView called 'Small Group Attendance for Last W
                     pnlDetails.Visible = false;
                 }
             }
-        }
+            else
+            {
+                // Cancelling on Edit.  Return to Details
+                var metricService = new MetricService( new RockContext() );
+                var metric = metricService.Get( hfMetricId.Value.AsInteger() );
 
-        #endregion
+                if ( metric == null )
+                {
+                    return;
+                }
+
+                CreateChart( metric );
+            }
+        }
 
         /// <summary>
         /// Restores the view-state information from a previous user control request that was saved by the <see cref="M:System.Web.UI.UserControl.SaveViewState" /> method.
@@ -249,6 +268,7 @@ Example: Let's say you have a DataView called 'Small Group Attendance for Last W
         }
 
         #endregion Base Control Methods
+
         #region Events
 
         // handlers called by the controls on your block
@@ -413,7 +433,7 @@ Example: Let's say you have a DataView called 'Small Group Attendance for Last W
 
             if ( !metric.IsValid )
             {
-                // Controls will render the error messages                    
+                // Controls will render the error messages
                 return;
             }
 
@@ -478,7 +498,7 @@ Example: Let's say you have a DataView called 'Small Group Attendance for Last W
                     rockContext.SaveChanges();
                 }
 
-                // update MetricCategories for Metric            
+                // update MetricCategories for Metric
                 metric.MetricCategories = metric.MetricCategories ?? new List<MetricCategory>();
                 var selectedCategoryIds = cpMetricCategories.SelectedValuesAsInt();
 
@@ -661,6 +681,26 @@ Example: Let's say you have a DataView called 'Small Group Attendance for Last W
         {
             ddlSchedule.Visible = rblScheduleSelect.SelectedValueAsEnum<ScheduleSelectionType>() == ScheduleSelectionType.NamedSchedule;
             sbSchedule.Visible = rblScheduleSelect.SelectedValueAsEnum<ScheduleSelectionType>() == ScheduleSelectionType.Unique;
+        }
+
+        /// <summary>
+        /// Handles the SelectItem event of the dvpDataView control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
+        protected void dvpDataView_SelectItem( object sender, EventArgs e )
+        {
+            ShowHideAutoPartitionPrimaryCampus();
+        }
+
+        /// <summary>
+        /// Handles the ServerValidate event of the cvTitle control.
+        /// </summary>
+        /// <param name="source">The source of the event.</param>
+        /// <param name="args">The <see cref="ServerValidateEventArgs"/> instance containing the event data.</param>
+        protected void cvTitle_ServerValidate( object source, ServerValidateEventArgs args )
+        {
+            args.IsValid = IsTitleUnique();
         }
 
         #endregion
@@ -1176,6 +1216,20 @@ The Lava can include Lava merge fields:";
             }
 
             lblMainDetails.Text = descriptionListMain.Html;
+
+            if ( metric.DataView != null )
+            {
+                hlDataView.Visible = UserCanEdit;
+
+                var queryParams = new Dictionary<string, string>();
+                queryParams.Add( "DataViewId", metric.DataViewId.ToString() );
+                hlDataView.Text = $"<a href='{LinkedPageUrl( AttributeKey.DataViewPage, queryParams )}'>Data View: {metric.DataView.Name.Truncate(30, true)}</a>";
+                hlDataView.ToolTip = (metric.DataView.Name.Length > 30) ? metric.DataView.Name : null;
+            }
+            else
+            {
+                hlDataView.Visible = false;
+            }
         }
 
         private void CreateChart( Metric metric )
@@ -1187,14 +1241,7 @@ The Lava can include Lava merge fields:";
             }
 
             var chartFactory = GetChartJsFactory( metric );
-            pnlActivityChart.Visible = chartFactory.HasData && GetAttributeValue( AttributeKey.ShowChart ).AsBoolean();
-            nbActivityChartMessage.Visible = !chartFactory.HasData;
-
-            if ( !chartFactory.HasData )
-            {
-                nbActivityChartMessage.Text = "There are no completed Steps matching the current filter.";
-                return;
-            }
+            pnlActivityChart.Visible = GetAttributeValue( AttributeKey.ShowChart ).AsBoolean();
 
             // Add client script to construct the chart.
             var chartDataJson = chartFactory.GetJson( new ChartJsTimeSeriesDataFactory.GetJsonArgs
@@ -1469,6 +1516,39 @@ The Lava can include Lava merge fields:";
                 && MetricPartitionsState[0].EntityTypeId == EntityTypeCache.GetId( Rock.SystemGuid.EntityType.CAMPUS );
         }
 
+        /// <summary>
+        /// If "Enable Analytics" is checked this methods checks for a metric with the same name that also has "Enable Analytics" checked.
+        /// </summary>
+        /// <returns>
+        ///   <c>false</c> If the name is already taken; otherwise, <c>true</c>.
+        /// </returns>
+        private bool IsTitleUnique()
+        {
+            // Only Analytics Metrics need to have a unique name.
+            if ( !cbEnableAnalytics.Checked )
+            {
+                return true;
+            }
+
+            using ( var rockContext = new RockContext() )
+            {
+                var metricId = hfMetricId.ValueAsInt();
+
+                var existingAnalyticMetricsWithTheSameName = new MetricService( rockContext )
+                    .Queryable()
+                    .Where( m => m.Title == tbTitle.Text && m.EnableAnalytics == true && m.Id != metricId )
+                    .ToList();
+
+                if ( existingAnalyticMetricsWithTheSameName.Any() )
+                {
+                    tbTitle.ShowErrorMessage( string.Empty );
+                    return false;
+                }
+
+                return true;
+            }
+        }
+
         #endregion
 
         #region Series Partitions
@@ -1729,7 +1809,7 @@ The Lava can include Lava merge fields:";
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         public enum ScheduleSelectionType
         {
@@ -1738,10 +1818,5 @@ The Lava can include Lava merge fields:";
         }
 
         #endregion
-
-        protected void dvpDataView_SelectItem( object sender, EventArgs e )
-        {
-            ShowHideAutoPartitionPrimaryCampus();
-        }
     }
 }

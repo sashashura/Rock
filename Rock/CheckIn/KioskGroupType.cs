@@ -18,7 +18,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
-
+using Rock.Lava;
 using Rock.Model;
 using Rock.Web.Cache;
 
@@ -36,8 +36,17 @@ namespace Rock.CheckIn
         /// <value>
         /// The type of the group.
         /// </value>
+        [LavaVisible]
+        public GroupTypeCache GroupType => GroupTypeCache.Get( GroupTypeId );
+
+        /// <summary>
+        /// Gets or sets the group type identifier.
+        /// </summary>
+        /// <value>
+        /// The group type identifier.
+        /// </value>
         [DataMember]
-        public GroupTypeCache GroupType { get; set; }
+        public int GroupTypeId { get; set; }
 
         /// <summary>
         /// All groups with active schedules
@@ -109,7 +118,7 @@ namespace Rock.CheckIn
         public KioskGroupType( int groupTypeid )
             : base()
         {
-            GroupType = GroupTypeCache.Get( groupTypeid );
+            GroupTypeId = groupTypeid;
             KioskGroups = new List<KioskGroup>();
         }
 

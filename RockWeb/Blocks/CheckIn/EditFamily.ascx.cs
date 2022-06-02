@@ -18,7 +18,6 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data.Entity;
 using System.Linq;
-using System.Web.UI;
 using System.Web.UI.WebControls;
 
 using Rock;
@@ -26,7 +25,6 @@ using Rock.CheckIn;
 using Rock.CheckIn.Registration;
 using Rock.Data;
 using Rock.Model;
-using Rock.Tasks;
 using Rock.Transactions;
 using Rock.Web;
 using Rock.Web.Cache;
@@ -124,6 +122,22 @@ namespace RockWeb.Blocks.CheckIn
         private List<AttributeCache> OptionalAttributesForFamilies { get; set; }
 
         /// <summary>
+        /// Gets or sets the display birthdate on children attribute.
+        /// </summary>
+        /// <value>
+        /// The display birthdate on children setting.
+        /// </value>
+        private string DisplayBirthdateOnChildren { get; set; }
+
+        /// <summary>
+        /// Gets or sets the display grade on children attribute.
+        /// </summary>
+        /// <value>
+        /// The display grade on children setting.
+        /// </value>
+        private string DisplayGradeOnChildren { get; set; }
+
+        /// <summary>
         /// The group type role adult identifier
         /// </summary>
         private static int _groupTypeRoleAdultId = GroupTypeCache.GetFamilyGroupType().Roles.FirstOrDefault( a => a.Guid == Rock.SystemGuid.GroupRole.GROUPROLE_FAMILY_MEMBER_ADULT.AsGuid() ).Id;
@@ -157,6 +171,9 @@ namespace RockWeb.Blocks.CheckIn
             OptionalAttributesForChildren = CurrentCheckInState.CheckInType.Registration.OptionalAttributesForChildren.Where( a => a.IsAuthorized( Rock.Security.Authorization.EDIT, this.CurrentPerson ) ).ToList();
             RequiredAttributesForFamilies = CurrentCheckInState.CheckInType.Registration.RequiredAttributesForFamilies.Where( a => a.IsAuthorized( Rock.Security.Authorization.EDIT, this.CurrentPerson ) ).ToList();
             OptionalAttributesForFamilies = CurrentCheckInState.CheckInType.Registration.OptionalAttributesForFamilies.Where( a => a.IsAuthorized( Rock.Security.Authorization.EDIT, this.CurrentPerson ) ).ToList();
+
+            DisplayBirthdateOnChildren = CurrentCheckInState.CheckInType.Registration.DisplayBirthdateOnChildren;
+            DisplayGradeOnChildren = CurrentCheckInState.CheckInType.Registration.DisplayGradeOnChildren;
         }
 
         /// <summary>
@@ -517,14 +534,8 @@ namespace RockWeb.Blocks.CheckIn
                 {
                     foreach ( var addFamilyWorkflowType in addFamilyWorkflowTypes )
                     {
-                        var launchWorkflowMsg= new LaunchWorkflow.Message
-                        {
-                            WorkflowTypeId = addFamilyWorkflowType.Id,
-                            EntityId = newPrimaryFamily.Id,
-                            EntityTypeId = EntityTypeCache.Get( typeof( Rock.Model.Group ) ).Id
-                        };
-
-                        launchWorkflowMsg.Send();
+                        LaunchWorkflowTransaction launchWorkflowTransaction = new LaunchWorkflowTransaction<Group>( addFamilyWorkflowType.Id, newPrimaryFamily.Id );
+                        launchWorkflowTransaction.Enqueue();
                     }
                 }
             }
@@ -536,14 +547,8 @@ namespace RockWeb.Blocks.CheckIn
                 {
                     foreach ( var addPersonWorkflowType in addPersonWorkflowTypes )
                     {
-                        var launchWorkflowMsg = new LaunchWorkflow.Message
-                        {
-                            WorkflowTypeId = addPersonWorkflowType.Id,
-                            EntityId = newPerson.Id,
-                            EntityTypeId = EntityTypeCache.Get( typeof( Rock.Model.Person ) ).Id
-                        };
-
-                        launchWorkflowMsg.Send();
+                        LaunchWorkflowTransaction launchWorkflowTransaction = new LaunchWorkflowTransaction<Person>( addPersonWorkflowType.Id, newPerson.Id );
+                        launchWorkflowTransaction.Enqueue();
                     }
                 }
             }
@@ -919,8 +924,16 @@ namespace RockWeb.Blocks.CheckIn
             }
 
             tglAdultMaritalStatus.Visible = isAdult;
-            dpBirthDate.Visible = !isAdult;
-            gpGradePicker.Visible = !isAdult;
+
+            var displayBirthdate = !isAdult && !DisplayBirthdateOnChildren.Equals( ControlOptions.HIDE );
+            var birthdateRequired = displayBirthdate && DisplayBirthdateOnChildren.Equals( ControlOptions.REQUIRED );
+            var displayGrade = !isAdult && !DisplayGradeOnChildren.Equals( ControlOptions.HIDE );
+            var gradeRequired = displayGrade && DisplayGradeOnChildren.Equals( ControlOptions.REQUIRED );
+            dpBirthDate.Visible = displayBirthdate;
+            dpBirthDate.Required = birthdateRequired;
+            gpGradePicker.Visible = displayGrade;
+            gpGradePicker.Required = gradeRequired;
+
             tbEmail.Visible = isAdult;
             pnlChildRelationshipToAdult.Visible = !isAdult;
 

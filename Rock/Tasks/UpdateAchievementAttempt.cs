@@ -16,19 +16,18 @@
 //
 
 using System;
-using System.Collections.Generic;
 using System.Data.Entity;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+
 using Rock.Data;
 using Rock.Model;
+using Rock.Transactions;
 using Rock.Web.Cache;
 
 namespace Rock.Tasks
 {
     /// <summary>
-    /// Transaction to process changes that occur to an attempt
+    /// Task to process actions that should occur after adding/updating an <see cref="AchievementAttempt" />.
     /// </summary>
     public sealed class UpdateAchievementAttempt : BusStartedTask<UpdateAchievementAttempt.Message>
     {
@@ -110,12 +109,14 @@ namespace Rock.Tasks
         {
             var attempt = GetAchievementAttempt( message );
 
-            new LaunchWorkflow.Message
+            if ( attempt == null )
             {
-                EntityTypeId = attempt?.TypeId,
-                EntityId = attempt?.Id,
-                WorkflowTypeId = workflowTypeId
-            }.Send();
+                return;
+            }
+
+            var workflowTransaction=new LaunchWorkflowTransaction<AchievementAttempt>( workflowTypeId, attempt.Id );
+            
+            workflowTransaction.Execute();
         }
 
         /// <summary>
@@ -231,6 +232,7 @@ namespace Rock.Tasks
             /// Gets or sets the end date.
             /// </summary>
             public DateTime? EndDate { get; set; }
+
         }
     }
 }

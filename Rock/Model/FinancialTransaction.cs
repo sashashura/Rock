@@ -24,7 +24,7 @@ using System.Data.Entity.Infrastructure;
 using System.Data.Entity.ModelConfiguration;
 using System.Linq;
 using System.Runtime.Serialization;
-
+using System.Threading.Tasks;
 using Rock.Data;
 using Rock.Lava;
 
@@ -105,7 +105,7 @@ namespace Rock.Model
         public DateTime? FutureProcessingDateTime { get; set; }
 
         /// <summary>
-        /// For Credit Card transactions, this is the response code that the gateway returns. 
+        /// For Credit Card transactions, this is the response code that the gateway returns.
         /// For Scanned Checks, this is the check number.
         /// </summary>
         /// <value>
@@ -116,7 +116,7 @@ namespace Rock.Model
         public string TransactionCode { get; set; }
 
         /// <summary>
-        /// Gets or sets a summary of the transaction.
+        /// Gets or sets a summary of the transaction. This would store any comments made.
         /// </summary>
         /// <value>
         /// A <see cref="System.String"/> representing a summary of the transaction.
@@ -160,7 +160,7 @@ namespace Rock.Model
         public string CheckMicrEncrypted { get; set; }
 
         /// <summary>
-        /// One Way Encryption (SHA1 Hash) of Raw Track of the MICR read. The same raw MICR will result in the same hash.  
+        /// One Way Encryption (SHA1 Hash) of Raw Track of the MICR read. The same raw MICR will result in the same hash.
         /// Enables detection of duplicate scanned checks
         /// Note: duplicate detection requires that the duplicate check was scanned using the same scanner type (Ranger vs Magtek)
         /// </summary>
@@ -206,7 +206,7 @@ namespace Rock.Model
         public int? ScheduledTransactionId { get; set; }
 
         /// <summary>
-        /// Gets or sets the PersonAliasId of the <see cref="Rock.Model.PersonAlias"/> who processed the transaction. For example, if the transaction is 
+        /// Gets or sets the PersonAliasId of the <see cref="Rock.Model.PersonAlias"/> who processed the transaction. For example, if the transaction is
         /// from a scanned check, the ProcessedByPersonAlias is the person who matched (or started to match) the check to the person who wrote the check.
         /// </summary>
         /// <value>
@@ -215,7 +215,7 @@ namespace Rock.Model
         public int? ProcessedByPersonAliasId { get; set; }
 
         /// <summary>
-        /// Gets or sets the processed date time. For example, if the transaction is from a scanned check, the ProcessedDateTime is when is when the transaction 
+        /// Gets or sets the processed date time. For example, if the transaction is from a scanned check, the ProcessedDateTime is when the transaction
         /// was matched (or started to match) to the person who wrote the check.
         /// </summary>
         /// <value>
@@ -300,7 +300,7 @@ namespace Rock.Model
 
             set
             {
-                // don't do anything here since EF uses this for loading, and we also want to ignore if somebody other than EF tries to set this 
+                // don't do anything here since EF uses this for loading, and we also want to ignore if somebody other than EF tries to set this
             }
         }
 
@@ -311,7 +311,7 @@ namespace Rock.Model
         /// The non cash asset type value identifier.
         /// </value>
         [DataMember]
-        [DefinedValue( SystemGuid.DefinedType.FINANCIAL_NONCASH_ASSET_TYPE )]        
+        [DefinedValue( SystemGuid.DefinedType.FINANCIAL_NONCASH_ASSET_TYPE )]
         public int? NonCashAssetTypeValueId { get; set; }
 
         /// <summary>
@@ -433,7 +433,7 @@ namespace Rock.Model
         public virtual FinancialScheduledTransaction ScheduledTransaction { get; set; }
 
         /// <summary>
-        /// Gets or sets the PersonAlias of the <see cref="Rock.Model.PersonAlias"/> who processed the transaction. For example, if the transaction is 
+        /// Gets or sets the PersonAlias of the <see cref="Rock.Model.PersonAlias"/> who processed the transaction. For example, if the transaction is
         /// from a scanned check, the ProcessedByPersonAlias is the person who matched (or started to match) the check to the person who wrote the check.
         /// </summary>
         /// <value>
@@ -549,17 +549,6 @@ namespace Rock.Model
         }
 
         /// <summary>
-        /// Gets or sets the history changes.
-        /// </summary>
-        /// <value>
-        /// The history changes.
-        /// </value>
-        [NotMapped]
-        [RockObsolete( "1.8" )]
-        [Obsolete( "Use HistoryChangeList instead", true )]
-        public virtual List<string> HistoryChanges { get; set; }
-
-        /// <summary>
         /// Gets or sets the history change list.
         /// </summary>
         /// <value>
@@ -567,17 +556,6 @@ namespace Rock.Model
         /// </value>
         [NotMapped]
         public virtual History.HistoryChangeList HistoryChangeList { get; set; }
-
-        /// <summary>
-        /// Gets or sets the batch history changes.
-        /// </summary>
-        /// <value>
-        /// The batch history changes.
-        /// </value>
-        [NotMapped]
-        [RockObsolete( "1.8" )]
-        [Obsolete( "Use BatchHistoryChangeList instead", true )]
-        public virtual Dictionary<int, List<string>> BatchHistoryChanges { get; set; }
 
         /// <summary>
         /// Gets or sets the batch history change list.
@@ -771,7 +749,7 @@ namespace Rock.Model
                             BatchHistoryChangeList.Add( batchId.Value, batchChanges );
                         }
 
-                        // since images have a cascade delete relationship, make sure the PreSaveChanges gets called 
+                        // since images have a cascade delete relationship, make sure the PreSaveChanges gets called
                         var childImages = new FinancialTransactionImageService( dbContext as RockContext ).Queryable().Where( a => a.TransactionId == this.Id );
                         foreach ( var image in childImages )
                         {
@@ -809,6 +787,12 @@ namespace Rock.Model
                         HistoryService.SaveChanges( ( RockContext ) dbContext, typeof( FinancialBatch ), Rock.SystemGuid.Category.HISTORY_FINANCIAL_TRANSACTION.AsGuid(), keyVal.Key, keyVal.Value, string.Empty, typeof( FinancialTransaction ), this.Id, true, this.ModifiedByPersonAliasId, dbContext.SourceOfChange );
                     }
                 }
+            }
+
+            if ( null != this.RefundDetails || this.TotalAmount <= 0 )
+            {
+                // The data context operation doesn't need to wait for this to compelete
+                Task.Run( () => StreakTypeService.HandleFinancialTransactionRecord( this.Id ) );
             }
 
             base.PostSaveChanges( dbContext );
@@ -936,7 +920,7 @@ namespace Rock.Model
     #region Extension Methods
 
     /// <summary>
-    /// 
+    ///
     /// </summary>
     public static partial class FinancialTransactionExtensionMethods
     {

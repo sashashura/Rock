@@ -24,6 +24,7 @@ using System.Text;
 using Quartz;
 
 using Rock.Attribute;
+using Rock.Bus.Message;
 using Rock.Communication;
 using Rock.Data;
 using Rock.Model;
@@ -41,7 +42,7 @@ namespace Rock.Jobs
         "Expiring Credit Card Email",
         Key = AttributeKey.ExpiringCreditCardEmail,
         Description = "The system communication template to use for the credit card expiration notice. The merge fields 'Person', 'Card' (the last four digits of the credit card), and 'Expiring' (the MM/YYYY of expiration) will be available to the email template.",
-        IsRequired = true,
+        IsRequired = false,
         Order = 0 )]
 
     [WorkflowTypeField(
@@ -61,6 +62,15 @@ namespace Rock.Jobs
         Order = 3
         )]
 
+    [BooleanField(
+        "Enable Sending Bus Event",
+        Key = AttributeKey.EnableSendingBusEvent,
+        Description = "When enabled, a 'Credit Card Expiring Soon Message' message will be sent to the Rock message bus.",
+        DefaultValue = "False",
+        IsRequired = false,
+        Order = 4
+        )]
+
     [DisallowConcurrentExecution]
     public class SendCreditCardExpirationNotices : IJob
     {
@@ -72,6 +82,7 @@ namespace Rock.Jobs
             public const string ExpiringCreditCardEmail = "ExpiringCreditCardEmail";
             public const string Workflow = "Workflow";
             public const string RemovedExpiredSavedAccountDays = "RemovedExpiredSavedAccountDays";
+            public const string EnableSendingBusEvent = "EnableSendingBusEvent";
         }
 
         /// <summary> 
@@ -121,7 +132,7 @@ namespace Rock.Jobs
             }
 
             // Remove expired, saved accounts.
-            RemoveExpiredSavedAccountsResult removeExpiredSavedAccountsResult = RemoveExpiredSavedAccounts( context );
+            var removeExpiredSavedAccountsResult = RemoveExpiredSavedAccounts( context );
 
             // Report any account removal successes.
             if ( removeExpiredSavedAccountsResult.AccountsDeletedCount > 0 )
@@ -152,115 +163,18 @@ namespace Rock.Jobs
         /// Removes any expired saved accounts (if <see cref="AttributeKey.RemovedExpiredSavedAccountDays"/> is set)
         /// </summary>
         /// <param name="context">The context.</param>
-        private RemoveExpiredSavedAccountsResult RemoveExpiredSavedAccounts( IJobExecutionContext context )
+        private FinancialPersonSavedAccountService.RemoveExpiredSavedAccountsResult RemoveExpiredSavedAccounts( IJobExecutionContext context )
         {
             var dataMap = context.JobDetail.JobDataMap;
             int? removedExpiredSavedAccountDays = dataMap.GetString( AttributeKey.RemovedExpiredSavedAccountDays ).AsIntegerOrNull();
+
             if ( !removedExpiredSavedAccountDays.HasValue )
             {
-                return new RemoveExpiredSavedAccountsResult();
+                return new FinancialPersonSavedAccountService.RemoveExpiredSavedAccountsResult();
             }
 
-            var financialPersonSavedAccountQry = new FinancialPersonSavedAccountService( new RockContext() ).Queryable()
-                .Where( a => a.FinancialPaymentDetail.ExpirationMonthEncrypted != null )
-                .Where( a => a.PersonAliasId.HasValue || a.GroupId.HasValue )
-                .Where( a => a.FinancialPaymentDetailId.HasValue )
-                .Where( a => a.IsSystem == false )
-                .OrderBy( a => a.Id );
-
-            var savedAccountInfoList = financialPersonSavedAccountQry.Select( a => new SavedAccountInfo
-            {
-                Id = a.Id,
-                FinancialPaymentDetail = a.FinancialPaymentDetail
-            } ).ToList();
-
-            DateTime now = DateTime.Now;
-            int currentMonth = now.Month;
-            int currentYear = now.Year;
-
-            var result = new RemoveExpiredSavedAccountsResult()
-            {
-                // if today is 3/16/2020 and removedExpiredSavedAccountDays is 90, only delete card if it expired before 12/17/2019
-                DeleteIfExpiredBeforeDate = RockDateTime.Today.AddDays( -removedExpiredSavedAccountDays.Value )
-            };
-
-            foreach ( var savedAccountInfo in savedAccountInfoList )
-            {
-                int? expirationMonth = savedAccountInfo.FinancialPaymentDetail.ExpirationMonth;
-                int? expirationYear = savedAccountInfo.FinancialPaymentDetail.ExpirationYear;
-                if ( !expirationMonth.HasValue || !expirationMonth.HasValue )
-                {
-                    continue;
-                }
-
-                if ( expirationMonth.Value < 1 || expirationMonth.Value > 12 || expirationYear <= DateTime.MinValue.Year || expirationYear >= DateTime.MaxValue.Year )
-                {
-                    // invalid month (or year)
-                    continue;
-                }
-
-                // a credit card with an expiration of April 2020 would be expired on May 1st, 2020
-                var cardExpirationDate = new DateTime( expirationYear.Value, expirationMonth.Value, 1 ).AddMonths( 1 );
-
-                /* Example:
-                 Today's Date: 2020-3-16
-                 removedExpiredSavedAccountDays: 90
-                 Expired Before Date: 2019-12-17 (Today (2020-3-16) - removedExpiredSavedAccountDays)
-                 Cards that expired before 2019-12-17 should be deleted
-                 Delete 04/20 (Expires 05/01/2020) card? No
-                 Delete 05/20 (Expires 06/01/2020) card? No
-                 Delete 01/20 (Expires 03/01/2020) card? No
-                 Delete 12/19 (Expires 01/01/2020) card? No
-                 Delete 11/19 (Expires 12/01/2019) card? Yes
-                 Delete 10/19 (Expires 11/01/2019) card? Yes
-
-                 Today's Date: 2020-3-16
-                 removedExpiredSavedAccountDays: 0
-                 Expired Before Date: 2019-03-16 (Today (2020-3-16) - 0)
-                 Cards that expired before 2019-03-16 should be deleted
-                 Delete 04/20 (Expires 05/01/2020) card? No
-                 Delete 05/20 (Expires 06/01/2020) card? No
-                 Delete 01/20 (Expires 03/01/2020) card? Yes
-                 Delete 12/19 (Expires 01/01/2020) card? Yes
-                 Delete 11/19 (Expires 12/01/2019) card? Yes
-                 Delete 10/19 (Expires 11/01/2019) card? Yes
-                 */
-
-                if ( cardExpirationDate >= result.DeleteIfExpiredBeforeDate )
-                {
-                    // We want to only delete cards that expired more than X days ago, so if this card expiration day is after that, skip
-                    continue;
-                }
-
-                // Card expiration date is older than X day ago, so delete it.
-                // Wrapping the following in a try/catch so a single deletion failure doesn't end the process for all deletion candidates.
-                try
-                {
-                    using ( var savedAccountRockContext = new RockContext() )
-                    {
-                        var financialPersonSavedAccountService = new FinancialPersonSavedAccountService( savedAccountRockContext );
-                        var financialPersonSavedAccount = financialPersonSavedAccountService.Get( savedAccountInfo.Id );
-                        if ( financialPersonSavedAccount != null )
-                        {
-                            if ( financialPersonSavedAccountService.CanDelete( financialPersonSavedAccount, out _ ) )
-                            {
-                                financialPersonSavedAccountService.Delete( financialPersonSavedAccount );
-                                savedAccountRockContext.SaveChanges();
-                                result.AccountsDeletedCount++;
-                            }
-                        }
-                    }
-                }
-                catch ( Exception ex )
-                {
-                    // Provide better identifying context in case the caught exception is too vague.
-                    var exception = new Exception( $"Unable to delete FinancialPersonSavedAccount (ID = {savedAccountInfo.Id}).", ex );
-
-                    result.AccountRemovalExceptions.Add( exception );
-                }
-            }
-
-            return result;
+            var service = new FinancialPersonSavedAccountService( new RockContext() );
+            return service.RemoveExpiredSavedAccounts( removedExpiredSavedAccountDays.Value );
         }
 
         /// <summary>
@@ -284,11 +198,6 @@ namespace Rock.Jobs
                 systemCommunication = systemCommunicationService.Get( systemEmailGuid.Value );
             }
 
-            if ( systemCommunication == null )
-            {
-                throw new Exception( "Expiring credit card email is missing." );
-            }
-
             // Fetch the configured Workflow once if one was set, we'll use it later.
             Guid? workflowGuid = dataMap.GetString( AttributeKey.Workflow ).AsGuidOrNull();
             WorkflowTypeCache workflowType = null;
@@ -299,7 +208,7 @@ namespace Rock.Jobs
             }
 
             var financialScheduledTransactionQuery = new FinancialScheduledTransactionService( rockContext ).Queryable()
-                .Where( t => t.IsActive && t.FinancialPaymentDetail.ExpirationMonthEncrypted != null && ( t.EndDate == null || t.EndDate > DateTime.Now ) )
+                .Where( t => t.IsActive && t.FinancialPaymentDetail.CardExpirationDate != null && ( t.EndDate == null || t.EndDate > RockDateTime.Now ) )
                 .AsNoTracking();
 
             List<ScheduledTransactionInfo> scheduledTransactionInfoList = financialScheduledTransactionQuery.Select( a => new ScheduledTransactionInfo
@@ -311,7 +220,7 @@ namespace Rock.Jobs
             } ).ToList();
 
             // Get the current month and year 
-            DateTime now = DateTime.Now;
+            var now = RockDateTime.Now;
             int currentMonth = now.Month;
             int currentYYYY = now.Year;
 
@@ -323,11 +232,14 @@ namespace Rock.Jobs
                 ExaminedCount = scheduledTransactionInfoList.Count()
             };
 
+            // get attibute value, so we don't have to keep calling it for every person,
+            bool enableSendingEvent = dataMap.GetString( AttributeKey.EnableSendingBusEvent ).AsBoolean();
+
             foreach ( ScheduledTransactionInfo scheduledTransactionInfo in scheduledTransactionInfoList.OrderByDescending( a => a.Id ) )
             {
                 int? expirationMonth = scheduledTransactionInfo.FinancialPaymentDetail.ExpirationMonth;
                 int? expirationYYYY = scheduledTransactionInfo.FinancialPaymentDetail.ExpirationYear;
-                if ( !expirationMonth.HasValue || !expirationMonth.HasValue )
+                if ( !expirationMonth.HasValue || !expirationYYYY.HasValue )
                 {
                     continue;
                 }
@@ -350,45 +262,49 @@ namespace Rock.Jobs
                     }
 
                     string expirationDateMMYYFormatted = scheduledTransactionInfo.FinancialPaymentDetail?.ExpirationDate;
-
                     var recipients = new List<RockEmailMessageRecipient>();
 
                     var person = scheduledTransactionInfo.Person;
 
-                    if ( !person.IsEmailActive || person.Email.IsNullOrWhiteSpace() || person.EmailPreference == EmailPreference.DoNotEmail )
+                    if ( enableSendingEvent )
                     {
-                        continue;
+                        var financialScheduledTransactions = scheduledTransactionInfoList.Where( m => m.Person.Id == person.Id ).Select( m => m.Id );
+                        CreditCardIsExpiringMessage.Publish( person, scheduledTransactionInfo.FinancialPaymentDetail, financialScheduledTransactions.ToList() );
                     }
 
-                    // make a mergeFields for this person, starting with copy of the commonFieldFields 
-                    var mergeFields = new Dictionary<string, object>( commonMergeFields );
-                    mergeFields.Add( "Person", person );
-                    mergeFields.Add( "Card", maskedCardNumber );
-                    mergeFields.Add( "Expiring", expirationDateMMYYFormatted );
-
-                    recipients.Add( new RockEmailMessageRecipient( person, mergeFields ) );
-
-                    var emailMessage = new RockEmailMessage( systemCommunication );
-                    emailMessage.SetRecipients( recipients );
-                    emailMessage.Send( out List<string> emailErrors );
-
-                    if ( emailErrors.Any() )
+                    bool isOpenToEmail = person.IsEmailActive && !person.Email.IsNullOrWhiteSpace() && person.EmailPreference != EmailPreference.DoNotEmail;
+                    if ( systemCommunication != null && isOpenToEmail )
                     {
-                        var errorLines = new StringBuilder();
-                        errorLines.AppendLine( string.Empty );
-                        foreach ( string error in emailErrors )
+                        // make a mergeFields for this person, starting with copy of the commonFieldFields 
+                        var mergeFields = new Dictionary<string, object>( commonMergeFields );
+                        mergeFields.Add( "Person", person );
+                        mergeFields.Add( "Card", maskedCardNumber );
+                        mergeFields.Add( "Expiring", expirationDateMMYYFormatted );
+
+                        recipients.Add( new RockEmailMessageRecipient( person, mergeFields ) );
+
+                        var emailMessage = new RockEmailMessage( systemCommunication );
+                        emailMessage.SetRecipients( recipients );
+                        emailMessage.Send( out List<string> emailErrors );
+
+                        if ( emailErrors.Any() )
                         {
-                            errorLines.AppendLine( error );
+                            var errorLines = new StringBuilder();
+                            errorLines.AppendLine( string.Empty );
+                            foreach ( string error in emailErrors )
+                            {
+                                errorLines.AppendLine( error );
+                            }
+
+                            // Provide better identifying context in case the errors are too vague.
+                            var exception = new Exception( $"Unable to send email (Person ID = {person.Id}).{errorLines}" );
+
+                            result.EmailSendExceptions.Add( exception );
                         }
-
-                        // Provide better identifying context in case the errors are too vague.
-                        var exception = new Exception( $"Unable to send email (Person ID = {person.Id}).{errorLines}" );
-
-                        result.EmailSendExceptions.Add( exception );
-                    }
-                    else
-                    {
-                        result.NoticesSentCount++;
+                        else
+                        {
+                            result.NoticesSentCount++;
+                        }
                     }
 
                     // Start workflow for this person
@@ -459,15 +375,6 @@ namespace Rock.Jobs
             public int NoticesSentCount { get; set; }
 
             public IList<Exception> EmailSendExceptions { get; set; } = new List<Exception>();
-        }
-
-        private class RemoveExpiredSavedAccountsResult
-        {
-            public DateTime DeleteIfExpiredBeforeDate { get; internal set; }
-
-            public int AccountsDeletedCount { get; internal set; }
-
-            public IList<Exception> AccountRemovalExceptions { get; set; } = new List<Exception>();
         }
     }
 }

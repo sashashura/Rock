@@ -28,6 +28,7 @@ using Rock.Model;
 using Rock.Security;
 using Rock.Web;
 using Rock.Web.UI;
+using Rock.Web.UI.Controls;
 
 namespace RockWeb.Blocks.Cms
 {
@@ -38,7 +39,7 @@ namespace RockWeb.Blocks.Cms
     [Category( "CMS" )]
     [Description( "Edit details of a Media Account" )]
 
-    public partial class MediaAccountDetail : RockBlock, IDetailBlock
+    public partial class MediaAccountDetail : RockBlock
     {
         #region PageParameterKeys
 
@@ -62,6 +63,8 @@ namespace RockWeb.Blocks.Cms
             // this event gets fired after block settings are updated. it's nice to repaint the screen if these settings would alter it
             this.BlockUpdated += Block_BlockUpdated;
             this.AddConfigurationUpdateTrigger( upnlContent );
+
+            btnDelete.Attributes["onclick"] = string.Format( "javascript: return Rock.dialogs.confirmDelete(event, '{0}');", MediaAccount.FriendlyTypeName );
         }
 
         /// <summary>
@@ -71,8 +74,6 @@ namespace RockWeb.Blocks.Cms
         protected override void OnLoad( EventArgs e )
         {
             base.OnLoad( e );
-
-            nbActionResult.Text = string.Empty;
 
             if ( !Page.IsPostBack )
             {
@@ -140,7 +141,7 @@ namespace RockWeb.Blocks.Cms
 
             // reload page
             var qryParams = new Dictionary<string, string>();
-            NavigateToPage( RockPage.Guid, qryParams );
+            NavigateToParentPage( qryParams );
         }
 
         /// <summary>
@@ -181,7 +182,7 @@ namespace RockWeb.Blocks.Cms
                 await MediaAccountService.SyncAnalyticsInAccountAsync( mediaAccountId );
             } );
 
-            nbActionResult.Text = "Synchronization with provider started and will continue in the background.";
+            mdSyncMessage.Show( "Synchronization with provider started and will continue in the background.", ModalAlertType.Information );
         }
 
         /// <summary>

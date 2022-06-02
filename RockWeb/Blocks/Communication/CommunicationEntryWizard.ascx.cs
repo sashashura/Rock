@@ -61,7 +61,7 @@ namespace RockWeb.Blocks.Communication
 
     [BinaryFileTypeField( "Attachment Binary File Type",
         Key = AttributeKey.AttachmentBinaryFileType,
-        Description = "The FileType to use for files that are attached to an sms or email communication",
+        Description = "The FileType to use for files that are attached to an SMS or email communication",
         IsRequired = true,
         DefaultBinaryFileTypeGuid = Rock.SystemGuid.BinaryFiletype.COMMUNICATION_ATTACHMENT,
         Order = 2 )]
@@ -81,7 +81,7 @@ namespace RockWeb.Blocks.Communication
 
     [CustomCheckboxListField( "Communication Types",
         Key = AttributeKey.CommunicationTypes,
-        Description = "The communication types that should be available to use for the communication (If none are selected, all will be available).",
+        Description = "The communication types that should be available to use for the communication. (If none are selected, all will be available.) Selecting 'Recipient Preference' will automatically enable Email and SMS as mediums. Push is not an option for selection as a communication preference as delivery is not as reliable as other mediums based on an individual's privacy settings.",
         ListSource = "Recipient Preference,Email,SMS,Push",
         IsRequired = false,
         Order = 5 )]
@@ -140,7 +140,7 @@ namespace RockWeb.Blocks.Communication
         Order = 13 )]
 
     #endregion Block Attributes
-    public partial class CommunicationEntryWizard : RockBlock, IDetailBlock
+    public partial class CommunicationEntryWizard : RockBlock
     {
         #region Attribute Keys
 
@@ -262,6 +262,11 @@ namespace RockWeb.Blocks.Communication
             gIndividualRecipients.GridRebind += gIndividualRecipients_GridRebind;
             gIndividualRecipients.Actions.ShowAdd = false;
             gIndividualRecipients.ShowActionRow = false;
+
+            gRecipientList.DataKeyNames = new string[] { "Id" };
+            gRecipientList.GridRebind += gRecipientList_GridRebind;
+            gRecipientList.Actions.ShowAdd = false;
+            gRecipientList.ShowActionRow = false;
 
             btnUseSimpleEditor.Visible = !string.IsNullOrEmpty( this.GetAttributeValue( AttributeKey.SimpleCommunicationPage ) );
             pnlHeadingLabels.Visible = btnUseSimpleEditor.Visible;
@@ -645,7 +650,7 @@ function onTaskCompleted( resultData )
 
             var selectedNumberGuids = GetAttributeValue( AttributeKey.AllowedSMSNumbers ).SplitDelimitedValues( true ).AsGuidList();
             var smsFromDefinedType = DefinedTypeCache.Get( new Guid( Rock.SystemGuid.DefinedType.COMMUNICATION_SMS_FROM ) );
-            var smsDefinedValues = smsFromDefinedType.DefinedValues.ToList();
+            var smsDefinedValues = smsFromDefinedType.DefinedValues.Where(v => v.IsAuthorized( Authorization.VIEW, this.CurrentPerson ) ).ToList();
             if ( selectedNumberGuids.Any() )
             {
                 smsDefinedValues = smsDefinedValues.Where( v => selectedNumberGuids.Contains( v.Guid ) ).ToList();
@@ -668,17 +673,40 @@ function onTaskCompleted( resultData )
         /// <summary>
         /// Loads the communication types that are configured for this block
         /// </summary>
-        private List<CommunicationType> GetAllowedCommunicationTypes(bool forSelector = false)
+        private List<CommunicationType> GetAllowedCommunicationTypes( bool forSelector = false )
         {
+            /*
+                JME 8/20/2021
+                How the communication type configuration works is tricky. First some background on recipient preference.
+
+                When an individual picks a communication preference they are not given 'Push' as an option. This is
+                because push is a very unreliable medium. We often don't know if the person has disabled it and so the
+                probability of them getting the message is much lower than email or SMS.
+
+                Before the change below, when the block configuration had 'Recipient Preference' enabled it showed ALL
+                mediums. NewSpring did not want that. They wanted 'Recipient Preference' (email and SMS) but not push. We
+                made the change below to allow for that.
+
+                At some point we should probably clean up this code a bit to not rely on text values as the keys and make
+                the logic more reusable for other places in Rock.
+            */
+
             var communicationTypes = this.GetAttributeValue( AttributeKey.CommunicationTypes ).SplitDelimitedValues( false );
 
             var result = new List<CommunicationType>();
             if ( !forSelector && communicationTypes.Contains( "Recipient Preference" ) )
             {
                 result.Add( CommunicationType.RecipientPreference );
+
+                // Recipient preference requires email and SMS to be shown
                 result.Add( CommunicationType.Email );
                 result.Add( CommunicationType.SMS );
-                result.Add( CommunicationType.PushNotification );
+
+                // Enabled push only if it is also enabled
+                if ( communicationTypes.Contains( "Push" ) )
+                {
+                    result.Add( CommunicationType.PushNotification );
+                }
             }
             else if ( communicationTypes.Any() )
             {
@@ -788,6 +816,7 @@ function onTaskCompleted( resultData )
             List<Guid> segmentDataViewGuids = null;
             if ( communicationGroupId.HasValue )
             {
+                btnRecipientList.Text = "View List";
                 var communicationGroup = new GroupService( rockContext ).Get( communicationGroupId.Value );
                 if ( communicationGroup != null )
                 {
@@ -810,6 +839,10 @@ function onTaskCompleted( resultData )
                         }
                     }
                 }
+            }
+            else
+            {
+                btnRecipientList.Text = "Manual List";
             }
 
             pnlCommunicationGroupSegments.Visible = cblCommunicationGroupSegments.Items.Count > 0;
@@ -871,6 +904,92 @@ function onTaskCompleted( resultData )
         private void gIndividualRecipients_GridRebind( object sender, GridRebindEventArgs e )
         {
             BindIndividualRecipientsGrid();
+        }
+
+        /// <summary>
+        /// Handles the GridRebind event of the gRecipientList control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="GridRebindEventArgs"/> instance containing the event data.</param>
+        private void gRecipientList_GridRebind( object sender, GridRebindEventArgs e )
+        {
+            BindCommunicationListRecipientsGrid();
+        }
+
+        /// <summary>
+        /// Handles the RowDataBound event of the gRecipientList control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="GridViewRowEventArgs"/> instance containing the event data.</param>
+        protected void gRecipientList_RowDataBound( object sender, GridViewRowEventArgs e )
+        {
+            var recipientPerson = e.Row.DataItem as Person;
+            var lRecipientListAlert = e.Row.FindControl( "lRecipientListAlert" ) as Literal;
+            var lRecipientListAlertEmail = e.Row.FindControl( "lRecipientListAlertEmail" ) as Literal;
+            var lRecipientListAlertSMS = e.Row.FindControl( "lRecipientListAlertSMS" ) as Literal;
+            if ( recipientPerson != null && lRecipientListAlert != null )
+            {
+                string alertClass = string.Empty;
+                string alertMessage = string.Empty;
+                string alertClassEmail = string.Empty;
+                string alertMessageEmail = recipientPerson.Email;
+                string alertClassSMS = string.Empty;
+                string alertMessageSMS = string.Format( "{0}", recipientPerson.PhoneNumbers.FirstOrDefault( a => a.IsMessagingEnabled ) );
+
+                // General alert info about recipient
+                if ( recipientPerson.IsDeceased )
+                {
+                    alertClass = "text-danger";
+                    alertMessage = "Deceased";
+                }
+
+                // Email related
+                if ( string.IsNullOrWhiteSpace( recipientPerson.Email ) )
+                {
+                    alertClassEmail = "text-danger";
+                    alertMessageEmail = "No Email." + recipientPerson.EmailNote;
+                }
+                else if ( !recipientPerson.IsEmailActive )
+                {
+                    // if email is not active, show reason why as tooltip
+                    alertClassEmail = "text-danger";
+                    alertMessageEmail = "Email is Inactive. " + recipientPerson.EmailNote;
+                }
+                else
+                {
+                    // Email is active
+                    if ( recipientPerson.EmailPreference != EmailPreference.EmailAllowed )
+                    {
+                        alertMessageEmail = string.Format( "{0} <span class='label label-warning'>{1}</span>", recipientPerson.Email, recipientPerson.EmailPreference.ConvertToString( true ) );
+                        if ( recipientPerson.EmailPreference == EmailPreference.NoMassEmails )
+                        {
+                            alertClassEmail = "js-no-bulk-email";
+                            if ( swBulkCommunication.Checked )
+                            {
+                                // This is a bulk email and user does not want bulk emails
+                                alertClassEmail += " text-danger";
+                            }
+                        }
+                        else
+                        {
+                            // Email preference is 'Do Not Email'
+                            alertClassEmail = "text-danger";
+                        }
+                    }
+                }
+
+                // SMS Related
+                if ( !recipientPerson.PhoneNumbers.Any( a => a.IsMessagingEnabled ) )
+                {
+                    // No SMS Number
+                    alertClassSMS = "text-danger";
+                    alertMessageSMS = "No phone number with SMS enabled.";
+                }
+
+                lRecipientListAlert.Text = string.Format( "<span class=\"{0}\">{1}</span>", alertClass, alertMessage );
+                lRecipientListAlertEmail.Text = string.Format( "<span class=\"{0}\">{1}</span>", alertClassEmail, alertMessageEmail );
+                lRecipientListAlertSMS.Text = string.Format( "<span class=\"{0}\">{1}</span>", alertClassSMS, alertMessageSMS );
+            }
         }
 
         /// <summary>
@@ -969,9 +1088,43 @@ function onTaskCompleted( resultData )
 
                 // Bind the list items to the grid.
                 gIndividualRecipients.SetLinqDataSource( qryPersons );
-
                 gIndividualRecipients.DataBind();
             }
+        }
+
+        /// <summary>
+        /// Binds the communication list recipients grid.
+        /// </summary>
+        private void BindCommunicationListRecipientsGrid()
+        {
+            nbListWarning.Visible = true;
+            var listGroupId = ddlCommunicationGroupList.SelectedValue.AsIntegerOrNull();
+
+            if ( listGroupId != null )
+            {
+                var listGroupName = ddlCommunicationGroupList.SelectedItem.Text;
+
+                nbListWarning.Text = string.Format( "Below are the current members of the \"{0}\" List with segment filters applied.\nIf this message is sent at a future date, it is possible that the list may change between now and then.", listGroupName );
+            }
+
+            // Get the list of recipients.
+            var rockContext = new RockContext();
+            var segmentDataViewIds = cblCommunicationGroupSegments.Items.OfType<ListItem>().Where( a => a.Selected ).Select( a => a.Value ).AsIntegerList();
+            var segmentCriteria = rblCommunicationGroupSegmentFilterType.SelectedValueAsEnum<SegmentCriteria>( SegmentCriteria.Any );
+            var recipientIdList = Rock.Model.Communication.GetCommunicationListMembers( rockContext, listGroupId, segmentCriteria, segmentDataViewIds )
+                .Select( x => x.PersonId )
+                .ToList();
+            var personService = new PersonService( rockContext );
+            var qryPersons = personService
+                .Queryable( true )
+                .AsNoTracking()
+                .Where( a => recipientIdList.Contains( a.Id ) )
+                .Include( a => a.PhoneNumbers )
+                .OrderBy( a => a.LastName )
+                .ThenBy( a => a.NickName );
+            // Bind the list items to the grid.
+            gRecipientList.SetLinqDataSource( qryPersons );
+            gRecipientList.DataBind();
         }
 
         /// <summary>
@@ -1041,7 +1194,7 @@ function onTaskCompleted( resultData )
                     listCount = groupMemberQuery.Count();
                     pnlRecipientFromListCount.Visible = true;
 
-                    lRecipientFromListCount.Text = string.Format( "{0} {1} selected", listCount, "recipient".PluralizeIf( listCount != 1 ) );
+                    lRecipientFromListCount.Text = string.Format( "Recipients: {0}", listCount );
                 }
                 else
                 {
@@ -1055,6 +1208,11 @@ function onTaskCompleted( resultData )
                 // Individuals Selection Count.
                 listCount = this.IndividualRecipientPersonIds.Count();
             }
+
+            // Refresh the individual list count, to address the case where the last item in the selection list has been removed.
+            lIndividualRecipientListCount.Text = string.Format( "Recipients: {0}", listCount );
+
+            pnlIndividualRecipientListCount.Visible = listCount > 0;
         }
 
         /// <summary>
@@ -1107,15 +1265,24 @@ function onTaskCompleted( resultData )
         }
 
         /// <summary>
-        /// Handles the Click event of the btnManualList control.
+        /// Handles the Click event of the btnRecipientList control.
         /// </summary>
         /// <param name="sender">The source of the event.</param>
         /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
-        protected void btnManualList_Click( object sender, EventArgs e )
+        protected void btnRecipientList_Click( object sender, EventArgs e )
         {
-            pnlHeadingLabels.Visible = false;
-            pnlListSelection.Visible = false;
-            ShowManualList();
+            var communicationGroupListId = ddlCommunicationGroupList.SelectedValue.AsIntegerOrNull();
+            if ( !communicationGroupListId.HasValue )
+            {
+                pnlHeadingLabels.Visible = false;
+                pnlListSelection.Visible = false;
+                ShowManualList();
+            }
+            else
+            {
+                BindCommunicationListRecipientsGrid();
+                mdCommunicationListRecipients.Show();
+            }
         }
 
         /// <summary>
@@ -1172,7 +1339,7 @@ function onTaskCompleted( resultData )
             }
 
             // See what is allowed by the block settings
-            var allowedCommunicationTypes = GetAllowedCommunicationTypes(true);
+            var allowedCommunicationTypes = GetAllowedCommunicationTypes( true );
             var emailTransportEnabled = _emailTransportEnabled && allowedCommunicationTypes.Contains( CommunicationType.Email );
             var smsTransportEnabled = _smsTransportEnabled && allowedCommunicationTypes.Contains( CommunicationType.SMS );
             var pushTransportEnabled = _pushTransportEnabled && allowedCommunicationTypes.Contains( CommunicationType.PushNotification );
@@ -1582,8 +1749,8 @@ function onTaskCompleted( resultData )
             var allowedCommunicationTypes = GetAllowedCommunicationTypes();
             var communicationTypeIsAllowed = !allowedCommunicationTypes.Any() || allowedCommunicationTypes.Contains( communicationType );
 
-            var selecedCommunicationType = SelectedCommunicationType;
-            var communicationTypeIsSelected = selecedCommunicationType == communicationType || selecedCommunicationType == CommunicationType.RecipientPreference;
+            var selectedCommunicationType = SelectedCommunicationType;
+            var communicationTypeIsSelected = selectedCommunicationType == communicationType || ( selectedCommunicationType == CommunicationType.RecipientPreference && communicationType != CommunicationType.PushNotification); 
 
             return communicationTypeIsAllowed && communicationTypeIsSelected;
         }
@@ -2600,7 +2767,7 @@ function onTaskCompleted( resultData )
                     communication.Status = CommunicationStatus.Approved;
                     communication.ReviewedDateTime = RockDateTime.Now;
                     communication.ReviewerPersonAliasId = CurrentPersonAliasId;
-                    
+
                     if ( communication.FutureSendDateTime.HasValue &&
                                    communication.FutureSendDateTime > RockDateTime.Now )
                     {
@@ -2669,7 +2836,7 @@ function onTaskCompleted( resultData )
             // Set a placeholder value for the navigation URL, to be replaced using client-side script when the task completed notification is sent.
             this.CurrentPageReference.Parameters.AddOrReplace( PageParameterKey.CommunicationId, _viewCommunicationIdPlaceholder );
 
-            var uri = new Uri( Request.Url.ToString() );
+            var uri = new Uri( Request.UrlProxySafe().ToString() );
 
             _viewCommunicationTemplateUrl = uri.Scheme + "://" + uri.GetComponents( UriComponents.HostAndPort, UriFormat.UriEscaped ) + CurrentPageReference.BuildUrl();
 
@@ -2913,11 +3080,11 @@ function onTaskCompleted( resultData )
                     ShowHideConfirmationTabLinks( false, false, true );
                     ShowHideTabPanel( false, false, true );
                     break;
-                default:
+                default: // Recipient Preference
                     var allowedCommunicationTypes = GetAllowedCommunicationTypes();
                     var emailTransportEnabled = _emailTransportEnabled && allowedCommunicationTypes.Contains( CommunicationType.Email );
                     var smsTransportEnabled = _smsTransportEnabled && allowedCommunicationTypes.Contains( CommunicationType.SMS );
-                    var pushTransportEnabled = _pushTransportEnabled && allowedCommunicationTypes.Contains( CommunicationType.PushNotification );
+                    var pushTransportEnabled = false; //_pushTransportEnabled && allowedCommunicationTypes.Contains( CommunicationType.PushNotification ); // Recipient preference should not use push
 
                     if ( emailTransportEnabled )
                     {
@@ -2980,7 +3147,7 @@ function onTaskCompleted( resultData )
 
             if ( pushData.Url.IsNotNullOrWhiteSpace() )
             {
-                openActionDetails.Append( string.Format( "<b>Url:</b> {0}<br />", pushData.Url ) );
+                openActionDetails.Append( string.Format( "<b>URL:</b> {0}<br />", pushData.Url ) );
             }
 
             if ( communication.PushOpenMessage.IsNotNullOrWhiteSpace() )
@@ -3044,7 +3211,7 @@ function onTaskCompleted( resultData )
                 litEmailConfirmationBcc.Text = communication.BCCEmails;
             }
 
-            ifConfirmationEmailPreview.Attributes.Add("onload", "resizeIframe(this)");
+            ifConfirmationEmailPreview.Attributes.Add( "onload", "resizeIframe(this)" );
             ifConfirmationEmailPreview.Attributes["srcdoc"] = communicationHtml;
         }
 

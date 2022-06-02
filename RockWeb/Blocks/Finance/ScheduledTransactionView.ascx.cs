@@ -20,7 +20,9 @@ using System.Data.Entity;
 using System.Linq;
 using System.Web.UI;
 using System.Web.UI.WebControls;
+
 using Newtonsoft.Json;
+
 using Rock;
 using Rock.Attribute;
 using Rock.Data;
@@ -74,10 +76,14 @@ namespace RockWeb.Blocks.Finance
 
         #region PageParameterKeys
 
-        public static class PageParameterKey
+        private static class PageParameterKey
         {
-            public const string Person = "Person";
+            [RockObsolete( "1.13.1" )]
+            [Obsolete( "Pass the GUID instead using the key ScheduledTransactionGuid." )]
             public const string ScheduledTransactionId = "ScheduledTransactionId";
+
+            public const string ScheduledTransactionGuid = "ScheduledTransactionGuid";
+            public const string PersonId = "PersonId";
         }
 
         #endregion PageParameterKeys
@@ -88,6 +94,7 @@ namespace RockWeb.Blocks.Finance
         {
             public const string TransactionDetailsState = "TransactionDetailsState";
             public const string ForeignCurrencyDefinedValueId = "ForeignCurrencyDefinedValueId";
+            public const string PersonIdState = "PersonIdState";
         }
 
         #endregion ViewStateKeys
@@ -128,6 +135,8 @@ namespace RockWeb.Blocks.Finance
             }
         }
 
+        private int? PersonId { get; set; }
+
         #endregion
 
         #region base control methods
@@ -150,7 +159,9 @@ namespace RockWeb.Blocks.Finance
                 TransactionDetailsState = JsonConvert.DeserializeObject<List<FinancialScheduledTransactionDetail>>( json );
             }
 
-            ForeignCurrencyDefinedValueId = (int?) ViewState[ViewStateKey.ForeignCurrencyDefinedValueId];
+            ForeignCurrencyDefinedValueId = ( int? ) ViewState[ViewStateKey.ForeignCurrencyDefinedValueId];
+
+            PersonId = ( int? ) ViewState[ViewStateKey.PersonIdState];
         }
 
         /// <summary>
@@ -170,6 +181,7 @@ namespace RockWeb.Blocks.Finance
 
             ViewState[ViewStateKey.TransactionDetailsState] = JsonConvert.SerializeObject( TransactionDetailsState, Formatting.None, jsonSetting );
             ViewState[ViewStateKey.ForeignCurrencyDefinedValueId] = ForeignCurrencyDefinedValueId;
+            ViewState[ViewStateKey.PersonIdState] = PersonId;
 
             return base.SaveViewState();
         }
@@ -240,11 +252,10 @@ namespace RockWeb.Blocks.Finance
         protected void btnUpdate_Click( object sender, EventArgs e )
         {
             var financialScheduledTransaction = GetScheduledTransaction();
-            if ( financialScheduledTransaction != null && financialScheduledTransaction.AuthorizedPersonAlias != null && financialScheduledTransaction.AuthorizedPersonAlias.Person != null )
+            if ( financialScheduledTransaction != null )
             {
                 var queryParams = new Dictionary<string, string>();
-                queryParams.Add( PageParameterKey.ScheduledTransactionId, financialScheduledTransaction.Id.ToString() );
-                queryParams.Add( PageParameterKey.Person, financialScheduledTransaction.AuthorizedPersonAlias.Person.UrlEncodedKey );
+                queryParams.Add( PageParameterKey.ScheduledTransactionGuid, financialScheduledTransaction.Guid.ToString() );
 
                 var hostedGatewayComponent = financialScheduledTransaction.FinancialGateway.GetGatewayComponent() as IHostedGatewayComponent;
                 if ( hostedGatewayComponent != null && hostedGatewayComponent.GetSupportedHostedGatewayModes( financialScheduledTransaction.FinancialGateway ).Contains( HostedGatewayMode.Hosted ) )
@@ -259,47 +270,77 @@ namespace RockWeb.Blocks.Finance
         }
 
         /// <summary>
+        /// Gets the scheduled transaction Guid based on what is specified in the URL
+        /// </summary>
+        /// <param name="refresh">if set to <c>true</c> [refresh].</param>
+        /// <returns></returns>
+        private Guid? GetScheduledTransactionGuidFromUrl()
+        {
+            var financialScheduledTransactionGuid = PageParameter( PageParameterKey.ScheduledTransactionGuid ).AsGuidOrNull();
+
+#pragma warning disable CS0618
+            var financialScheduledTransactionId = PageParameter( PageParameterKey.ScheduledTransactionId ).AsIntegerOrNull();
+#pragma warning restore CS0618
+
+            if ( financialScheduledTransactionGuid.HasValue  )
+            {
+                return financialScheduledTransactionGuid.Value;
+            }
+
+            if ( financialScheduledTransactionId.HasValue )
+            {
+                return new FinancialScheduledTransactionService( new RockContext() ).GetGuid( financialScheduledTransactionId.Value );
+            }
+
+            return null;
+        }
+
+        /// <summary>
         /// Handles the Click event of the btnRefresh control.
         /// </summary>
         /// <param name="sender">The source of the event.</param>
         /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
         protected void btnRefresh_Click( object sender, EventArgs e )
         {
-            int? financialScheduledTransactionId = PageParameter( PageParameterKey.ScheduledTransactionId ).AsIntegerOrNull();
-            if ( financialScheduledTransactionId.HasValue )
+            var financialScheduledTranactionGuid = GetScheduledTransactionGuidFromUrl();
+            if ( !financialScheduledTranactionGuid.HasValue )
             {
-                using ( var rockContext = new RockContext() )
+                return;
+            }
+
+            using ( var rockContext = new RockContext() )
+            {
+                var financialScheduledTransactionService = new FinancialScheduledTransactionService( rockContext );
+                var financialScheduledTransaction = financialScheduledTransactionService.Queryable()
+                    .Include( a => a.AuthorizedPersonAlias.Person )
+                    .Include( a => a.FinancialGateway )
+                    .FirstOrDefault( t => t.Guid == financialScheduledTranactionGuid.Value );
+
+                if ( financialScheduledTransaction == null )
                 {
-                    var financialScheduledTransactionService = new FinancialScheduledTransactionService( rockContext );
-                    var financialScheduledTransaction = financialScheduledTransactionService.Queryable()
-                        .Include( a => a.AuthorizedPersonAlias.Person )
-                        .Include( a => a.FinancialGateway )
-                        .FirstOrDefault( t => t.Id == financialScheduledTransactionId.Value );
+                    return;
+                }
 
-                    if ( financialScheduledTransaction != null )
+                string errorMessage = string.Empty;
+                if ( financialScheduledTransactionService.GetStatus( financialScheduledTransaction, out errorMessage ) )
+                {
+                    rockContext.SaveChanges();
+                }
+                else
+                {
+                    if ( financialScheduledTransaction.IsActive == false )
                     {
-                        string errorMessage = string.Empty;
-                        if ( financialScheduledTransactionService.GetStatus( financialScheduledTransaction, out errorMessage ) )
-                        {
-                            rockContext.SaveChanges();
-                        }
-                        else
-                        {
-                            if ( financialScheduledTransaction.IsActive == false )
-                            {
-                                // if GetStatus failed, but the scheduled transaction is inactive, just show Schedule is Inactive
-                                // This takes care of dealing with gateways that delete the scheduled payment vs inactivating them on the gateway side
-                                ShowErrorMessage( "Schedule is inactive" );
-                            }
-                            else
-                            {
-                                ShowErrorMessage( errorMessage );
-                            }
-                        }
-
-                        ShowView( financialScheduledTransaction );
+                        // if GetStatus failed, but the scheduled transaction is inactive, just show Schedule is Inactive
+                        // This takes care of dealing with gateways that delete the scheduled payment vs inactivating them on the gateway side
+                        ShowErrorMessage( "Schedule is inactive" );
+                    }
+                    else
+                    {
+                        ShowErrorMessage( errorMessage );
                     }
                 }
+
+                ShowView( financialScheduledTransaction );
             }
         }
 
@@ -310,38 +351,42 @@ namespace RockWeb.Blocks.Finance
         /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
         protected void btnCancelSchedule_Click( object sender, EventArgs e )
         {
-            int? financialScheduledTransactionId = PageParameter( PageParameterKey.ScheduledTransactionId ).AsIntegerOrNull();
-            if ( financialScheduledTransactionId.HasValue )
+            var financialScheduledTranactionGuid = GetScheduledTransactionGuidFromUrl();
+            if ( !financialScheduledTranactionGuid.HasValue )
             {
-                using ( var rockContext = new RockContext() )
+                return;
+            }
+
+            using ( var rockContext = new RockContext() )
+            {
+                var financialScheduledTransactionService = new FinancialScheduledTransactionService( rockContext );
+                var financialScheduledTransaction = financialScheduledTransactionService.Queryable()
+                    .Include( a => a.AuthorizedPersonAlias.Person )
+                    .Include( a => a.FinancialGateway )
+                    .FirstOrDefault( t => t.Guid == financialScheduledTranactionGuid.Value );
+
+                if ( financialScheduledTransaction == null )
                 {
-                    var financialScheduledTransactionService = new FinancialScheduledTransactionService( rockContext );
-                    var financialScheduledTransaction = financialScheduledTransactionService.Queryable()
-                        .Include( a => a.AuthorizedPersonAlias.Person )
-                        .Include( a => a.FinancialGateway )
-                        .FirstOrDefault( t => t.Id == financialScheduledTransactionId.Value );
-
-                    if ( financialScheduledTransaction != null )
-                    {
-                        if ( financialScheduledTransaction.FinancialGateway != null )
-                        {
-                            financialScheduledTransaction.FinancialGateway.LoadAttributes( rockContext );
-                        }
-
-                        string errorMessage = string.Empty;
-                        if ( financialScheduledTransactionService.Cancel( financialScheduledTransaction, out errorMessage ) )
-                        {
-                            financialScheduledTransactionService.GetStatus( financialScheduledTransaction, out errorMessage );
-                            rockContext.SaveChanges();
-                        }
-                        else
-                        {
-                            ShowErrorMessage( errorMessage );
-                        }
-
-                        ShowView( financialScheduledTransaction );
-                    }
+                    return;
                 }
+
+                if ( financialScheduledTransaction.FinancialGateway != null )
+                {
+                    financialScheduledTransaction.FinancialGateway.LoadAttributes( rockContext );
+                }
+
+                string errorMessage = string.Empty;
+                if ( financialScheduledTransactionService.Cancel( financialScheduledTransaction, out errorMessage ) )
+                {
+                    financialScheduledTransactionService.GetStatus( financialScheduledTransaction, out errorMessage );
+                    rockContext.SaveChanges();
+                }
+                else
+                {
+                    ShowErrorMessage( errorMessage );
+                }
+
+                ShowView( financialScheduledTransaction );
             }
         }
 
@@ -352,38 +397,42 @@ namespace RockWeb.Blocks.Finance
         /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
         protected void btnReactivateSchedule_Click( object sender, EventArgs e )
         {
-            int? financialScheduledTransactionId = PageParameter( PageParameterKey.ScheduledTransactionId ).AsIntegerOrNull();
-            if ( financialScheduledTransactionId.HasValue )
+            var financialScheduledTranactionGuid = GetScheduledTransactionGuidFromUrl();
+            if ( !financialScheduledTranactionGuid.HasValue )
             {
-                using ( var rockContext = new RockContext() )
+                return;
+            }
+
+            using ( var rockContext = new RockContext() )
+            {
+                var financialScheduledTransactionService = new FinancialScheduledTransactionService( rockContext );
+                var financialScheduledTransaction = financialScheduledTransactionService.Queryable()
+                    .Include( a => a.AuthorizedPersonAlias.Person )
+                    .Include( a => a.FinancialGateway )
+                    .FirstOrDefault( t => t.Guid == financialScheduledTranactionGuid.Value );
+
+                if ( financialScheduledTransaction == null )
                 {
-                    var financialScheduledTransactionService = new FinancialScheduledTransactionService( rockContext );
-                    var financialScheduledTransaction = financialScheduledTransactionService.Queryable()
-                        .Include( a => a.AuthorizedPersonAlias.Person )
-                        .Include( a => a.FinancialGateway )
-                        .FirstOrDefault( t => t.Id == financialScheduledTransactionId.Value );
-
-                    if ( financialScheduledTransaction != null )
-                    {
-                        if ( financialScheduledTransaction.FinancialGateway != null )
-                        {
-                            financialScheduledTransaction.FinancialGateway.LoadAttributes( rockContext );
-                        }
-
-                        string errorMessage = string.Empty;
-                        if ( financialScheduledTransactionService.Reactivate( financialScheduledTransaction, out errorMessage ) )
-                        {
-                            financialScheduledTransactionService.GetStatus( financialScheduledTransaction, out errorMessage );
-                            rockContext.SaveChanges();
-                        }
-                        else
-                        {
-                            ShowErrorMessage( errorMessage );
-                        }
-
-                        ShowView( financialScheduledTransaction );
-                    }
+                    return;
                 }
+
+                if ( financialScheduledTransaction.FinancialGateway != null )
+                {
+                    financialScheduledTransaction.FinancialGateway.LoadAttributes( rockContext );
+                }
+
+                string errorMessage = string.Empty;
+                if ( financialScheduledTransactionService.Reactivate( financialScheduledTransaction, out errorMessage ) )
+                {
+                    financialScheduledTransactionService.GetStatus( financialScheduledTransaction, out errorMessage );
+                    rockContext.SaveChanges();
+                }
+                else
+                {
+                    ShowErrorMessage( errorMessage );
+                }
+
+                ShowView( financialScheduledTransaction );
             }
         }
 
@@ -394,7 +443,15 @@ namespace RockWeb.Blocks.Finance
         /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
         protected void btnCancel_Click( object sender, EventArgs e )
         {
-            NavigateToParentPage();
+            // Passing the person ID to the parent in case the parent page uses the person model context.
+            var queryParams = new Dictionary<string, string>();
+
+            if ( PersonId != null )
+            {
+                queryParams.Add( PageParameterKey.PersonId, PersonId?.ToString() );
+            }
+
+            NavigateToParentPage( queryParams );
         }
 
         /// <summary>
@@ -700,15 +757,15 @@ namespace RockWeb.Blocks.Finance
         /// <returns></returns>
         private FinancialScheduledTransaction GetTransaction( RockContext rockContext )
         {
-            int? scheduledTransactionId = PageParameter( PageParameterKey.ScheduledTransactionId ).AsIntegerOrNull();
-            if ( scheduledTransactionId.HasValue )
+            var scheduledTransactionGuid = GetScheduledTransactionGuidFromUrl();
+            if ( scheduledTransactionGuid.HasValue )
             {
                 var financialScheduledTransactionService = new FinancialScheduledTransactionService( rockContext );
                 return financialScheduledTransactionService
                     .Queryable()
                     .Include( a => a.AuthorizedPersonAlias.Person )
                     .Include( a => a.FinancialGateway )
-                    .FirstOrDefault( t => t.Id == scheduledTransactionId.Value );
+                    .FirstOrDefault( t => t.Guid == scheduledTransactionGuid.Value );
             }
 
             return null;
@@ -727,8 +784,24 @@ namespace RockWeb.Blocks.Finance
 
             ForeignCurrencyDefinedValueId = financialScheduledTransaction.ForeignCurrencyCodeValueId;
 
-            hlStatus.Text = financialScheduledTransaction.IsActive ? "Active" : "Inactive";
-            hlStatus.LabelType = financialScheduledTransaction.IsActive ? LabelType.Success : LabelType.Danger;
+            if ( financialScheduledTransaction.FinancialPaymentDetail.CardExpirationDate < RockDateTime.Now )
+            {
+                // Show that card is expired
+                hlStatus.Text = "Card Expired";
+                hlStatus.LabelType = LabelType.Warning;
+            }
+            else if ( financialScheduledTransaction.Status.HasValue && financialScheduledTransaction.Status != FinancialScheduledTransactionStatus.Active )
+            {
+                // show that that the gateway reported another problem 
+                hlStatus.Text = financialScheduledTransaction.Status.ConvertToString();
+                hlStatus.LabelType = LabelType.Warning;
+            }
+            else
+            {
+
+                hlStatus.Text = financialScheduledTransaction.IsActive ? "Active" : "Inactive";
+                hlStatus.LabelType = financialScheduledTransaction.IsActive ? LabelType.Success : LabelType.Danger;
+            }
 
             string rockUrlRoot = ResolveRockUrl( "/" );
             Person person = null;
@@ -736,6 +809,8 @@ namespace RockWeb.Blocks.Finance
             {
                 person = financialScheduledTransaction.AuthorizedPersonAlias.Person;
             }
+
+            PersonId = person.Id;
 
             var detailsLeft = new DescriptionList().Add( "Person", person );
 
@@ -758,7 +833,7 @@ namespace RockWeb.Blocks.Finance
                 {
                     // Credit Card
                     paymentMethodDetails.Add( "Type", currencyType.Value + ( financialScheduledTransaction.FinancialPaymentDetail.CreditCardTypeValue != null ? ( " - " + financialScheduledTransaction.FinancialPaymentDetail.CreditCardTypeValue.Value ) : string.Empty ) );
-                    paymentMethodDetails.Add( "Name on Card", financialScheduledTransaction.FinancialPaymentDetail.NameOnCard.Trim() );
+                    paymentMethodDetails.Add( "Name on Card", financialScheduledTransaction.FinancialPaymentDetail.NameOnCard?.Trim() );
                     paymentMethodDetails.Add( "Account Number", financialScheduledTransaction.FinancialPaymentDetail.AccountNumberMasked );
                     paymentMethodDetails.Add( "Expires", financialScheduledTransaction.FinancialPaymentDetail.ExpirationDate );
                 }
@@ -786,8 +861,8 @@ namespace RockWeb.Blocks.Finance
                 .Add( "Transaction Code", financialScheduledTransaction.TransactionCode )
                 .Add( "Schedule Id", financialScheduledTransaction.GatewayScheduleId );
 
-            lSummary.Visible = financialScheduledTransaction.Summary.IsNotNullOrWhiteSpace();
-            lSummary.Text = financialScheduledTransaction.Summary.ConvertCrLfToHtmlBr();
+            lComments.Visible = financialScheduledTransaction.Summary.IsNotNullOrWhiteSpace();
+            lComments.Text = financialScheduledTransaction.Summary.ConvertCrLfToHtmlBr();
 
             lDetailsLeft.Text = detailsLeft.Html;
             lDetailsRight.Text = detailsRight.Html;
@@ -930,8 +1005,8 @@ namespace RockWeb.Blocks.Finance
         /// <returns></returns>
         private FinancialScheduledTransaction GetScheduledTransaction()
         {
-            int? financialScheduledTransactionId = PageParameter( PageParameterKey.ScheduledTransactionId ).AsIntegerOrNull();
-            if ( financialScheduledTransactionId.HasValue )
+            var financialScheduledTransactionGuid = GetScheduledTransactionGuidFromUrl();
+            if ( financialScheduledTransactionGuid.HasValue )
             {
                 var rockContext = new RockContext();
                 var service = new FinancialScheduledTransactionService( rockContext );
@@ -942,7 +1017,7 @@ namespace RockWeb.Blocks.Finance
                     .Include( s => s.FinancialGateway )
                     .Include( s => s.FinancialPaymentDetail.CurrencyTypeValue )
                     .Include( s => s.FinancialPaymentDetail.CreditCardTypeValue )
-                    .Where( t => t.Id == financialScheduledTransactionId.Value )
+                    .Where( t => t.Guid == financialScheduledTransactionGuid.Value )
                     .FirstOrDefault();
             }
 
@@ -971,7 +1046,7 @@ namespace RockWeb.Blocks.Finance
             /* 2021-01-28 MDP
 
               FinancialScheduledTransactionDetail.Amount includes the FeeCoverageAmount.
-              For example, if a person scheduld to gave $100.00 but elected to pay $1.80 to cover the fee.
+              For example, if a person scheduled to gave $100.00 but elected to pay $1.80 to cover the fee.
               FinancialScheduledTransactionDetail.Amount would be stored as $101.80 and
               FinancialScheduledTransactionDetail.FeeCoverageAmount would be stored as $1.80.
 

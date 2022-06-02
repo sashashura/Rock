@@ -14,8 +14,13 @@
 // limitations under the License.
 // </copyright>
 //
+using System;
+using System.Collections.Generic;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Rock.Lava;
+using Rock.Lava.Fluid;
+using Rock.Lava.RockLiquid;
+using Rock.Tests.Shared;
 
 namespace Rock.Tests.Integration.Lava
 {
@@ -54,31 +59,188 @@ Font Bold: true
 
             expectedOutput = expectedOutput.Replace( "``", @"""" );
 
-            var context = new LavaDataDictionary() { { "fontsize", 99 }  };
+            var context = new LavaDataDictionary() { { "fontsize", 99 } };
 
             var options = new LavaTestRenderOptions { MergeFields = context };
 
             TestHelper.ExecuteForActiveEngines( ( engine ) =>
             {
+                // RockLiquid uses a different mechanism for registering shortcodes that cannot be tested here.
+                if ( engine.GetType() == typeof( RockLiquidEngine ) )
+                {
+                    return;
+                }
+
                 engine.RegisterShortcode( shortcodeDefinition.Name, ( shortcodeName ) => { return shortcodeDefinition; } );
 
-                TestHelper.AssertTemplateOutput( engine.EngineType, expectedOutput, input, options );
+                TestHelper.AssertTemplateOutput( engine, expectedOutput, input, options );
+            } );
+        }
+
+        [TestMethod]
+        public void Shortcode_ReferencingItemFromParentScope_CorrectlyResolvesItem()
+        {
+            var shortcodeTemplate = @"
+ValueInShortcodeScope = {{ Value }}
+";
+
+            // Create a new test shortcode.
+            var shortcodeDefinition = new DynamicShortcodeDefinition();
+
+            shortcodeDefinition.ElementType = LavaShortcodeTypeSpecifier.Inline;
+            shortcodeDefinition.TemplateMarkup = shortcodeTemplate;
+            shortcodeDefinition.Name = "debug";
+
+            var input = @"
+ValueInOuterScope = {{ Value }}
+{[ debug ]}
+";
+
+            var expectedOutput = @"
+ValueInOuterScope = 99
+ValueInShortcodeScope = 99
+";
+
+            expectedOutput = expectedOutput.Replace( "``", @"""" );
+
+            var context = new LavaDataDictionary() { { "Value", 99 } };
+
+            var options = new LavaTestRenderOptions { MergeFields = context };
+
+            TestHelper.ExecuteForActiveEngines( ( engine ) =>
+            {
+                // RockLiquid uses a different mechanism for registering shortcodes that cannot be tested here.
+                if ( engine.GetType() == typeof( RockLiquidEngine ) )
+                {
+                    return;
+                }
+
+                engine.RegisterShortcode( shortcodeDefinition.Name, ( shortcodeName ) => { return shortcodeDefinition; } );
+
+                TestHelper.AssertTemplateOutput( engine, expectedOutput, input, options );
+            } );
+        }
+
+        /// <summary>
+        /// A shortcode with no specific commands enabled should inherit the enabled commands from the outer scope.
+        /// </summary>
+        [TestMethod]
+        public void Shortcode_WithUnspecifiedEnabledCommands_InheritsEnabledCommandsFromOuterScope()
+        {
+            var shortcodeTemplate = @"
+{% execute %}
+    return ""Shortcode!"";
+{% endexecute %}
+";
+
+            // Create a new test shortcode with no enabled commands.
+            var shortcodeDefinition = new DynamicShortcodeDefinition();
+
+            shortcodeDefinition.ElementType = LavaShortcodeTypeSpecifier.Inline;
+            shortcodeDefinition.TemplateMarkup = shortcodeTemplate;
+            shortcodeDefinition.Name = "shortcode_execute";
+            shortcodeDefinition.EnabledLavaCommands = new List<string> { "" };
+
+            var input = @"
+Shortcode Output:
+{[ shortcode_execute ]}
+<br>
+Main Output:
+{% execute %}
+    return ""Main!"";
+{% endexecute %}
+<br>
+";
+
+            var expectedOutput = @"
+Shortcode Output: Shortcode!<br>
+Main Output: Main!<br>
+";
+
+            // Render the template with the "execute" command enabled.
+            // This permission setting should be inherited by the shortcode, allowing it to render the "execute" command.
+            var options = new LavaTestRenderOptions { EnabledCommands = "execute" };
+
+            TestHelper.ExecuteForActiveEngines( ( engine ) =>
+            {
+                // RockLiquid uses a different mechanism for registering shortcodes that cannot be tested here.
+                if ( engine.GetType() == typeof( RockLiquidEngine ) )
+                {
+                    return;
+                }
+
+                engine.RegisterShortcode( shortcodeDefinition.Name, ( shortcodeName ) => { return shortcodeDefinition; } );
+
+                TestHelper.AssertTemplateOutput( engine, expectedOutput, input, options );
+            } );
+        }
+
+        /// <summary>
+        /// A shortcode that enables a specific command should not cause that command to be enabled outside the scope of the shortcode.
+        /// </summary>
+        [TestMethod]
+        public void Shortcode_WithEnabledCommand_DoesNotEnableCommandForOuterScope()
+        {
+            var shortcodeTemplate = @"
+{% execute %}
+    return ""Shortcode!"";
+{% endexecute %}
+";
+
+            // Create a new test shortcode with the "execute" command permission.
+            var shortcodeDefinition = new DynamicShortcodeDefinition();
+
+            shortcodeDefinition.ElementType = LavaShortcodeTypeSpecifier.Inline;
+            shortcodeDefinition.TemplateMarkup = shortcodeTemplate;
+            shortcodeDefinition.Name = "shortcode_execute";
+            shortcodeDefinition.EnabledLavaCommands = new List<string> { "execute" };
+
+            var input = @"
+Shortcode Output:
+{[ shortcode_execute ]}
+<br>
+Main Output:
+{% execute %}
+    return ""Main!"";
+{% endexecute %}
+<br>
+";
+
+            var expectedOutput = @"
+Shortcode Output: Shortcode!<br>
+Main Output: The Lava command 'execute' is not configured for this template.<br>
+";
+
+            // Render the template with no enabled commands.
+            // The shortcode should render correctly using the enabled commands defined by its definition,
+            // but the main template should show a permission error.
+            var options = new LavaTestRenderOptions { EnabledCommands = "" };
+
+            TestHelper.ExecuteForActiveEngines( ( engine ) =>
+            {
+                // RockLiquid uses a different mechanism for registering shortcodes that cannot be tested here.
+                if ( engine.GetType() == typeof( RockLiquidEngine ) )
+                {
+                    return;
+                }
+
+                engine.RegisterShortcode( shortcodeDefinition.Name, ( shortcodeName ) => { return shortcodeDefinition; } );
+
+                TestHelper.AssertTemplateOutput( engine, expectedOutput, input, options );
             } );
         }
 
         #region Bootstrap Alert
 
         /// <summary>
-        /// Using the Scripturize shortcode produces the expected output.
+        /// Using the BootstrapAlert shortcode produces the expected output.
         /// </summary>
         [DataTestMethod]
         [DataRow( "{[ bootstrapalert type='info' ]}This is an information message.{[ endbootstrapalert ]}", "<div class='alert alert-info'>This is an information message.</div>" )]
 
         public void BootstrapAlertShortcode_VariousTypes_ProducesCorrectHtml( string input, string expectedResult )
         {
-            
-            TestHelper.AssertTemplateOutput( expectedResult,
-                                          input );
+            TestHelper.AssertTemplateOutput( expectedResult, input );
         }
 
         #endregion
@@ -108,8 +270,7 @@ ScheduleName:Saturday4:30pm<br>ScheduleLive:true<br>
         public void ScheduledContentShortcode_ContainedInCaptureBlock_EmitsCorrectOutput()
         {
             var input = @"
-{% capture isScheduleActive %}
-{[ scheduledcontent scheduleid:'6' ]}true{[ endscheduledcontent ]}
+{% capture isScheduleActive %}{[ scheduledcontent scheduleid:'6' ]}true{[ endscheduledcontent ]}
 {% endcapture %}
 Schedule Active = {{isScheduleActive}}
 ";
@@ -137,5 +298,181 @@ Schedule Active = {{isScheduleActive}}
         }
 
         #endregion
+
+        /// <summary>
+        /// Verify that an invalid shortcode name correctly throws a shortcode parsing error when embedded in an if/endif block.
+        /// </summary>
+        [TestMethod]
+        public void ShortcodeParsing_UndefinedShortcodeTag_ThrowsUnknownShortcodeParsingError()
+        {
+            // Create a template containing an undefined shortcode "testshortcode1".
+
+            var input = @"
+<p>Document start.</p>
+{[ testshortcode1 ]}
+<p>Document end.</p>
+";
+
+            TestHelper.ExecuteForActiveEngines( ( engine ) =>
+            {
+                var result = engine.RenderTemplate( input, new LavaRenderParameters { ExceptionHandlingStrategy = ExceptionHandlingStrategySpecifier.Ignore } );
+
+                var error = result.Error;
+
+                // Verify that the result is the expected parse error.
+                if ( !( result.Error is LavaParseException ) )
+                {
+                    throw new Exception( "Parse exception expected but not encountered." );
+                }
+
+                if ( engine.GetType() == typeof( FluidEngine ) )
+                {
+                    Assert.That.IsTrue( result.Error.Message.Contains( "Unknown shortcode 'testshortcode1'" ), "Unexpected Lava error message." );
+                }
+            } );
+
+        }
+
+        /// <summary>
+        /// Verify that an invalid shortcode name correctly throws a shortcode parsing error when embedded in an if/endif block.
+        /// </summary>
+        [TestMethod]
+        public void ShortcodeParsing_UndefinedShortcodeEmbeddedInIfBlock_ThrowsCorrectParsingError()
+        {
+            // Create a template containing an undefined shortcode "testshortcode1".
+
+            var input = @"
+{% if 1 == 1 %}
+    {[ invalidshortcode ]}
+{% endif %}
+";
+
+            TestHelper.ExecuteForActiveEngines( ( engine ) =>
+            {
+                var result = engine.RenderTemplate( input, new LavaRenderParameters { ExceptionHandlingStrategy = ExceptionHandlingStrategySpecifier.Ignore } );
+
+                var error = result.Error;
+
+                // Verify that the result is the expected parse error.
+                if ( !( result.Error is LavaParseException ) )
+                {
+                    throw new Exception( "Parse exception expected but not encountered." );
+                }
+
+                // In Fluid, parse error should correctly identify the invalid shortcode.
+                if ( engine.GetType() == typeof( FluidEngine ) )
+                {
+                    if ( !result.Error.Message.Contains( "Unknown shortcode 'invalidshortcode'" ) )
+                    {
+                        throw result.Error;
+                    }
+                }
+
+            } );
+
+        }
+
+        /// <summary>
+        /// Verify that a shortcode tag is parsed correctly when embedded in an if/endif block.
+        /// </summary>
+        /// <remarks>This test is necessary to verify custom changes to the Fluid parser.</remarks>
+        [TestMethod]
+        public void ShortcodeParsing_ShortcodeEmbeddedInIfBlock_IsParsedCorrectly()
+        {
+            var input = @"
+{% if 1 == 1 %}
+{[ sparkline type:'line' data:'5,6,7,9,9,5,3,2,2,4,6,7' ]}
+{% endif %}
+";
+
+            var expectedResult = @"
+<script src='~/Scripts/sparkline/jquery-sparkline.min.js' type='text/javascript'></script>
+<span class=""sparkline sparkline-id-<guid>"">Loading...</span><script>
+  $("".sparkline-id-<guid>"").sparkline([5,6,7,9,9,5,3,2,2,4,6,7], {
+      type: 'line'
+      , width: 'auto'
+      , height: 'auto'
+      , lineColor: '#ee7625'
+      , fillColor: '#f7c09b'
+      , lineWidth: 1
+      , spotColor: '#f80'
+      , minSpotColor: '#f80'
+      , maxSpotColor: '#f80'
+      , highlightSpotColor: ''
+      , highlightLineColor: ''
+      , spotRadius: 1.5
+      , chartRangeMin: undefined
+      , chartRangeMax: undefined
+      , chartRangeMinX: undefined
+      , chartRangeMaxX: undefined
+      , normalRangeMin: undefined
+      , normalRangeMax: undefined
+      , normalRangeColor: '#ccc'
+    });
+  </script>
+";
+
+            TestHelper.AssertTemplateOutput( expectedResult, input, new LavaTestRenderOptions { Wildcards = new List<string> { "<guid>" } } );
+        }
+
+        /// <summary>
+        /// Verify that an invalid shortcode name correctly throws a shortcode parsing error when embedded in an if/endif block.
+        /// </summary>
+        [TestMethod]
+        public void ShortcodeParsing_ShortcodeEmbeddedInOuterShortcode_IsParsedCorrectly()
+        {
+            var input = @"
+{[ accordion ]}
+    [[ item title:'Line Chart' ]]
+        {[ sparkline type:'line' data:'5,6,7,9,9,5,3,2,2,4,6,7' ]}
+    [[ enditem ]]
+{[ endaccordion ]}
+";
+
+            var expectedResult = @"
+<div class=""panel-group"" id=""accordion-id-<guid1>"" role=""tablist"" aria-multiselectable=""true"">
+    <div class=""panel panel-default"">
+        <div class=""panel-heading"" role=""tab"" id=""heading1-id-<guid1>"">
+          <h4 class=""panel-title"">
+            <a role=""button"" data-toggle=""collapse"" data-parent=""#accordion-id-<guid1>"" href=""#collapse1-id-<guid1>"" aria-expanded=""true"" aria-controls=""collapse1"">
+              Line Chart
+            </a>
+          </h4>
+        </div>
+        <div id=""collapse1-id-<guid1>"" class=""panel-collapse collapse in"" role=""tabpanel"" aria-labelledby=""heading1-id-<guid1>"">
+          <div class=""panel-body"">
+            <script src='~/Scripts/sparkline/jquery-sparkline.min.js' type='text/javascript'></script>
+            <span class=""sparkline sparkline-id-<guid2>"">Loading...</span>
+            <script>
+              $("".sparkline-id-<guid2>"").sparkline([5,6,7,9,9,5,3,2,2,4,6,7], {
+                  type: 'line'
+                  , width: 'auto'
+                  , height: 'auto'
+                  , lineColor: '#ee7625'
+                  , fillColor: '#f7c09b'
+                  , lineWidth: 1
+                  , spotColor: '#f80'
+                  , minSpotColor: '#f80'
+                  , maxSpotColor: '#f80'
+                  , highlightSpotColor: ''
+                  , highlightLineColor: ''
+                  , spotRadius: 1.5
+                  , chartRangeMin: undefined
+                  , chartRangeMax: undefined
+                  , chartRangeMinX: undefined
+                  , chartRangeMaxX: undefined
+                  , normalRangeMin: undefined
+                  , normalRangeMax: undefined
+                  , normalRangeColor: '#ccc'
+                });
+            </script>
+          </div>
+        </div>
+    </div>
+</div>
+";
+
+            TestHelper.AssertTemplateOutput( expectedResult, input, new LavaTestRenderOptions { Wildcards = new List<string> { "<guid1>", "<guid2>" } } );
+        }
     }
 }

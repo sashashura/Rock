@@ -19,6 +19,7 @@ using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Rock.Data;
 using Rock.Lava;
+using Rock.Lava.RockLiquid;
 using Rock.Model;
 using Rock.Tests.Shared;
 
@@ -37,6 +38,7 @@ namespace Rock.Tests.Integration.Lava
         /// correctly unwraps Lava library types when the filter is called.
         /// </summary>
         [TestMethod]
+        [Ignore( "Enable this test only if needed to test specific aspects of the RockLiquid implementation." )]
         public void DotLiquid_FilterRegisteredToDotLiquidFramework_ProducesCorrectResultInLavaLibrary()
         {
             DotLiquid.Template.RegisterFilter( typeof( TestDotLiquidFilter ) );
@@ -60,7 +62,7 @@ namespace Rock.Tests.Integration.Lava
 
             var options = new LavaTestRenderOptions { MergeFields = values };
 
-            TestHelper.AssertTemplateOutput( LavaEngineTypeSpecifier.RockLiquid, expectedOutput, inputTemplate, options );
+            TestHelper.AssertTemplateOutput( typeof( RockLiquidEngine ), expectedOutput, inputTemplate, options );
         }
 
         #endregion

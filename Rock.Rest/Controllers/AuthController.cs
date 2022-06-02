@@ -15,11 +15,13 @@
 // </copyright>
 //
 using System.Net;
+using System.Net.Http;
 using System.Web.Http;
+
 using Rock.Data;
 using Rock.Model;
+using Rock.Rest.Jwt;
 using Rock.Security;
-using Rock.Web.Cache;
 
 namespace Rock.Rest.Controllers
 {
@@ -37,55 +39,109 @@ namespace Rock.Rest.Controllers
         [System.Web.Http.Route( "api/Auth/Login" )]
         public void Login( [FromBody] LoginParameters loginParameters )
         {
-            if ( !IsLoginValid( loginParameters ) )
+            string userName;
+            if ( !IsLoginValid( loginParameters, out var errorMessage, out userName ) )
             {
-                throw new HttpResponseException( HttpStatusCode.Unauthorized );
+                var errorResponse = ControllerContext.Request.CreateErrorResponse( HttpStatusCode.Unauthorized, errorMessage );
+                throw new HttpResponseException( errorResponse );
             }
 
-            Rock.Security.Authorization.SetAuthCookie( loginParameters.Username, loginParameters.Persisted, false );
+            Rock.Security.Authorization.SetAuthCookie( userName, loginParameters.Persisted, false );
         }
 
         /// <summary>
         /// Check if the login parameters are valid
         /// </summary>
-        /// <param name="loginParameters"></param>
-        /// <returns></returns>
-        private bool IsLoginValid( LoginParameters loginParameters )
+        /// <param name="loginParameters">The parameters that describe the login request.</param>
+        /// <param name="errorMessage">The error message if method returns <c>false</c>.</param>
+        /// <param name="userName">Name of the user.</param>
+        /// <returns><c>true</c> if the login request was valid; otherwise <c>false</c>.</returns>
+        internal static bool IsLoginValid( LoginParameters loginParameters, out string errorMessage, out string userName )
         {
-            if ( loginParameters == null || loginParameters.Username.IsNullOrWhiteSpace() )
+            userName = null;
+            if ( loginParameters == null )
             {
+                errorMessage = "Invalid Login Parameters";
                 return false;
             }
 
+            bool isAuthenticatedFromToken;
             UserLogin userLogin;
+
             using ( var rockContext = new RockContext() )
             {
                 var userLoginService = new UserLoginService( rockContext );
-                userLogin = userLoginService.GetByUserName( loginParameters.Username );
+                if ( loginParameters.Authorization.IsNotNullOrWhiteSpace() )
+                {
+                    userLogin = JwtHelper.GetUserLoginByJSONWebToken( rockContext, loginParameters.Authorization );
+                    if ( userLogin == null )
+                    {
+                        errorMessage = "Invalid Token";
+                        return false;
+                    }
+
+                    isAuthenticatedFromToken = true;
+                }
+                else if ( loginParameters.Username.IsNotNullOrWhiteSpace() )
+                {
+                    userLogin = userLoginService.GetByUserName( loginParameters.Username );
+                    isAuthenticatedFromToken = false;
+                }
+                else
+                {
+                    errorMessage = "Invalid Login Parameters";
+                    return false;
+                }
 
                 if ( userLogin == null || userLogin.EntityType == null )
                 {
+                    errorMessage = "Invalid login type.";
+                    return false;
+                }
+
+                // Do not allow login if account is locked out.
+                if ( userLogin.IsLockedOut.HasValue && userLogin.IsLockedOut.Value )
+                {
+                    errorMessage = "Account is locked out.";
+                    return false;
+                }
+
+                // Do not allow login if account is not confirmed.
+                if ( !userLogin.IsConfirmed.HasValue || userLogin.IsConfirmed.Value == false )
+                {
+                    errorMessage = "Account is not confirmed.";
                     return false;
                 }
             }
 
-            var pinAuthentication = AuthenticationContainer.GetComponent( typeof( Rock.Security.Authentication.PINAuthentication ).FullName );
-
-            // Don't allow PIN authentications.
-            var userLoginEntityType = EntityTypeCache.Get( userLogin.EntityTypeId.Value );
-            if ( userLoginEntityType != null && userLoginEntityType.Id == pinAuthentication.EntityType.Id )
-            {
-                return false;
-            }
-
             var component = AuthenticationContainer.GetComponent( userLogin.EntityType.Name );
-
             if ( component == null || !component.IsActive )
             {
+                errorMessage = "Account type is inactive.";
                 return false;
             }
 
-            return component.Authenticate( userLogin, loginParameters.Password );
+            if ( component is Rock.Security.Authentication.PINAuthentication )
+            {
+                // Don't allow PIN authentications.
+                errorMessage = "Account type is not supported.";
+                return false;
+            }
+
+            bool isAuthenticated;
+            if ( isAuthenticatedFromToken )
+            {
+                isAuthenticated = true;
+            }
+            else
+            {
+                isAuthenticated = component.Authenticate( userLogin, loginParameters.Password );
+            }
+
+            errorMessage = !isAuthenticated ? "Invalid user name or password." : null;
+            userName = userLogin?.UserName;
+
+            return isAuthenticated;
         }
     }
 }

@@ -19,7 +19,6 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data.Entity;
 using System.Linq;
-using System.Linq.Dynamic;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using Newtonsoft.Json;
@@ -63,7 +62,7 @@ namespace RockWeb.Blocks.Event
         Order = 2,
         Key = AttributeKey.GroupDetailPage )]
 
-    public partial class EventItemOccurrenceDetail : RockBlock, IDetailBlock
+    public partial class EventItemOccurrenceDetail : RockBlock
     {
         #region Properties
 
@@ -585,7 +584,7 @@ namespace RockWeb.Blocks.Event
             if ( eventItemOccurrence.Schedule != null )
             {
                 sbSchedule.iCalendarContent = eventItemOccurrence.Schedule.iCalendarContent;
-                lScheduleText.Text = eventItemOccurrence.Schedule.FriendlyScheduleText;
+                lScheduleText.Text = "<span class='text-sm'>" + eventItemOccurrence.Schedule.FriendlyScheduleText + "</span>";
             }
             else
             {
@@ -614,7 +613,7 @@ namespace RockWeb.Blocks.Event
         protected void sbSchedule_SaveSchedule( object sender, EventArgs e )
         {
             var schedule = new Schedule { iCalendarContent = sbSchedule.iCalendarContent };
-            lScheduleText.Text = schedule.FriendlyScheduleText;
+            lScheduleText.Text = "<span class='text-sm'>" + schedule.FriendlyScheduleText + "</span>";
         }
 
         /// <summary>
@@ -804,12 +803,14 @@ namespace RockWeb.Blocks.Event
                     }
                 }
 
-                foreach ( var x in linkedRegistrationsToRemove )
+                // Remove the link from the linkages and then delete it from the occurrence group map.
+                foreach ( var linkedRegistration in linkedRegistrationsToRemove )
                 {
-                    eventItemOccurrence.Linkages.Remove( x );
+                    eventItemOccurrence.Linkages.Remove( linkedRegistration );
+                    eventItemOccurrenceGroupMapService.Delete( linkedRegistration );
                 }
 
-                // Add/update
+                // Add/update links to the event occurrence.
                 foreach ( var linkedRegistrationState in LinkedRegistrationsState )
                 {
                     // Get or create the linkage
@@ -1169,7 +1170,9 @@ namespace RockWeb.Blocks.Event
                 {
                     foreach ( var instance in new RegistrationInstanceService( rockContext )
                         .Queryable().AsNoTracking()
-                        .Where( i => i.RegistrationTemplateId == templateId.Value )
+                        .Where( i => i.RegistrationTemplateId == templateId.Value
+                            && i.RegistrationTemplate.IsActive == true
+                            && i.IsActive == true )
                         .OrderBy( i => i.Name )
                         )
                     {
@@ -1191,7 +1194,10 @@ namespace RockWeb.Blocks.Event
 
             using ( var rockContext = new RockContext() )
             {
-                foreach ( var template in new RegistrationTemplateService( rockContext ).Queryable().AsNoTracking().OrderBy( t => t.Name ) )
+                foreach ( var template in new RegistrationTemplateService( rockContext )
+                    .Queryable().AsNoTracking()
+                    .Where( i => i.IsActive == true )
+                    .OrderBy( t => t.Name ) )
                 {
                     if ( template.IsAuthorized( Authorization.VIEW, CurrentPerson ) )
                     {
@@ -1462,6 +1468,18 @@ namespace RockWeb.Blocks.Event
 
                 args.IsValid = !existsInCurrentList && !eventMapingService.Queryable().AsNoTracking().Any( m => m.UrlSlug == urlSlug && m.Guid != groupMapId );
             }
+        }
+
+        protected void rvUrlSlug_ServerValidate( object source, ServerValidateEventArgs args )
+        {
+            var urlSlug = args.Value;
+            if ( urlSlug.IsNullOrWhiteSpace() )
+            {
+                return;
+            }
+
+            var match = System.Text.RegularExpressions.Regex.Match( urlSlug, "^[a-z0-9]+(?:-[a-z0-9]+)*$" );
+            args.IsValid = match.Success;
         }
     }
 }

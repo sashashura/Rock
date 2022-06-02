@@ -47,6 +47,12 @@ namespace RockWeb.Blocks.Examples
     [KeyValueListField( "Category Icons", "The Icon Class to use for each category.", false, "", "Category", "Icon Css Class" )]
     public partial class ModelMap : RockBlock
     {
+        #region Fields
+
+        private const string DEFINED_TYPE_ROUTE = "/admintools/general/defined-type/";
+
+        #endregion Fields
+
         #region Properties
 
         protected List<MCategory> EntityCategories { get; set; }
@@ -242,10 +248,12 @@ namespace RockWeb.Blocks.Examples
                 }
             }
 
-            foreach ( var entity in EntityTypeCache.All().Where( t => t.IsEntity ) )
+            RegisterIncludeForModelMapTypes();
+
+            foreach ( var entity in EntityTypeCache.All() )
             {
                 var type = entity.GetEntityType();
-                if ( type != null && type.InheritsOrImplements( typeof( Rock.Data.Entity<> ) ) )
+                if ( type != null && (entity.IsEntity || type.GetCustomAttribute( typeof( IncludeForModelMapAttribute ) ) != null) ) 
                 {
                     string category = "Other";
                     var domainAttr = type.GetCustomAttribute<RockDomainAttribute>( false );
@@ -260,7 +268,7 @@ namespace RockWeb.Blocks.Examples
                     if ( entityCategory == null )
                     {
                         entityCategory = new MCategory { Guid = Guid.NewGuid(), Name = category, RockEntityIds = new List<int>() };
-                        entityCategory.IconCssClass = categoryIcons.ContainsKey( category ) ? categoryIcons[category] : "fa fa-th-large";
+                        entityCategory.IconCssClass = categoryIcons.ContainsKey( category ) ? categoryIcons[category] : "fa fa-network-wired";
                         entityCategories.Add( entityCategory );
                     }
 
@@ -270,6 +278,26 @@ namespace RockWeb.Blocks.Examples
 
             EntityCategories = new List<MCategory>( entityCategories.Where( c => c.Name != "Other" ).OrderBy( c => c.Name ) );
             EntityCategories.AddRange( entityCategories.Where( c => c.Name == "Other" ) );
+        }
+
+        /// <summary>
+        /// Registers the <see cref="IncludeForModelMapAttribute"/> model types.
+        /// </summary>
+        private void RegisterIncludeForModelMapTypes()
+        {
+            var modelMapAssembly = Assembly.GetAssembly( typeof( IncludeForModelMapAttribute ) );
+            var modelMapTypes = from type in modelMapAssembly.GetTypes()
+                                where System.Attribute.IsDefined( type, typeof( IncludeForModelMapAttribute ) )
+                                select type;
+
+            if ( modelMapTypes?.Count() > 0 )
+            {
+                foreach ( var modelMapType in modelMapTypes )
+                {
+                    // Call EntityTypeCache.Get to register the modelMapType if it isn't already registered
+                    EntityTypeCache.Get( modelMapType, true, new RockContext() );
+                }
+            }
         }
 
         private void ShowData( Guid? categoryGuid, int? entityTypeId )
@@ -358,7 +386,7 @@ namespace RockWeb.Blocks.Examples
                                 NotMapped = p.IsDefined( typeof( NotMappedAttribute ) ),
                                 Required = p.IsDefined( typeof( RequiredAttribute ) ),
                                 Id = p.MetadataToken,
-                                Comment = GetComments( p, xmlComments ),
+                                Comment = GetComments( p, xmlComments, properties ),
                                 IsEnum = p.PropertyType.IsEnum,
                                 IsDefinedValue = p.Name.EndsWith( "ValueId" ) && p.IsDefined( typeof( DefinedValueAttribute ) )
                             };
@@ -380,8 +408,9 @@ namespace RockWeb.Blocks.Examples
                                 {
                                     property.KeyValues = new Dictionary<string, string>();
                                     var definedTypeGuid = definedValueAttribute.DefinedTypeGuid.Value;
-                                    var definedValues = DefinedTypeCache.Get( definedTypeGuid ).DefinedValues;
-                                    foreach ( var definedValue in definedValues )
+                                    var definedType = DefinedTypeCache.Get( definedTypeGuid );
+                                    property.DefinedTypeId = definedType.Id;
+                                    foreach ( var definedValue in definedType.DefinedValues )
                                     {
                                         property.KeyValues.AddOrReplace( string.Format( "{0} = {1}", definedValue.Id, definedValue.Value ), definedValue.Description );
                                     }
@@ -476,7 +505,7 @@ namespace RockWeb.Blocks.Examples
                         }
 
                         sb.AppendFormat(
-                            "<tr data-id='p{0}' {11}><td class='d-block d-sm-table-cell'>{8}<tt class='cursor-default font-weight-bold {3}' title='{6}'>{1}</tt> {4}{5}</td><td class='d-block d-sm-table-cell'>{9}{2}{10}</td></tr>{7}",
+                            "<tr data-id='p{0}' {11}><td class='d-block d-sm-table-cell'>{8}<tt class='cursor-default font-weight-bold {3}' title='{6}'>{1}</tt> {4}{5}</td><td class='d-block d-sm-table-cell'>{9}{2}{12}{10}</td></tr>{7}",
                             property.Id, // 0
                             HttpUtility.HtmlEncode( property.Name ), // 1
                             ( property.Comment != null && !string.IsNullOrWhiteSpace( property.Comment.Summary ) ) ? " " + property.Comment.Summary : string.Empty, // 2
@@ -488,7 +517,8 @@ namespace RockWeb.Blocks.Examples
                             property.NotMapped || property.IsVirtual ? "<i class='fa fa-square fa-fw o-20'></i> " : "<i class='fa fa-database fa-fw'></i> ", // 8
                             property.IsObsolete ? "<i class='fa fa-ban fa-fw text-danger' title='no longer supported'></i> <span class='small text-danger'>" + property.ObsoleteMessage + " </span> " : string.Empty, // 9
                             ( property.IsEnum || property.IsDefinedValue ) && property.KeyValues != null ? GetStringFromKeyValues( property.KeyValues ) : string.Empty, /*10*/
-                            property.IsObsolete ? "class='o-50' title='Obsolete'" : "class=''"
+                            property.IsObsolete ? "class='o-50' title='Obsolete'" : "class=''",
+                            ( property.IsEnum || property.IsDefinedValue ) ? GetStringForEnumOrDefinedType( property ) : string.Empty
                             );
                     }
 
@@ -607,6 +637,63 @@ namespace RockWeb.Blocks.Examples
         /// given member object.
         /// </summary>
         /// <param name="p">The MemberInfo instance.</param>
+        /// <param name="properties">The properties.</param>
+        /// <returns>an XmlComment object</returns>
+        private XmlComment GetComments( MemberInfo p, Dictionary<string, XElement> xmlComments, PropertyInfo[] properties )
+        {
+            XmlComment xmlComment = new XmlComment();
+
+            try
+            {
+                var prefix = "P:";
+
+                string path = string.Format( "{0}{1}.{2}", prefix, ( p.DeclaringType != null ) ? p.DeclaringType.FullName : "Rock.Model", p.Name );
+
+                var name = xmlComments != null && xmlComments.ContainsKey( path ) ? xmlComments[path] : null;
+                if ( name != null )
+                {
+                    if ( name.Element( "summary" ) == null )
+                    {
+                        var reader = name.CreateReader();
+                        reader.MoveToContent();
+                        var xml = reader.ReadInnerXml();
+                        var match = System.Text.RegularExpressions.Regex.Match( xml, @"<inheritdoc cref=""P:(.*?)""(?: />|>(.*)</inheritdoc>)" );
+                        if ( match.Success )
+                        {
+                            System.Text.RegularExpressions.Regex.Match( match.Value, @"<inheritdoc cref=""P:(.*?)""(?: />|>(.*)</inheritdoc>)" );
+                            var property = properties.Where( a => a.Name == match.Groups[1].Value.Split( '.' ).LastOrDefault() ).FirstOrDefault();
+                            if ( property != null )
+                            {
+                                xmlComment = GetComments( property, xmlComments );
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // Read the InnerXml contents of the summary Element.
+                        var reader = name.Element( "summary" ).CreateReader();
+                        reader.MoveToContent();
+                        var xml = reader.ReadInnerXml();
+                        xmlComment.Summary = MakeSummaryHtml( xml );
+                    }
+
+                    xmlComment.Value = name.Element( "value" ).ValueSafe();
+                    xmlComment.Remarks = name.Element( "remarks" ).ValueSafe();
+                    xmlComment.Returns = name.Element( "returns" ).ValueSafe();
+                }
+            }
+            catch
+            {
+            }
+
+            return xmlComment;
+        }
+
+        /// <summary>
+        /// Gets the comments from the data in the assembly's XML file for the
+        /// given member object.
+        /// </summary>
+        /// <param name="p">The MemberInfo instance.</param>
         /// <returns>an XmlComment object</returns>
         private string GetObsoleteMessage( MemberInfo p )
         {
@@ -687,6 +774,22 @@ namespace RockWeb.Blocks.Examples
             }
 
             return string.Empty;
+        }
+
+        private string GetStringForEnumOrDefinedType( MProperty property )
+        {
+            var value = string.Empty;
+            if ( property.IsEnum )
+            {
+                value = " This is a hard coded list of values defined in the code as an enumeration.";
+            }
+            else if ( property.DefinedTypeId.HasValue )
+            {
+                var definedType = DefinedTypeCache.Get( property.DefinedTypeId.Value );
+                value = $" These are found in the \"<a href=\"{DEFINED_TYPE_ROUTE}{definedType.Id}\">{definedType.Name}</a>\" Defined Type.";
+            }
+
+            return value;
         }
 
         private string GetStringFromKeyValues( Dictionary<string, string> keyValues )
@@ -775,6 +878,8 @@ namespace RockWeb.Blocks.Examples
         public bool IsEnum { get; set; }
 
         public bool IsDefinedValue { get; set; }
+
+        public int? DefinedTypeId { get; set; }
 
         public Dictionary<string, string> KeyValues { get; set; }
 

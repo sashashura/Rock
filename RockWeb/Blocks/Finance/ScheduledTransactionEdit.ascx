@@ -49,7 +49,7 @@
                                             <Rock:DatePicker ID="dtpStartDate" runat="server" Label="Next Gift" />
                                         </div>
 
-                                        <Rock:DataTextBox ID="tbSummary" runat="server" Label="Summary" TextMode="MultiLine" Rows="2" ValidateRequestMode="Disabled"
+                                        <Rock:DataTextBox ID="tbComments" runat="server" Label="Comments" TextMode="MultiLine" Rows="2" ValidateRequestMode="Disabled"
                                             SourceTypeName="Rock.Model.FinancialScheduledTransaction, Rock" PropertyName="Summary" />
 
                                     </fieldset>
@@ -87,7 +87,7 @@
 
                                         <div id="divCCPaymentInfo" runat="server" visible="false">
                                             <fieldset>
-                                                <Rock:RockRadioButtonList ID="rblSavedCC" runat="server" Label=" " CssClass="radio-list" RepeatDirection="Vertical" DataValueField="Id" DataTextField="Name" />
+                                                <Rock:RockRadioButtonList ID="rblSavedCC" runat="server" Label=" " CssClass="radio-list" RepeatDirection="Vertical" DataValueField="Id" DataTextField="DisplayName" />
                                                 <div id="divNewCard" runat="server" class="radio-content">
                                                     <Rock:RockTextBox ID="txtCardFirstName" runat="server" Label="First Name on Card" Visible="false"></Rock:RockTextBox>
                                                     <Rock:RockTextBox ID="txtCardLastName" runat="server" Label="Last Name on Card" Visible="false"></Rock:RockTextBox>
@@ -110,7 +110,7 @@
 
                                         <div id="divACHPaymentInfo" runat="server" visible="false">
                                             <fieldset>
-                                                <Rock:RockRadioButtonList ID="rblSavedAch" runat="server" Label=" " CssClass="radio-list" RepeatDirection="Vertical" DataValueField="Id" DataTextField="Name" />
+                                                <Rock:RockRadioButtonList ID="rblSavedAch" runat="server" Label=" " CssClass="radio-list" RepeatDirection="Vertical" DataValueField="Id" DataTextField="DisplayName" />
                                                 <div id="divNewBank" runat="server" class="radio-content">
                                                     <Rock:RockTextBox ID="txtRoutingNumber" runat="server" Label="Routing Number" />
                                                     <Rock:RockTextBox ID="txtAccountNumber" runat="server" Label="Account Number" />

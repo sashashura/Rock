@@ -73,157 +73,25 @@ namespace Rock.StatementGenerator.Rest
         [Authenticate, Secured]
         [HttpPost]
         [System.Web.Http.Route( "api/FinancialGivingStatement/UploadGivingStatementDocument" )]
-        public void UploadGivingStatementDocument( [FromBody] FinancialStatementGeneratorUploadGivingStatementData uploadGivingStatementData )
+        public FinancialStatementGeneratorUploadGivingStatementResult UploadGivingStatementDocument( [FromBody] FinancialStatementGeneratorUploadGivingStatementData uploadGivingStatementData )
         {
-            var rockContext = new RockContext();
-
-            var saveOptions = uploadGivingStatementData?.FinancialStatementIndividualSaveOptions;
-
-            if ( saveOptions == null )
-            {
-                throw new FinancialGivingStatementArgumentException( "FinancialStatementIndividualSaveOptions must be specified" );
-            }
-
-            if ( !saveOptions.SaveStatementsForIndividuals )
-            {
-                throw new FinancialGivingStatementArgumentException( "FinancialStatementIndividualSaveOptions.SaveStatementsForIndividuals is not enabled." );
-            }
-
-            var documentTypeId = saveOptions.DocumentTypeId;
-
-            if ( !documentTypeId.HasValue )
-            {
-                throw new FinancialGivingStatementArgumentException( "Document Type must be specified" );
-            }
-
-            var documentType = new DocumentTypeService( rockContext )
-                    .Queryable()
-                    .AsNoTracking()
-                    .Where( dt => dt.Id == documentTypeId.Value )
-                    .Select( a => new
-                    {
-                        BinaryFileTypeId = ( int? ) a.BinaryFileTypeId
-                    } )
-                    .FirstOrDefault();
-
-            if ( documentType == null )
-            {
-                throw new FinancialGivingStatementArgumentException( "DocumentType must be specified" );
-            }
-
-            if ( documentType.BinaryFileTypeId == null )
-            {
-                throw new FinancialGivingStatementArgumentException( "DocumentType.BinaryFileType must be specified" );
-            }
-
-            var pdfData = uploadGivingStatementData.PDFData;
-
-            string fileName = saveOptions.DocumentName + ".pdf";
-
-            var financialStatementGeneratorRecipient = uploadGivingStatementData.FinancialStatementGeneratorRecipient;
-            if ( financialStatementGeneratorRecipient == null )
-            {
-                throw new FinancialGivingStatementArgumentException( "FinancialStatementGeneratorRecipient must be specified" );
-            }
-
-            var documentName = saveOptions.DocumentName;
-
-            var groupId = financialStatementGeneratorRecipient.GroupId;
-            var givingFamilyMembersQuery = new GroupMemberService( rockContext ).GetByGroupId( groupId, false );
-
-            List<int> documentPersonIds;
-            if ( saveOptions.DocumentSaveFor == FinancialStatementGeneratorOptions.FinancialStatementIndividualSaveOptions.FinancialStatementIndividualSaveOptionsSaveFor.AllActiveAdults )
-            {
-                documentPersonIds = givingFamilyMembersQuery.Where( a => a.Person.AgeClassification == AgeClassification.Adult ).Select( a => a.PersonId ).ToList();
-            }
-            else if ( saveOptions.DocumentSaveFor == FinancialStatementGeneratorOptions.FinancialStatementIndividualSaveOptions.FinancialStatementIndividualSaveOptionsSaveFor.AllActiveFamilyMembers )
-            {
-                documentPersonIds = givingFamilyMembersQuery.Select( a => a.PersonId ).ToList();
-            }
-            else
-            {
-                var headOfHouseHoldPersonId = givingFamilyMembersQuery.GetHeadOfHousehold( s => ( int? ) s.PersonId );
-                documentPersonIds = new List<int>();
-                if ( headOfHouseHoldPersonId.HasValue )
-                {
-                    documentPersonIds.Add( headOfHouseHoldPersonId.Value );
-                }
-            }
-
-            var documentService = new DocumentService( rockContext );
-            var today = RockDateTime.Today;
-            var tomorrow = today.AddDays( 1 );
-
-            foreach ( var documentPersonId in documentPersonIds )
-            {
-                // Create the document, linking the entity and binary file.
-                Document document = null;
-                if ( saveOptions.OverwriteDocumentsOfThisTypeCreatedOnSameDate == true )
-                {
-                    // See if there is an existing one.
-                    // Note include BinaryFile in the Get since we'll have to mark it temporary if it exists.
-                    document = documentService.Queryable().Where(
-                        a => a.DocumentTypeId == documentTypeId.Value
-                        && a.EntityId == documentPersonId
-                        && a.CreatedDateTime.HasValue
-                        && a.CreatedDateTime >= today && a.CreatedDateTime < tomorrow )
-                        .Include( a => a.BinaryFile )
-                        .FirstOrDefault();
-                }
-
-                if ( document == null )
-                {
-                    document = new Document
-                    {
-                        DocumentTypeId = documentTypeId.Value,
-                        EntityId = documentPersonId,
-                    };
-
-                    documentService.Add( document );
-                }
-                else
-                {
-                    // we'll overwrite with a new binary file, so mark the old one as temporary so it'll get cleared up
-                    if ( document.BinaryFile != null )
-                    {
-                        document.BinaryFile.IsTemporary = true;
-                    }
-                }
-
-                // Create the binary file.
-                var binaryFile = new BinaryFile
-                {
-                    BinaryFileTypeId = documentType.BinaryFileTypeId,
-                    MimeType = "application/pdf",
-                    FileName = fileName,
-                    FileSize = pdfData.Length,
-                    IsTemporary = false,
-                    ContentStream = new MemoryStream( pdfData )
-                };
-
-                new BinaryFileService( rockContext ).Add( binaryFile );
-
-                document.PurposeKey = saveOptions.DocumentPurposeKey;
-                document.Name = saveOptions.DocumentName;
-                document.Description = saveOptions.DocumentDescription;
-                document.BinaryFile = binaryFile;
-            }
-
-            rockContext.SaveChanges();
+            return FinancialStatementGeneratorHelper.UploadGivingStatementDocument( uploadGivingStatementData );
         }
 
         /// <summary>
-        /// Render and return a giving statement for the specified person.
+        /// Render and return a giving statement for the specified person. If the person
+        /// uses combined giving, the statement will be for the person's giving group.
         /// </summary>
-        /// <param name="personId">The person that made the contributions. That person's entire
-        /// giving group is included, which is typically the family.</param>
+        /// <param name="personId">The person that the statement is for. If the person
+        /// uses combined giving, the statement will be for the person's giving group,
+        /// which is typically the family.</param>
         /// <param name="year">The contribution calendar year. ie 2019.  If not specified, the
         /// current year is assumed.</param>
         /// <param name="templateDefinedValueId">[Obsolete] The defined value ID that represents the statement
         /// lava. This defined value should be a part of the Statement Generator Lava Template defined
         /// type. If no ID is specified, then the default defined value for the Statement Generator Lava
         /// Template defined type is assumed.</param>
-        /// <param name="financialStatementTemplateId"></param>
+        /// <param name="financialStatementTemplateId">The Statement Template to use. This is required (unless the obsolete templateDefinedValueId is specified).</param>
         /// <param name="hideRefundedTransactions">if set to <c>true</c> transactions that have any
         /// refunds will be hidden.</param>
         /// <returns>
@@ -287,10 +155,26 @@ namespace Rock.StatementGenerator.Rest
                 StartDate = startDate,
             };
 
-            var financialStatementGeneratorRecipientRequest = new FinancialStatementGeneratorRecipientRequest( options )
+            var financialStatementGeneratorRecipientRequest = new FinancialStatementGeneratorRecipientRequest( options );
+            if ( person.GivingGroupId.HasValue )
             {
-                FinancialStatementGeneratorRecipient = new FinancialStatementGeneratorRecipient { GroupId = person.PrimaryFamilyId.Value, PersonId = person.Id }
-            };
+                // If person has a GivingGroupId get the combined statement for the GivingGroup
+                financialStatementGeneratorRecipientRequest.FinancialStatementGeneratorRecipient = new FinancialStatementGeneratorRecipient
+                {
+                    GroupId = person.GivingGroupId.Value,
+                    PersonId = null
+                };
+            }
+            else
+            {
+                // If person gives individually ( GivingGroupId is null) get the individual statement for the person
+                // and specify Group as the Primary Family so we know which Family to use for the address.
+                financialStatementGeneratorRecipientRequest.FinancialStatementGeneratorRecipient = new FinancialStatementGeneratorRecipient
+                {
+                    GroupId = person.PrimaryFamilyId.Value,
+                    PersonId = person.Id
+                };
+            }
 
             // Get the generator result
             FinancialStatementGeneratorRecipientResult result = FinancialStatementGeneratorHelper.GetStatementGeneratorRecipientResult( financialStatementGeneratorRecipientRequest, this.GetPerson() );

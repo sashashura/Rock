@@ -35,6 +35,12 @@ namespace Rock.Client
         public int Id { get; set; }
 
         /// <summary />
+        public int? AccountParticipantSystemCommunicationId { get; set; }
+
+        /// <summary />
+        public int? AlertSummaryNotificationGroupId { get; set; }
+
+        /// <summary />
         public Rock.Client.Enums.AlertType AlertType { get; set; }
 
         /// <summary />
@@ -53,6 +59,9 @@ namespace Rock.Client
         public int? DataViewId { get; set; }
 
         /// <summary />
+        public int? FinancialAccountId { get; set; }
+
+        /// <summary />
         public Guid? ForeignGuid { get; set; }
 
         /// <summary />
@@ -60,6 +69,9 @@ namespace Rock.Client
 
         /// <summary />
         public decimal? FrequencySensitivityScale { get; set; }
+
+        /// <summary />
+        public bool IncludeChildFinancialAccounts { get; set; }
 
         /// <summary />
         public int? MaximumDaysSinceLastGift { get; set; }
@@ -89,6 +101,9 @@ namespace Rock.Client
 
         /// <summary />
         public int? RepeatPreventionDuration { get; set; }
+
+        /// <summary />
+        public int /* DayOfWeekFlag*/? RunDays { get; set; }
 
         /// <summary />
         public bool SendBusEvent { get; set; }
@@ -132,15 +147,19 @@ namespace Rock.Client
         public void CopyPropertiesFrom( FinancialTransactionAlertType source )
         {
             this.Id = source.Id;
+            this.AccountParticipantSystemCommunicationId = source.AccountParticipantSystemCommunicationId;
+            this.AlertSummaryNotificationGroupId = source.AlertSummaryNotificationGroupId;
             this.AlertType = source.AlertType;
             this.AmountSensitivityScale = source.AmountSensitivityScale;
             this.CampusId = source.CampusId;
             this.ConnectionOpportunityId = source.ConnectionOpportunityId;
             this.ContinueIfMatched = source.ContinueIfMatched;
             this.DataViewId = source.DataViewId;
+            this.FinancialAccountId = source.FinancialAccountId;
             this.ForeignGuid = source.ForeignGuid;
             this.ForeignKey = source.ForeignKey;
             this.FrequencySensitivityScale = source.FrequencySensitivityScale;
+            this.IncludeChildFinancialAccounts = source.IncludeChildFinancialAccounts;
             this.MaximumDaysSinceLastGift = source.MaximumDaysSinceLastGift;
             this.MaximumGiftAmount = source.MaximumGiftAmount;
             this.MaximumMedianGiftAmount = source.MaximumMedianGiftAmount;
@@ -150,6 +169,7 @@ namespace Rock.Client
             this.Name = source.Name;
             this.Order = source.Order;
             this.RepeatPreventionDuration = source.RepeatPreventionDuration;
+            this.RunDays = source.RunDays;
             this.SendBusEvent = source.SendBusEvent;
             this.SystemCommunicationId = source.SystemCommunicationId;
             this.WorkflowTypeId = source.WorkflowTypeId;
@@ -169,6 +189,12 @@ namespace Rock.Client
     public partial class FinancialTransactionAlertType : FinancialTransactionAlertTypeEntity
     {
         /// <summary />
+        public SystemCommunication AccountParticipantSystemCommunication { get; set; }
+
+        /// <summary />
+        public Group AlertSummaryNotificationGroup { get; set; }
+
+        /// <summary />
         public Campus Campus { get; set; }
 
         /// <summary />
@@ -176,6 +202,9 @@ namespace Rock.Client
 
         /// <summary />
         public DataView DataView { get; set; }
+
+        /// <summary />
+        public FinancialAccount FinancialAccount { get; set; }
 
         /// <summary />
         public ICollection<FinancialTransactionAlert> FinancialTransactionAlerts { get; set; }

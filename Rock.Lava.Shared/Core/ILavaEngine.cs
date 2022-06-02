@@ -24,8 +24,13 @@ namespace Rock.Lava
     /// <summary>
     /// Represents the Lava Engine that is responsible for compiling and rendering templates.
     /// </summary>
-    public interface ILavaEngine
+    public interface ILavaEngine : ILavaService
     {
+        /// <summary>
+        /// An event that is triggered when the LavaEngine encounters a processing exception.
+        /// </summary>
+        event EventHandler<LavaEngineExceptionEventArgs> ExceptionEncountered;
+
         /// <summary>
         /// Remove all items from the template cache.
         /// </summary>
@@ -43,20 +48,18 @@ namespace Rock.Lava
         void Initialize( LavaEngineConfigurationOptions options = null );
 
         /// <summary>
-        /// The descriptive name of the templating framework on which Lava is currently operating.
+        /// The descriptive name of the Liquid framework on which Lava is currently operating.
         /// </summary>
         string EngineName { get; }
 
         /// <summary>
-        /// The Liquid template framework used to parse and render Lava templates.
+        /// The Liquid framework currently used to parse and render Lava templates.
         /// </summary>
-        LavaEngineTypeSpecifier EngineType { get; }
+        Guid EngineIdentifier { get; }
 
         /// <summary>
-        /// Creates a new render context instance containing the specified merge values.
+        /// Creates a new render context instance.
         /// </summary>
-        /// <param name="values"></param>
-        /// <param name="enabledCommands"></param>
         /// <returns></returns>
         ILavaRenderContext NewRenderContext();
 
@@ -68,7 +71,7 @@ namespace Rock.Lava
         ILavaRenderContext NewRenderContext( IEnumerable<string> enabledCommands );
 
         /// <summary>
-        /// Creates a new render context instance containing the specified merge values.
+        /// Creates a new render context instance.
         /// </summary>
         /// <param name="mergeFields"></param>
         /// <param name="enabledCommands"></param>
@@ -76,7 +79,7 @@ namespace Rock.Lava
         ILavaRenderContext NewRenderContext( IDictionary<string, object> mergeFields, IEnumerable<string> enabledCommands = null );
 
         /// <summary>
-        /// Creates a new render context instance containing the specified merge values.
+        /// Creates a new render context instance.
         /// </summary>
         /// <param name="mergeFields"></param>
         /// <param name="enabledCommands"></param>
@@ -84,7 +87,7 @@ namespace Rock.Lava
         ILavaRenderContext NewRenderContext( ILavaDataDictionary mergeFields, IEnumerable<string> enabledCommands = null );
 
         /// <summary>
-        /// Creates a new render context instance containing the specified merge values.
+        /// Creates a new render context instance.
         /// </summary>
         /// <param name="mergeFields"></param>
         /// <param name="enabledCommands"></param>
@@ -94,14 +97,14 @@ namespace Rock.Lava
 
         /// <summary>
         /// Register one or more filter functions that are implemented by the supplied Type.
-        /// A filter must be defined as a public static function that returns a string.
+        /// A filter must be defined as a public static function that returns a value.
         /// </summary>
         /// <param name="implementingType"></param>
         void RegisterFilters( Type implementingType );
 
         /// <summary>
         /// Register a filter function.
-        /// A filter must be defined as a public static function that returns a string.
+        /// A filter must be defined as a public static function that returns a value.
         /// </summary>
         /// <param name="filterMethod"></param>
         /// <param name="filterName"></param>
@@ -148,25 +151,35 @@ namespace Rock.Lava
         /// Remove the registration entry for a Tag with the specified name.
         /// </summary>
         /// <param name="name"></param>
-        void DeregisterTag( string name );
+        /// <returns>true, if the item was previously registered.</returns>
+        bool DeregisterTag( string name );
 
         /// <summary>
         /// Remove the registration entry for a Block with the specified name.
         /// </summary>
         /// <param name="name"></param>
-        void DeregisterBlock( string name );
+        /// <returns>true, if the item was previously registered.</returns>
+        bool DeregisterBlock( string name );
 
         /// <summary>
         /// Remove the registration entry for a Shortcode with the specified name.
         /// </summary>
         /// <param name="name"></param>
-        void DeregisterShortcode( string name );
+        /// <returns>true, if the item was previously registered.</returns>
+        bool DeregisterShortcode( string name );
 
         /// <summary>
         /// Gets the collection of all registered Lava document elements.
         /// </summary>
         /// <returns></returns>
         Dictionary<string, ILavaElementInfo> GetRegisteredElements();
+
+        /// <summary>
+        /// Parse the provided text into a compiled Lava template object. The resulting template can be used to render output with a variety of render contexts.
+        /// </summary>
+        /// <param name="inputTemplate"></param>
+        /// <returns>A compiled template object.</returns>
+        LavaParseResult ParseTemplate( string inputTemplate );
 
         /// <summary>
         /// Render the provided template.
@@ -177,17 +190,6 @@ namespace Rock.Lava
         /// If the template is invalid, returns an error message or an empty string according to the current ExceptionHandlingStrategy setting.
         /// </returns>
         LavaRenderResult RenderTemplate( string inputTemplate );
-
-        /// <summary>
-        /// Render the provided template in the specified context.
-        /// </summary>
-        /// <param name="inputTemplate"></param>
-        /// <param name="context"></param>
-        /// <returns>
-        /// The rendered output of the template.
-        /// If the template is invalid, returns an error message or an empty string according to the current ExceptionHandlingStrategy setting.
-        /// </returns>
-        //string RenderTemplate( string inputTemplate, ILavaRenderContext context );
 
         /// <summary>
         /// Render the provided template in a new context with the specified merge fields.
@@ -201,7 +203,7 @@ namespace Rock.Lava
         LavaRenderResult RenderTemplate( string inputTemplate, ILavaDataDictionary mergeFields );
 
         /// <summary>
-        /// Render the provided template in a new context with the specified merge fields.
+        /// Render the provided template in a new context with the specified parameters.
         /// </summary>
         /// <param name="inputTemplate"></param>
         /// <param name="parameters">The settings applied to the rendering process.</param>
@@ -219,6 +221,16 @@ namespace Rock.Lava
         /// A LavaRenderResult object, containing the rendered output of the template or any errors encountered during the rendering process.
         /// </returns>
         LavaRenderResult RenderTemplate( ILavaTemplate inputTemplate, LavaRenderParameters parameters );
+
+        /// <summary>
+        /// Render the provided template in a new context with the specified merge fields.
+        /// </summary>
+        /// <param name="inputTemplate"></param>
+        /// <param name="context">The context in which the template should be rendered.</param>
+        /// <returns>
+        /// A LavaRenderResult object, containing the rendered output of the template or any errors encountered during the rendering process.
+        /// </returns>
+        LavaRenderResult RenderTemplate( ILavaTemplate inputTemplate, ILavaRenderContext context );
 
         /// <summary>
         /// Register a type that can be referenced in a template during the rendering process.
@@ -241,21 +253,6 @@ namespace Rock.Lava
         void RegisterSafeType( Type type, IEnumerable<string> allowedMembers );
 
         /// <summary>
-        /// Try to parse the provided template.
-        /// </summary>
-        /// <param name="inputTemplate"></param>
-        /// <param name="template"></param>
-        /// <returns></returns>
-        //bool TryParseTemplate( string inputTemplate, out ILavaTemplate template, out List<Exception> errors );
-
-        /// <summary>
-        /// Parse the provided template.
-        /// </summary>
-        /// <param name="inputTemplate"></param>
-        /// <returns>A compiled template object.</returns>
-        LavaParseResult ParseTemplate( string inputTemplate );
-
-        /// <summary>
         /// Compare two objects for equivalence according to the applicable Lava equality rules for the input object types.
         /// </summary>
         /// <param name="left"></param>
@@ -270,16 +267,6 @@ namespace Rock.Lava
     }
 
     #region Enumerations
-
-    public enum LavaEngineTypeSpecifier
-    {
-        // A fork of the DotLiquid framework, customised to include Lava syntax and features.
-        RockLiquid = 1,
-        // DotLiquid is an open-source implementation of the Liquid templating language. [https://github.com/dotliquid/dotliquid]
-        DotLiquid = 2,
-        // Fluid is an open-source implementation of the Liquid templating language. [https://github.com/sebastienros/fluid]
-        Fluid = 3,
-    }
 
     /// <summary>
     /// Specifies a strategy for handling exceptions encountered during the template rendering process.
@@ -300,88 +287,119 @@ namespace Rock.Lava
         Ignore = 2
     }
 
+    #endregion
+
+    #region Support Classes
+
     /// <summary>
     /// Contains the result of a Lava template rendering operation.
     /// </summary>
     public class LavaRenderResult
     {
-        public string Text;
-        public List<Exception> Errors;
+        /// <summary>
+        /// The final output of the render process.
+        /// </summary>
+        public string Text { get; set; }
+
+        /// <summary>
+        /// The top-level exception encountered while processing the render operation, or null if the operation succeeded.
+        /// </summary>
+        public Exception Error { get; set; }
+
+        /// <summary>
+        /// A flag indicating if the operation encountered any errors.
+        /// </summary>
         public bool HasErrors
         {
             get
             {
-                return this.Errors != null
-                       && this.Errors.Count > 0;
+                return this.Error != null;
             }
         }
 
-        public LavaException GetLavaException()
+        /// <summary>
+        /// Get the Error result as a LavaException.
+        /// </summary>
+        /// <param name="message"></param>
+        /// <returns></returns>
+        public LavaException GetLavaException( string message = null )
         {
-            if ( this.Errors == null
-                 || this.Errors.Count == 0 )
+            if ( this.Error == null )
             {
                 return null;
             }
 
-            if ( this.Errors.Count == 1 )
+            if ( string.IsNullOrWhiteSpace( message ) )
             {
-                if ( this.Errors[0] is LavaException le )
-                {
-                    return le;
-                }
-                else
-                {
-                    return new LavaException( "One or more errors occurred while processing a Lava template.", this.Errors[0] );
-                }
+                message = this.Error.Message;
             }
 
-            var ae = new AggregateException( this.Errors );
-
-            return new LavaException( "One or more errors occurred while processing a Lava template.", ae.Flatten() );
+            if ( this.Error is LavaException le )
+            {
+                return le;
+            }
+            else
+            {
+                return new LavaException( message, this.Error );
+            }
         }
     }
 
     /// <summary>
-    /// Contains the result of a Lava template rendering operation.
+    /// Contains the result of a Lava template parsing operation.
     /// </summary>
     public class LavaParseResult
     {
+        /// <summary>
+        /// A compiled template object that is the result of the parse process.
+        /// </summary>
         public ILavaTemplate Template;
-        public List<Exception> Errors;
+
+        /// <summary>
+        /// The top-level exception encountered while processing the parse operation, or null if the operation succeeded.
+        /// </summary>
+        public Exception Error;
+
+        /// <summary>
+        /// A flag indicating if the operation encountered any errors.
+        /// </summary>
         public bool HasErrors
         {
             get
             {
-                return this.Errors != null
-                       && this.Errors.Count > 0;
+                return this.Error != null;
             }
         }
 
+        /// <summary>
+        /// Get the Error result as a LavaException.
+        /// </summary>
+        /// <param name="message"></param>
+        /// <returns></returns>
         public LavaException GetLavaException()
         {
-            if ( this.Errors == null
-                 || this.Errors.Count == 0 )
+            if ( this.Error == null )
             {
                 return null;
             }
 
-            if ( this.Errors.Count == 1 )
+            if ( this.Error is LavaException le )
             {
-                if ( this.Errors[0] is LavaException le )
-                {
-                    return le;
-                }
-                else
-                {
-                    return new LavaException( "One or more errors occurred while parsing a Lava template.", this.Errors[0] );
-                }
+                return le;
             }
-
-            var ae = new AggregateException( this.Errors );
-
-            return new LavaException( "One or more errors occurred while parsing a Lava template.", ae.Flatten() );
+            else
+            {
+                return new LavaException( "An error occurred while parsing a Lava template.", this.Error );
+            }
         }
+    }
+
+    /// <summary>
+    /// Contains details of an event that is fired when the Lava Engine encounters a processing exception.
+    /// </summary>
+    public class LavaEngineExceptionEventArgs : EventArgs
+    {
+        public LavaException Exception;
     }
 
     #endregion

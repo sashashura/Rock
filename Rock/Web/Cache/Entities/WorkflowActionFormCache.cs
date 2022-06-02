@@ -22,277 +22,160 @@ using System.Runtime.Serialization;
 
 using Rock.Data;
 using Rock.Model;
+using Rock.Workflow.FormBuilder;
 
 namespace Rock.Web.Cache
 {
     /// <summary>
-    /// Cached WorkflowActionForm
+    /// Cached <seealso cref="WorkflowActionForm"/>
     /// </summary>
     [Serializable]
     [DataContract]
     public class WorkflowActionFormCache : ModelCache<WorkflowActionFormCache, WorkflowActionForm>
     {
-
         #region Properties
 
         private readonly object _obj = new object();
 
-        /// <summary>
-        /// Gets the notification communication email identifier.
-        /// </summary>
-        /// <value>
-        /// The notification system communication identifier.
-        /// </value>
+        /// <inheritdoc cref="WorkflowActionForm.NotificationSystemCommunicationId"/>
         [DataMember]
         public int? NotificationSystemCommunicationId { get; private set; }
 
-
-        /// <summary>
-        /// Gets the notification system email identifier.
-        /// </summary>
-        /// <value>
-        /// The notification system email identifier.
-        /// </value>
+        /// <inheritdoc cref="WorkflowActionForm.NotificationSystemEmailId"/>
         [DataMember]
         [Obsolete( "Use NotificationSystemCommunicationId instead." )]
         [RockObsolete( "1.10" )]
         public int? NotificationSystemEmailId { get; private set; }
 
-        /// <summary>
-        /// Gets a value indicating whether [include actions in notification].
-        /// </summary>
-        /// <value>
-        /// <c>true</c> if [include actions in notification]; otherwise, <c>false</c>.
-        /// </value>
+        /// <inheritdoc cref="WorkflowActionForm.IncludeActionsInNotification"/>
         [DataMember]
         public bool IncludeActionsInNotification { get; private set; }
 
-        /// <summary>
-        /// Gets the header.
-        /// </summary>
-        /// <value>
-        /// The header.
-        /// </value>
+        /// <inheritdoc cref="WorkflowActionForm.Header"/>
         [DataMember]
         public string Header { get; private set; }
 
-        /// <summary>
-        /// Gets the footer.
-        /// </summary>
-        /// <value>
-        /// The footer.
-        /// </value>
+        /// <inheritdoc cref="WorkflowActionForm.Footer"/>
         [DataMember]
         public string Footer { get; private set; }
 
-        /// <summary>
-        /// Gets the delimited list of action buttons and actions.
-        /// </summary>
-        /// <value>
-        /// The actions.
-        /// </value>
+        /// <inheritdoc cref="WorkflowActionForm.Actions"/>
         [DataMember]
         public string Actions { get; private set; }
 
-        /// <summary>
-        /// An optional text attribute that will be updated with the action that was selected
-        /// </summary>
-        /// <value>
-        /// The action attribute unique identifier.
-        /// </value>
+        /// <inheritdoc cref="WorkflowActionForm.ActionAttributeGuid"/>
         [DataMember]
         public Guid? ActionAttributeGuid { get; private set; }
 
-        /// <summary>
-        /// Gets whether Notes can be entered
-        /// </summary>
-        /// <value>
-        /// The allow notes.
-        /// </value>
+        /// <inheritdoc cref="WorkflowActionForm.AllowNotes"/>
         [DataMember]
         public bool? AllowNotes { get; private set; }
 
         #region Person entry related Entity Properties
 
-        /// <summary>
-        /// Gets a value indicating whether a new person (and spouse) can be added
-        /// </summary>
-        /// <value>
-        ///   <c>true</c> if [allow person entry]; otherwise, <c>false</c>.
-        /// </value>
+        /// <inheritdoc cref="WorkflowActionForm.AllowPersonEntry"/>
         [DataMember]
         public bool AllowPersonEntry { get; private set; }
 
-        /// <summary>
-        /// Gets the person entry preHTML.
-        /// </summary>
-        /// <value>
-        /// The person entry preHTML.
-        /// </value>
+        /// <inheritdoc cref="WorkflowActionForm.PersonEntryPreHtml"/>
         [DataMember]
         public string PersonEntryPreHtml { get; private set; }
 
-        /// <summary>
-        /// Gets the person entry post HTML.
-        /// </summary>
-        /// <value>
-        /// The person entry post HTML.
-        /// </value>
+        /// <inheritdoc cref="WorkflowActionForm.PersonEntryPostHtml"/>
         [DataMember]
         public string PersonEntryPostHtml { get; private set; }
 
-        /// <summary>
-        /// Gets a value indicating whether [person entry show campus].
-        /// </summary>
-        /// <value>
-        ///   <c>true</c> if [person entry show campus]; otherwise, <c>false</c>.
-        /// </value>
+        /// <inheritdoc cref="WorkflowActionForm.PersonEntryCampusIsVisible"/>
         [DataMember]
         public bool PersonEntryCampusIsVisible { get; private set; }
 
-        /// <summary>
-        /// Gets a value indicating whether Person Entry should auto-fill with the CurrentPerson
-        /// </summary>
-        /// <value>
-        ///   <c>true</c> if [person entry auto-fill current person]; otherwise, <c>false</c>.
-        /// </value>
+        /// <inheritdoc cref="WorkflowActionForm.PersonEntryAutofillCurrentPerson"/>
         [DataMember]
         public bool PersonEntryAutofillCurrentPerson { get; private set; }
 
-        /// <summary>
-        /// Gets a value indicating whether Person Entry should be hidden if the CurrentPerson is known
-        /// </summary>
-        /// <value>
-        ///   <c>true</c> if [person entry hide if current person known]; otherwise, <c>false</c>.
-        /// </value>
+        /// <inheritdoc cref="WorkflowActionForm.PersonEntryHideIfCurrentPersonKnown"/>
         [DataMember]
         public bool PersonEntryHideIfCurrentPersonKnown { get; private set; }
 
-        /// <summary>
-        /// Gets the person entry spouse entry option.
-        /// </summary>
-        /// <value>
-        /// The person entry spouse entry option.
-        /// </value>
+        /// <inheritdoc cref="WorkflowActionForm.PersonEntrySpouseEntryOption"/>
         [DataMember]
         public WorkflowActionFormPersonEntryOption PersonEntrySpouseEntryOption { get; private set; }
 
-        /// <summary>
-        /// Gets the person entry gender entry option.
-        /// </summary>
-        /// <value>
-        /// The person entry gender entry option.
-        /// </value>
+        /// <inheritdoc cref="WorkflowActionForm.PersonEntryGenderEntryOption"/>
         [DataMember]
         public WorkflowActionFormPersonEntryOption PersonEntryGenderEntryOption { get; private set; }
 
-        /// <summary>
-        /// Gets the person entry email entry option.
-        /// </summary>
-        /// <value>
-        /// The person entry email entry option.
-        /// </value>
+        /// <inheritdoc cref="WorkflowActionForm.PersonEntryEmailEntryOption"/>
         [DataMember]
         public WorkflowActionFormPersonEntryOption PersonEntryEmailEntryOption { get; private set; }
 
-        /// <summary>
-        /// Gets the person entry mobile phone entry option.
-        /// </summary>
-        /// <value>
-        /// The person entry mobile phone entry option.
-        /// </value>
+        /// <inheritdoc cref="WorkflowActionForm.PersonEntryMobilePhoneEntryOption"/>
         [DataMember]
         public WorkflowActionFormPersonEntryOption PersonEntryMobilePhoneEntryOption { get; private set; }
 
-        /// <summary>
-        /// Gets the person entry birthdate entry option.
-        /// </summary>
-        /// <value>
-        /// The person entry birthdate entry option.
-        /// </value>
+        /// <inheritdoc cref="WorkflowActionForm.PersonEntryBirthdateEntryOption"/>
         [DataMember]
         public WorkflowActionFormPersonEntryOption PersonEntryBirthdateEntryOption { get; private set; }
 
-        /// <summary>
-        /// Gets the person entry address entry option.
-        /// </summary>
-        /// <value>
-        /// The person entry address entry option.
-        /// </value>
+        /// <inheritdoc cref="WorkflowActionForm.PersonEntryAddressEntryOption"/>
         [DataMember]
         public WorkflowActionFormPersonEntryOption PersonEntryAddressEntryOption { get; private set; }
 
-        /// <summary>
-        /// Gets the person entry marital status entry option.
-        /// </summary>
-        /// <value>
-        /// The person entry marital entry option.
-        /// </value>
+        /// <inheritdoc cref="WorkflowActionForm.PersonEntryMaritalStatusEntryOption"/>
         [DataMember]
         public WorkflowActionFormPersonEntryOption PersonEntryMaritalStatusEntryOption { get; private set; }
 
-        /// <summary>
-        /// Gets the person entry spouse label.
-        /// </summary>
-        /// <value>
-        /// The person entry spouse label.
-        /// </value>
+        /// <inheritdoc cref="WorkflowActionForm.PersonEntrySpouseLabel"/>
         [DataMember]
         public string PersonEntrySpouseLabel { get; private set; }
 
-        /// <summary>
-        /// Gets the person entry connection status value identifier.
-        /// </summary>
-        /// <value>
-        /// The person entry connection status value identifier.
-        /// </value>
+        /// <inheritdoc cref="WorkflowActionForm.PersonEntryConnectionStatusValueId"/>
         [DataMember]
         public int? PersonEntryConnectionStatusValueId { get; private set; }
 
-        /// <summary>
-        /// Gets the person entry record status value identifier.
-        /// </summary>
-        /// <value>
-        /// The person entry record status value identifier.
-        /// </value>
+        /// <inheritdoc cref="WorkflowActionForm.PersonEntryRecordStatusValueId"/>
         [DataMember]
         public int? PersonEntryRecordStatusValueId { get; private set; }
 
-        /// <summary>
-        /// Gets the person entry address type value identifier (aka Group Location Type). Home Address, Work Address, etc.
-        /// </summary>
-        /// <value>
-        /// The person entry address type value identifier.
-        /// </value>
+        /// <inheritdoc cref="WorkflowActionForm.PersonEntryGroupLocationTypeValueId"/>
         [DataMember]
         public int? PersonEntryGroupLocationTypeValueId { get; private set; }
 
-        /// <summary>
-        /// Gets the person entry family attribute unique identifier. (The one used to set the Added/Edited Person's Family to)
-        /// </summary>
-        /// <value>
-        /// The person entry family attribute unique identifier.
-        /// </value>
+        /// <inheritdoc cref="WorkflowActionForm.PersonEntryCampusStatusValueId"/>
+        [DataMember]
+        public int? PersonEntryCampusStatusValueId { get; private set; }
+
+        /// <inheritdoc cref="WorkflowActionForm.PersonEntryCampusTypeValueId"/>
+        [DataMember]
+        public int? PersonEntryCampusTypeValueId { get; private set; }
+
+        /// <inheritdoc cref="WorkflowActionForm.PersonEntryFamilyAttributeGuid"/>
         [DataMember]
         public Guid? PersonEntryFamilyAttributeGuid { get; private set; }
 
-        /// <summary>
-        /// Gets the person entry person workflow attribute unique identifier. (The one used to set the Added/Edited Person to)
-        /// </summary>
-        /// <value>
-        /// The person entry person attribute unique identifier.
-        /// </value>
+        /// <inheritdoc cref="WorkflowActionForm.PersonEntryPersonAttributeGuid"/>
         [DataMember]
         public Guid? PersonEntryPersonAttributeGuid { get; private set; }
 
-        /// <summary>
-        /// Gets the person entry spouse workflow attribute unique identifier.  (The one used to set the Added/Edited Person's Spouse to)
-        /// </summary>
-        /// <value>
-        /// The person entry spouse attribute unique identifier.
-        /// </value>
+        /// <inheritdoc cref="WorkflowActionForm.PersonEntrySpouseAttributeGuid"/>
         [DataMember]
         public Guid? PersonEntrySpouseAttributeGuid { get; private set; }
+
+        /// <inheritdoc cref="WorkflowActionForm.PersonEntrySectionTypeValueId"/>
+        [DataMember]
+        public int? PersonEntrySectionTypeValueId { get; set; }
+
+        /// <inheritdoc cref="WorkflowActionForm.PersonEntryTitle"/>
+        [DataMember]
+        public string PersonEntryTitle { get; set; }
+
+        /// <inheritdoc cref="WorkflowActionForm.PersonEntryDescription"/>
+        [DataMember]
+        public string PersonEntryDescription { get; set; }
+
+        /// <inheritdoc cref="WorkflowActionForm.PersonEntryShowHeadingSeparator"/>
+        [DataMember]
+        public bool PersonEntryShowHeadingSeparator { get; set; }
 
         #endregion Person entry related Entity Properties
 
@@ -356,6 +239,129 @@ namespace Rock.Web.Cache
         #region Public Methods
 
         /// <summary>
+        /// Gets the PersonEntryPersonAttribute from either the WorkflowActionForm or WorkflowType.WorkflowFormBuilderTemplate
+        /// </summary>
+        /// <param name="workflow">The workflow</param>
+        /// <returns></returns>
+        public AttributeCache GetPersonEntryPersonAttribute( Rock.Model.Workflow workflow  )
+        {
+            var workflowType = workflow?.WorkflowTypeCache;
+            if ( workflowType?.FormBuilderTemplate != null )
+            {
+                return workflow.Attributes.GetValueOrNull( "Person" );
+            }
+            else if ( this.PersonEntryPersonAttributeGuid.HasValue )
+            {
+                return AttributeCache.Get( this.PersonEntryPersonAttributeGuid.Value );
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Gets the PersonEntrySpouseAttribute from either the WorkflowActionForm or WorkflowType.WorkflowFormBuilderTemplate
+        /// </summary>
+        /// <param name="workflow">The workflow</param>
+        /// <returns></returns>
+        public AttributeCache GetPersonEntrySpouseAttribute( Rock.Model.Workflow workflow )
+        {
+            var workflowType = workflow?.WorkflowTypeCache;
+            if ( workflowType?.FormBuilderTemplate != null )
+            {
+                return workflow.Attributes.GetValueOrNull( "Spouse" );
+            }
+            else if ( this.PersonEntrySpouseAttributeGuid.HasValue )
+            {
+                return AttributeCache.Get( this.PersonEntrySpouseAttributeGuid.Value );
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Gets the PersonEntryFamilyAttribute from either the WorkflowActionForm or WorkflowType.WorkflowFormBuilderTemplate
+        /// </summary>
+        /// <param name="workflow">The workflow</param>
+        /// <returns></returns>
+        public AttributeCache GetPersonEntryFamilyAttribute( Rock.Model.Workflow workflow )
+        {
+            var workflowType = workflow?.WorkflowTypeCache;
+            if ( workflowType?.FormBuilderTemplate != null )
+            {
+                return workflow.Attributes.GetValueOrNull( "Family" );
+            }
+            else if ( this.PersonEntryFamilyAttributeGuid.HasValue )
+            {
+                return AttributeCache.Get( this.PersonEntryFamilyAttributeGuid.Value );
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Gets the form person entry settings from either the WorkflowActionForm or WorkflowFormBuilderTemplate
+        /// </summary>
+        /// <param name="workflowFormBuilderTemplate">The workflow form builder template.</param>
+        /// <returns></returns>
+        public FormPersonEntrySettings GetFormPersonEntrySettings( WorkflowFormBuilderTemplateCache workflowFormBuilderTemplate )
+        {
+            var actionForm = this;
+
+            FormPersonEntrySettings formPersonEntrySettings;
+            if ( workflowFormBuilderTemplate != null )
+            {
+                formPersonEntrySettings = workflowFormBuilderTemplate.PersonEntrySettingsJson?.FromJsonOrNull<Rock.Workflow.FormBuilder.FormPersonEntrySettings>();
+            }
+            else
+            {
+                formPersonEntrySettings = new Rock.Workflow.FormBuilder.FormPersonEntrySettings
+                {
+                    Address = actionForm.PersonEntryAddressEntryOption,
+                    AddressTypeValueId = actionForm.PersonEntryGroupLocationTypeValueId,
+                    AutofillCurrentPerson = actionForm.PersonEntryAutofillCurrentPerson,
+                    Birthdate = actionForm.PersonEntryBirthdateEntryOption,
+                    CampusStatusValueId = actionForm.PersonEntryCampusStatusValueId,
+                    CampusTypeValueId = actionForm.PersonEntryCampusTypeValueId,
+                    ConnectionStatusValueId = actionForm.PersonEntryConnectionStatusValueId,
+                    Email = actionForm.PersonEntryEmailEntryOption,
+                    Gender = actionForm.PersonEntryGenderEntryOption,
+                    HideIfCurrentPersonKnown = actionForm.PersonEntryHideIfCurrentPersonKnown,
+                    MaritalStatus = actionForm.PersonEntryMaritalStatusEntryOption,
+                    MobilePhone = actionForm.PersonEntryMobilePhoneEntryOption,
+                    RecordStatusValueId = actionForm.PersonEntryRecordStatusValueId,
+                    ShowCampus = actionForm.PersonEntryCampusIsVisible,
+                    SpouseEntry = actionForm.PersonEntrySpouseEntryOption,
+                    SpouseLabel = actionForm.PersonEntrySpouseLabel
+                };
+            }
+
+            return formPersonEntrySettings;
+        }
+
+        /// <summary>
+        /// Gets the AllowPersonEntry values form either the WorkflowActionForm or WorkflowFormBuilderTemplate
+        /// </summary>
+        /// <param name="workflowFormBuilderTemplate">The workflow form builder template.</param>
+        /// <returns></returns>
+        public bool GetAllowPersonEntry( WorkflowFormBuilderTemplateCache workflowFormBuilderTemplate )
+        {
+            if ( workflowFormBuilderTemplate != null )
+            {
+                return workflowFormBuilderTemplate.AllowPersonEntry;
+            }
+            else
+            {
+                return this.AllowPersonEntry;
+            }
+        }
+
+        /// <summary>
         /// Copies from model.
         /// </summary>
         /// <param name="entity">The entity.</param>
@@ -385,6 +391,10 @@ namespace Rock.Web.Cache
 #pragma warning restore 612, 618
             this.PersonEntryAddressEntryOption = workflowActionForm.PersonEntryAddressEntryOption;
             this.PersonEntryGroupLocationTypeValueId = workflowActionForm.PersonEntryGroupLocationTypeValueId;
+
+            this.PersonEntryCampusStatusValueId = workflowActionForm.PersonEntryCampusStatusValueId;
+            this.PersonEntryCampusTypeValueId = workflowActionForm.PersonEntryCampusTypeValueId;
+
             this.PersonEntryAutofillCurrentPerson = workflowActionForm.PersonEntryAutofillCurrentPerson;
             this.PersonEntryBirthdateEntryOption = workflowActionForm.PersonEntryBirthdateEntryOption;
             this.PersonEntryCampusIsVisible = workflowActionForm.PersonEntryCampusIsVisible;
@@ -402,6 +412,10 @@ namespace Rock.Web.Cache
             this.PersonEntrySpouseAttributeGuid = workflowActionForm.PersonEntrySpouseAttributeGuid;
             this.PersonEntrySpouseEntryOption = workflowActionForm.PersonEntrySpouseEntryOption;
             this.PersonEntrySpouseLabel = workflowActionForm.PersonEntrySpouseLabel;
+            this.PersonEntrySectionTypeValueId = workflowActionForm.PersonEntrySectionTypeValueId;
+            this.PersonEntryTitle = workflowActionForm.PersonEntryTitle;
+            this.PersonEntryDescription = workflowActionForm.PersonEntryDescription;
+            this.PersonEntryShowHeadingSeparator = workflowActionForm.PersonEntryShowHeadingSeparator;
             this.Guid = workflowActionForm.Guid;
             this.ForeignId = workflowActionForm.ForeignId;
 

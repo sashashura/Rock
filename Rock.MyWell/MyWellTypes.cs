@@ -17,8 +17,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
+
 using Rock.Utility;
 
 //// <summary>
@@ -29,7 +31,7 @@ namespace Rock.MyWell
     #region Customer Related
 
     /// <summary>
-    /// https://sandbox.gotnpgateway.com/docs/api/#create-a-new-customer
+    /// https://sandbox.gotnpgateway.com/docs/api/#create-customer-deprecated
     /// </summary>
     public class CreateCustomerRequest
     {
@@ -71,7 +73,8 @@ namespace Rock.MyWell
     }
 
     /// <summary>
-    /// from https://sandbox.gotnpgateway.com/docs/api/#create-a-new-customer and https://sandbox.gotnpgateway.com/docs/api/#get-a-specific-customer
+    /// from https://sandbox.gotnpgateway.com/docs/api/#create-customer-deprecated
+    /// and https://sandbox.gotnpgateway.com/docs/api/#get-customer-by-id-deprecated
     /// </summary>
     public class CustomerResponse : BaseResponseData
     {
@@ -86,7 +89,8 @@ namespace Rock.MyWell
     }
 
     /// <summary>
-    /// from https://sandbox.gotnpgateway.com/docs/api/#create-a-new-customer and https://sandbox.gotnpgateway.com/docs/api/#get-a-specific-customer
+    /// from https://sandbox.gotnpgateway.com/docs/api/#create-customer-deprecated
+    /// and https://sandbox.gotnpgateway.com/docs/api/#get-customer-by-id-deprecated
     /// </summary>
     public class CustomerResponseData
     {
@@ -146,14 +150,14 @@ namespace Rock.MyWell
     }
 
     /// <summary>
-    /// https://sandbox.gotnpgateway.com/docs/api/#update-a-specific-customer-address
+    /// https://sandbox.gotnpgateway.com/docs/api/#update-address-token-deprecated
     /// </summary>
     public class UpdateCustomerAddressRequest : BillingAddress
     {
     }
 
     /// <summary>
-    /// https://sandbox.gotnpgateway.com/docs/api/#update-a-specific-customer-address
+    /// https://sandbox.gotnpgateway.com/docs/api/#update-address-token-deprecated
     /// </summary>
     public class UpdateCustomerAddressResponse : BaseResponseData
     {
@@ -909,7 +913,7 @@ namespace Rock.MyWell
     #region Transactions 
 
     /// <summary>
-    /// https://sandbox.gotnpgateway.com/docs/api/#processing-a-transaction
+    /// https://sandbox.gotnpgateway.com/docs/api/#process-a-transaction
     /// </summary>
     public class CreateTransaction
     {
@@ -1491,7 +1495,7 @@ namespace Rock.MyWell
     #region Plans
 
     /// <summary>
-    /// https://sandbox.gotnpgateway.com/docs/api/#create-a-plan
+    /// https://sandbox.gotnpgateway.com/docs/api/#create-plan
     /// </summary>
     public class CreatePlanParameters : BillingPlanParameters
     {
@@ -1665,8 +1669,8 @@ namespace Rock.MyWell
     #region Subscriptions
 
     /// <summary>
-    /// https://sandbox.gotnpgateway.com/docs/api/#create-a-subscription and
-    /// https://sandbox.gotnpgateway.com/docs/api/#update-a-subscription
+    /// https://sandbox.gotnpgateway.com/docs/api/#create-subscription and
+    /// https://sandbox.gotnpgateway.com/docs/api/#update-subscription
     /// </summary>
     public class SubscriptionRequestParameters : BillingPlanParameters
     {
@@ -1711,10 +1715,46 @@ namespace Rock.MyWell
         /// </value>
         [JsonProperty( "id" )]
         public string Id { get; set; }
+
+        /// <summary>
+        /// Gets or sets the type of the payment method.
+        /// </summary>
+        /// <value>
+        /// The type of the payment method.
+        /// </value>
+        [JsonProperty( "payment_method_type" )]
+        public string PaymentMethodType { get; set; }
+
+        /// <summary>
+        /// Gets or sets the payment method identifier.
+        /// </summary>
+        /// <value>
+        /// The payment method identifier.
+        /// </value>
+        [JsonProperty( "payment_method_id" )]
+        public string PaymentMethodId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the billing address identifier.
+        /// </summary>
+        /// <value>
+        /// The billing address identifier.
+        /// </value>
+        [JsonProperty( "billing_address_id" )]
+        public string BillingAddressId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the shipping address identifier.
+        /// </summary>
+        /// <value>
+        /// The shipping address identifier.
+        /// </value>
+        [JsonProperty( "shipping_address_id" )]
+        public string ShippingAddressId { get; set; }
     }
 
     /// <summary>
-    /// https://sandbox.gotnpgateway.com/docs/api/#create-a-subscription
+    /// https://sandbox.gotnpgateway.com/docs/api/#create-subscription
     /// </summary>
     public class SubscriptionResponse : BaseResponseData
     {
@@ -1729,7 +1769,7 @@ namespace Rock.MyWell
     }
 
     /// <summary>
-    /// https://sandbox.gotnpgateway.com/docs/api/#create-a-subscription
+    /// https://sandbox.gotnpgateway.com/docs/api/#create-subscription
     /// </summary>
     public class SubscriptionData
     {
@@ -1743,13 +1783,40 @@ namespace Rock.MyWell
         public string Id { get; set; }
 
         /// <summary>
-        /// Gets or sets the name.
+        /// Gets or sets the plan identifier.
         /// </summary>
         /// <value>
-        /// The name.
+        /// The plan identifier.
         /// </value>
-        [JsonProperty( "name" )]
-        public string Name { get; set; }
+        [JsonProperty( "plan_id" )]
+        public string PlanId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the name of the plan.
+        /// </summary>
+        /// <value>
+        /// The name of the plan.
+        /// </value>
+        [JsonProperty( "plan_name" )]
+        public string PlanName { get; set; }
+
+
+        /// <summary>
+        /// Gets or sets the raw subscription status.
+        /// </summary>
+        /// <value>
+        /// The raw subscription status.
+        /// </value>
+        [JsonProperty( "status" )]
+        public string SubscriptionStatusRaw { get; set; }
+
+        /// <summary>
+        /// Gets the subscription status, converted from <seealso cref="SubscriptionStatusRaw"/>
+        /// </summary>
+        /// <value>
+        /// The subscription status.
+        /// </value>
+        public MyWellSubscriptionStatus? SubscriptionStatus => MyWellSubscriptionStatusHelper.ConvertFromString( SubscriptionStatusRaw );
 
         /// <summary>
         /// Gets or sets the description.
@@ -1759,6 +1826,24 @@ namespace Rock.MyWell
         /// </value>
         [JsonProperty( "description" )]
         public string Description { get; set; }
+
+        /// <summary>
+        /// Gets or sets the name of the customer.
+        /// </summary>
+        /// <value>
+        /// The name of the customer.
+        /// </value>
+        [JsonProperty( "customer_name" )]
+        public string CustomerName { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether this <see cref="SubscriptionData"/> is shared.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if shared; otherwise, <c>false</c>.
+        /// </value>
+        [JsonProperty( "shared" )]
+        public bool Shared { get; set; }
 
         /// <summary>
         /// Gets or sets the customer.
@@ -1790,6 +1875,42 @@ namespace Rock.MyWell
         /// </value>
         [JsonProperty( "amount" )]
         public int AmountCents { get; set; }
+
+        /// <summary>
+        /// Gets or sets the currency.
+        /// </summary>
+        /// <value>
+        /// The currency.
+        /// </value>
+        [JsonProperty( "currency" )]
+        public string Currency { get; set; }
+
+        /// <summary>
+        /// Gets or sets the processor identifier.
+        /// </summary>
+        /// <value>
+        /// The processor identifier.
+        /// </value>
+        [JsonProperty( "processor_id" )]
+        public string ProcessorId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the total adds.
+        /// </summary>
+        /// <value>
+        /// The total adds.
+        /// </value>
+        [JsonProperty( "total_adds" )]
+        public int TotalAdds { get; set; }
+
+        /// <summary>
+        /// Gets or sets the total discounts.
+        /// </summary>
+        /// <value>
+        /// The total discounts.
+        /// </value>
+        [JsonProperty( "total_discounts" )]
+        public int TotalDiscounts { get; set; }
 
         /// <summary>
         /// "How often to run the billing cycle. Run every x months"
@@ -1836,6 +1957,24 @@ namespace Rock.MyWell
         [JsonProperty( "next_bill_date" )]
         [JsonConverter( typeof( MyWellGatewayUTCIsoDateConverter ) )]
         public DateTime? NextBillDateUTC { get; set; }
+
+        /// <summary>
+        /// Gets or sets the add ons.
+        /// </summary>
+        /// <value>
+        /// The add ons.
+        /// </value>
+        [JsonProperty( "add_ons" )]
+        public object AddOns { get; set; }
+
+        /// <summary>
+        /// Gets or sets the discounts.
+        /// </summary>
+        /// <value>
+        /// The discounts.
+        /// </value>
+        [JsonProperty( "discounts" )]
+        public object Discounts { get; set; }
 
         /// <summary>
         /// Gets or sets the created date time.
@@ -1969,6 +2108,13 @@ namespace Rock.MyWell
         public QuerySearchInt SearchAmount { get; set; }
 
         /// <summary>
+        /// The Type of transaction to limit the search to
+        /// </summary>
+        /// <value>The type.</value>
+        [JsonProperty( "type", NullValueHandling = NullValueHandling.Ignore )]
+        public QuerySearchTransactionType TransactionTypeSearch { get; set; }
+
+        /// <summary>
         /// Gets or sets the date range (optional).
         /// </summary>
         /// <value>
@@ -1980,7 +2126,7 @@ namespace Rock.MyWell
         /// <summary>
         /// Maximum records to return (0-100, optional)
         /// Gets or sets the limit (MyWell default is 10, but we can set it to 0 to get all of them )
-        /// https://sandbox.gotnpgateway.com/docs/api/#query-transactions
+        /// https://sandbox.gotnpgateway.com/docs/api/#search-transactions
         /// </summary>
         /// <value>
         /// The limit.
@@ -1990,7 +2136,7 @@ namespace Rock.MyWell
 
         /// <summary>
         /// Number of records to offset the return by (optional)
-        /// https://sandbox.gotnpgateway.com/docs/api/#query-transactions
+        /// https://sandbox.gotnpgateway.com/docs/api/#search-transactions
         /// </summary>
         /// <value>
         /// The offset.
@@ -2000,7 +2146,7 @@ namespace Rock.MyWell
     }
 
     /// <summary>
-    /// see https://sandbox.gotnpgateway.com/docs/api/#query-transactions
+    /// see https://sandbox.gotnpgateway.com/docs/api/#search-transactions
     /// </summary>
     public class QuerySearchString
     {
@@ -2023,6 +2169,23 @@ namespace Rock.MyWell
         [JsonProperty( "value" )]
         public string SearchValue { get; set; }
     }
+
+    /// <summary>
+    /// Searching by <see cref="TransactionType"/>
+    /// </summary>
+    public class QuerySearchTransactionType : QuerySearchString
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="QuerySearchTransactionType"/> class.
+        /// </summary>
+        /// <param name="transactionType">Type of the transaction.</param>
+        public QuerySearchTransactionType( TransactionType transactionType )
+        {
+            this.ComparisonOperator = "=";
+            this.SearchValue = transactionType.ToString();
+        }
+    }
+
 
     /// <summary>
     /// Searching by the Customer property of a record
@@ -2049,7 +2212,7 @@ namespace Rock.MyWell
     }
 
     /// <summary>
-    /// see https://sandbox.gotnpgateway.com/docs/api/#query-transactions
+    /// see https://sandbox.gotnpgateway.com/docs/api/#search-transactions
     /// </summary>
     public class QuerySearchInt
     {
@@ -2178,6 +2341,16 @@ namespace Rock.MyWell
         /// </value>
         [JsonProperty( "idempotency_time" )]
         public int IdempotencyTime { get; set; }
+
+        /// <summary>
+        /// Gets the type of the transaction.
+        /// </summary>
+        /// <value>The type of the transaction.</value>
+        [JsonIgnore]
+        public TransactionType? TransactionType
+        {
+            get => this.Type.ConvertToEnumOrNull<TransactionType>( MyWell.TransactionType.other );
+        }
 
         /// <summary>
         /// Gets or sets the type.
@@ -2401,7 +2574,7 @@ namespace Rock.MyWell
 
         /// <summary>
         /// Gets or sets the status.
-        /// https://sandbox.gotnpgateway.com/docs/api/#query-transactions.
+        /// https://sandbox.gotnpgateway.com/docs/api/#search-transactions.
         /// possible values include: unknown, declined, authorized, pending_settlement, settled, voided, reversed, refunded
         /// </summary>
         /// <value>
@@ -2615,6 +2788,275 @@ namespace Rock.MyWell
 
     #endregion
 
+    #region CardSync Webhook
+
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <seealso cref="Rock.MyWell.BaseResponseData" />
+    public class CardSyncWebhookResponse : BaseResponseData
+    {
+        /// <summary>
+        /// Gets or sets the type of the account.
+        /// </summary>
+        /// <value>
+        /// The type of the account.
+        /// </value>
+        [JsonProperty( "account_type" )]
+        public string AccountType { get; set; }
+
+        /// <summary>
+        /// Gets or sets the account type identifier.
+        /// </summary>
+        /// <value>
+        /// The account type identifier.
+        /// </value>
+        [JsonProperty( "account_type_id" )]
+        public string AccountTypeId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the transaction identifier.
+        /// </summary>
+        /// <value>
+        /// The transaction identifier.
+        /// </value>
+        [JsonProperty( "transaction_id" )]
+        public string TransactionId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the action at.
+        /// </summary>
+        /// <value>
+        /// The action at.
+        /// </value>
+        [JsonProperty( "action_at" )]
+        public DateTime action_at { get; set; }
+
+        /// <summary>
+        /// Gets or sets the payment method data.
+        /// </summary>
+        /// <value>
+        /// The payment method data.
+        /// </value>
+        [JsonProperty( "data" )]
+        public CardSyncWebhookPaymentMethod PaymentMethodData { get; set; }
+
+        /// <summary>
+        /// Gets or sets the type.
+        /// </summary>
+        /// <value>
+        /// The type.
+        /// </value>
+        [JsonProperty( "type" )]
+        public string type { get; set; }
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    public class CardSyncWebhookPaymentMethod
+    {
+        /// <summary>
+        /// Gets or sets the card identifier.
+        /// </summary>
+        /// <value>
+        /// The card identifier.
+        /// </value>
+        [JsonProperty( "card_id" )]
+        public string CardId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the digest.
+        /// </summary>
+        /// <value>
+        /// The digest.
+        /// </value>
+        [JsonProperty( "digest" )]
+        public string digest { get; set; }
+
+        /// <summary>
+        /// Gets or sets the expiration date.
+        /// </summary>
+        /// <value>
+        /// The expiration date.
+        /// </value>
+        [JsonProperty( "expiration_date" )]
+        public string ExpirationDate { get; set; }
+
+        /// <summary>
+        /// Gets or sets the flags.
+        /// </summary>
+        /// <value>
+        /// The flags.
+        /// </value>
+        [JsonProperty( "flags" )]
+        public object Flags { get; set; }
+
+        /// <summary>
+        /// Gets or sets the generic card level.
+        /// </summary>
+        /// <value>
+        /// The generic card level.
+        /// </value>
+        [JsonProperty( "generic_card_level" )]
+        public string GenericCardLevel { get; set; }
+
+        /// <summary>
+        /// Gets or sets the type of the instrument.
+        /// </summary>
+        /// <value>
+        /// The type of the instrument.
+        /// </value>
+        [JsonProperty( "instrument_type" )]
+        public string instrument_type { get; set; }
+
+        /// <summary>
+        /// Gets or sets the masked number.
+        /// </summary>
+        /// <value>
+        /// The masked number.
+        /// </value>
+        [JsonProperty( "masked_number" )]
+        public string MaskedNumber { get; set; }
+
+        /// <summary>
+        /// Gets or sets the processor identifier.
+        /// </summary>
+        /// <value>
+        /// The processor identifier.
+        /// </value>
+        [JsonProperty( "processor_id" )]
+        public string processor_id { get; set; }
+
+        /// <summary>
+        /// Gets or sets the record identifier (The CustomerId)
+        /// </summary>
+        /// <value>
+        /// The record identifier.
+        /// </value>
+        [JsonProperty( "record_id" )]
+        public string RecordId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the status.
+        /// </summary>
+        /// <value>
+        /// The status.
+        /// </value>
+        [JsonProperty( "status" )]
+        public string Status { get; set; }
+
+        /// <summary>
+        /// Newtonsoft.Json.JsonExtensionData instructs the Newtonsoft.Json.JsonSerializer to deserialize properties with no
+        /// matching class member into the specified collection
+        /// </summary>
+        /// <value>
+        /// The other data.
+        /// </value>
+        [Newtonsoft.Json.JsonExtensionData( ReadData = true, WriteData = false )]
+        public IDictionary<string, Newtonsoft.Json.Linq.JToken> _additionalData { get; set; }
+    }
+
+    #endregion CardSync Webhook
+
+    #region Transaction WebHook
+
+    /*
+
+    TransactionWebhookResponse and TransactionWebhookResponseData
+    aren't currently needed (yet). 
+
+    */
+
+    internal class TransactionWebhookResponse : BaseResponseData
+    {
+        public string account_type { get; set; }
+        public string account_type_id { get; set; }
+        public string action_at { get; set; }
+        public TransactionWebhookResponseData data { get; set; }
+        public string msg { get; set; }
+        public string status { get; set; }
+        public string transaction_id { get; set; }
+        public string type { get; set; }
+    }
+
+    internal class TransactionWebhookResponseData
+    {
+        public int amount { get; set; }
+        public int amount_authorized { get; set; }
+        public int amount_captured { get; set; }
+        public int amount_refunded { get; set; }
+        public int amount_settled { get; set; }
+        public int base_amount { get; set; }
+        public BillingAddress billing_address { get; set; }
+        public object captured_at { get; set; }
+        public string created_at { get; set; }
+        public string currency { get; set; }
+        //public CustomFields custom_fields { get; set; }
+        public string customer_id { get; set; }
+        public string customer_payment_ID { get; set; }
+        public string customer_payment_type { get; set; }
+        public string customer_vat_registration_number { get; set; }
+        public string description { get; set; }
+        public int discount_amount { get; set; }
+        public int duty_amount { get; set; }
+        public string email_address { get; set; }
+        public bool email_receipt { get; set; }
+        public string[] features { get; set; }
+        public string id { get; set; }
+        public string idempotency_key { get; set; }
+        public int idempotency_time { get; set; }
+        public string ip_address { get; set; }
+        public object line_items { get; set; }
+        public string merchant_id { get; set; }
+        public string merchant_name { get; set; }
+        public string merchant_vat_registration_number { get; set; }
+        public int national_tax_amount { get; set; }
+        public string order_id { get; set; }
+        public int payment_adjustment { get; set; }
+        public string payment_method { get; set; }
+        public string payment_type { get; set; }
+        public string po_number { get; set; }
+        public string processor_id { get; set; }
+        public string processor_name { get; set; }
+        public string processor_type { get; set; }
+        public string referenced_transaction_id { get; set; }
+        public string response { get; set; }
+        public PaymentMethodResponse response_body { get; set; }
+        public int response_code { get; set; }
+        public int service_fee { get; set; }
+        public object settled_at { get; set; }
+        public string settlement_batch_id { get; set; }
+        public string ship_from_postal_code { get; set; }
+        public BillingAddress shipping_address { get; set; }
+        public int shipping_amount { get; set; }
+        public string status { get; set; }
+        public string subscription_id { get; set; }
+        public string summary_commodity_code { get; set; }
+        public int surcharge { get; set; }
+        public int tax_amount { get; set; }
+        public bool tax_exempt { get; set; }
+        public int tip_amount { get; set; }
+        public string transaction_source { get; set; }
+        public string type { get; set; }
+        public string updated_at { get; set; }
+        public string user_id { get; set; }
+        public string user_name { get; set; }
+
+        /// <summary>
+        /// Newtonsoft.Json.JsonExtensionData instructs the Newtonsoft.Json.JsonSerializer to deserialize properties with no
+        /// matching class member into the specified collection
+        /// </summary>
+        /// <value>
+        /// The other data.
+        /// </value>
+        [Newtonsoft.Json.JsonExtensionData( ReadData = true, WriteData = false )]
+        public IDictionary<string, Newtonsoft.Json.Linq.JToken> _additionalData { get; set; }
+    }
+
+    #endregion Transaction WebHook
+
     #region Rock Wrapper Type
 
     /// <summary>
@@ -2690,7 +3132,7 @@ namespace Rock.MyWell
     }
 
     /// <summary>
-    /// see DateFormats specs from https://sandbox.gotnpgateway.com/docs/api/#query-transactions
+    /// see DateFormats specs from https://sandbox.gotnpgateway.com/docs/api/#search-transactions
     /// this is mostly just needed for JSON Payloads that are POST'd to the gateway
     /// </summary>
     /// <seealso cref="Newtonsoft.Json.Converters.IsoDateTimeConverter" />
@@ -2756,25 +3198,47 @@ namespace Rock.MyWell
     }
 
     /// <summary>
-    /// 
+    /// Possible Transaction Types are at https://sandbox.gotnpgateway.com/docs/api/#upload-batch-file
+    /// It is possible there are more, but the documentation doesn't mention any
+    /// But just in case, we'll throw unexpected ones into 'other'
     /// </summary>
     [JsonConverter( typeof( StringEnumConverter ) )]
     public enum TransactionType
     {
         /// <summary>
-        /// The sale
+        /// verification
         /// </summary>
-        sale,
+        verification,
 
         /// <summary>
-        /// The authorize
+        /// authorize
         /// </summary>
         authorize,
 
         /// <summary>
-        /// The credit
+        /// capture
         /// </summary>
-        credit
+        capture,
+
+        /// <summary>
+        /// sale
+        /// </summary>
+        sale,
+
+        /// <summary>
+        /// credit
+        /// </summary>
+        credit,
+
+        /// <summary>
+        /// refund
+        /// </summary>
+        refund,
+
+        /// <summary>
+        /// Something we didn't expect
+        /// </summary>
+        other,
     }
 
     /// <summary>
@@ -2809,6 +3273,74 @@ namespace Rock.MyWell
         /// The ach
         /// </summary>
         ach
+    }
+
+    /// <summary>
+    /// MyWell Subscription Status Enum
+    /// </summary>
+    [JsonConverter( typeof( StringEnumConverter ) )]
+    public enum MyWellSubscriptionStatus
+    {
+        /// <summary>
+        /// Active
+        /// </summary>
+        active,
+
+        /// <summary>
+        /// Completed
+        /// </summary>
+        completed,
+
+        /// <summary>
+        /// Paused
+        /// </summary>
+        paused,
+
+        /// <summary>
+        /// canceled
+        /// </summary>
+        canceled,
+
+        /// <summary>
+        /// failed
+        /// </summary>
+        failed,
+
+        /// <summary>
+        /// Past Due
+        /// </summary>
+        past_due
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <seealso cref="Newtonsoft.Json.Converters.StringEnumConverter" />
+    internal class MyWellSubscriptionStatusHelper
+    {
+        /// <summary>
+        /// Converts from string.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns></returns>
+        internal static MyWellSubscriptionStatus? ConvertFromString( string value )
+        {
+            if ( value == null )
+            {
+                return null;
+            }
+
+            if ( value == "cancelled" || value == "canceled" )
+            {
+                /*
+                    The canceled statuses, MyWell spells it 'cancelled' (British spelling), but just in case they change it to 'canceled'
+                    https://www.grammarly.com/blog/canceled-vs-cancelled/
+                */
+                return MyWellSubscriptionStatus.canceled;
+            }
+
+            return value.ConvertToEnumOrNull<MyWellSubscriptionStatus>();
+        }
     }
 
     #endregion Rock Wrapper Types

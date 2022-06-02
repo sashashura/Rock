@@ -40,7 +40,7 @@ namespace RockWeb.Blocks.Finance
     [LinkedPage( "Transaction Matching Page", "Page used to match transactions for a batch.", order: 1 )]
     [LinkedPage( "Audit Page", "Page used to display the history of changes to a batch.", order: 2 )]
     [DefinedTypeField( "Batch Names", "The Defined Type that contains a predefined list of batch names to choose from instead of entering it in manually when adding a new batch. Leave this blank to hide this option and let them edit the batch name manually.", false, "", "", 3 )]
-    public partial class BatchDetail : Rock.Web.UI.RockBlock, IDetailBlock
+    public partial class BatchDetail : Rock.Web.UI.RockBlock
     {
         #region Control Methods
 
@@ -403,6 +403,13 @@ namespace RockWeb.Blocks.Finance
 
                 // hide the panel drawer that show created and last modified dates
                 pdAuditDetails.Visible = false;
+            }
+            else
+            {
+                string quickReturnLava = "{{ Batch.Name | AddQuickReturn:'Batches', 50 }}";
+                var quickReturnMergeFields = Rock.Lava.LavaHelper.GetCommonMergeFields( this.RockPage, this.CurrentPerson, new Rock.Lava.CommonMergeFieldsOptions { GetLegacyGlobalMergeFields = false } );
+                quickReturnMergeFields.Add( "Batch", batch );
+                quickReturnLava.ResolveMergeFields( quickReturnMergeFields );
             }
 
             hfBatchId.Value = batch.Id.ToString();

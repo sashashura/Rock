@@ -18,18 +18,20 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Entity;
+using System.Data.Entity.Core.Objects;
 using System.Data.Entity.Infrastructure;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Web;
+
 using Rock.Bus.Message;
 using Rock.Model;
 using Rock.Tasks;
-using Rock.Transactions;
 using Rock.UniversalSearch;
 using Rock.Web.Cache;
+
 using Z.EntityFramework.Plus;
 
 using Audit = Rock.Model.Audit;
@@ -42,9 +44,24 @@ namespace Rock.Data
     public abstract class DbContext : System.Data.Entity.DbContext
     {
         /// <summary>
+        /// The shared save hook provider that is used by default by all
+        /// instances of DbContext.
+        /// </summary>
+        internal static readonly Internal.EntitySaveHookProvider SharedSaveHookProvider = new Internal.EntitySaveHookProvider();
+
+        /// <summary>
+        /// Gets or sets the entity save hook provider.
+        /// </summary>
+        /// <value>
+        /// The entity save hook provider.
+        /// </value>
+        internal Internal.EntitySaveHookProvider EntitySaveHookProvider { get; set; } = SharedSaveHookProvider;
+
+        /// <summary>
         /// Is there a transaction in progress?
         /// </summary>
         private bool _transactionInProgress = false;
+        private TaskCompletionSource<bool> _wrappedTransactionCompleted = null;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DbContext"/> class.
@@ -56,6 +73,12 @@ namespace Rock.Data
         /// </summary>
         /// <param name="nameOrConnectionString">Either the database name or a connection string.</param>
         public DbContext( string nameOrConnectionString ) : base( nameOrConnectionString ) { }
+
+        /// <inheritdoc />
+        internal protected DbContext( ObjectContext objectContext, bool dbContextOwnsObjectContext ) :
+            base( objectContext, dbContextOwnsObjectContext )
+        {
+        }
 
         /// <summary>
         /// Gets any error messages that occurred during a SaveChanges
@@ -72,6 +95,28 @@ namespace Rock.Data
         /// The source of change.
         /// </value>
         public string SourceOfChange { get; set; }
+
+        /// <summary>
+        /// If <see cref="WrapTransaction(Action)"/> is in progress, this will return a task that will return completed
+        /// after the transaction is committed. Otherwise, it will return a completed task immediately.
+        /// </summary>
+        /// <value>
+        /// The wrapped transaction completed.
+        /// </value>
+        public Task<bool> WrappedTransactionCompletedTask
+        {
+            get
+            {
+                if ( _transactionInProgress )
+                {
+                    return _wrappedTransactionCompleted?.Task ?? Task.FromResult( true );
+                }
+                else
+                {
+                    return Task.FromResult( true );
+                }
+            }
+        }
 
         /// <summary>
         /// Wraps the action in a BeginTransaction and CommitTransaction.
@@ -99,6 +144,7 @@ namespace Rock.Data
             if ( !_transactionInProgress )
             {
                 _transactionInProgress = true;
+                _wrappedTransactionCompleted = new TaskCompletionSource<bool>();
                 using ( var dbContextTransaction = this.Database.BeginTransaction() )
                 {
                     try
@@ -106,20 +152,24 @@ namespace Rock.Data
                         if ( action.Invoke() )
                         {
                             dbContextTransaction.Commit();
+                            _wrappedTransactionCompleted.SetResult( true );
                         }
                         else
                         {
                             dbContextTransaction.Rollback();
+                            _wrappedTransactionCompleted.SetResult( false );
                             return false;
                         }
                     }
                     catch
                     {
                         dbContextTransaction.Rollback();
+                        _wrappedTransactionCompleted.SetResult( false );
                         throw;
                     }
                     finally
                     {
+                        _wrappedTransactionCompleted = null;
                         _transactionInProgress = false;
                     }
                 }
@@ -153,7 +203,7 @@ namespace Rock.Data
         /// the Pre and Post processing from being run. This should only be disabled
         /// when updating a large number of records at a time (e.g. importing records).</param>
         /// <returns></returns>
-        public int SaveChanges( bool disablePrePostProcessing )
+        public virtual int SaveChanges( bool disablePrePostProcessing )
         {
             var result = SaveChanges( new SaveChangesArgs
             {
@@ -171,7 +221,7 @@ namespace Rock.Data
         /// </summary>
         /// <param name="args">Arguments determining behavior of the save.</param>
         /// <returns></returns>
-        public SaveChangesResult SaveChanges( SaveChangesArgs args )
+        public virtual SaveChangesResult SaveChanges( SaveChangesArgs args )
         {
             var saveChangesResult = new SaveChangesResult();
 
@@ -212,7 +262,19 @@ namespace Rock.Data
                         }
                     }
 
+                    // Let all the hooks that were called know that the save
+                    // was aborted.
+                    CallSaveFailedHooks( updatedItems );
+
                     throw new SystemException( "Entity Validation Error: " + validationErrors.AsDelimited( ";" ), ex );
+                }
+                catch
+                {
+                    // Let all the hooks that were called know that the save
+                    // was aborted.
+                    CallSaveFailedHooks( updatedItems );
+
+                    throw;
                 }
 
                 // If any items changed process audit and triggers
@@ -267,117 +329,179 @@ namespace Rock.Data
             var preSavedEntities = new HashSet<Guid>();
 
             // First loop through all models calling the PreSaveChanges
-            foreach ( var entry in dbContext.ChangeTracker.Entries()
-                .Where( c =>
-                    c.Entity is IEntity &&
-                    ( c.State == EntityState.Added || c.State == EntityState.Modified || c.State == EntityState.Deleted ) ) )
+            var updatedItems = new Dictionary<IEntity, ContextItem>();
+
+            try
             {
-                if ( entry.Entity is IModel )
+                foreach ( var entry in dbContext.ChangeTracker.Entries()
+                    .Where( c =>
+                        c.Entity is IEntity &&
+                        ( c.State == EntityState.Added || c.State == EntityState.Modified || c.State == EntityState.Deleted ) ) )
                 {
-                    var model = entry.Entity as IModel;
-                    model.PreSaveChanges( this, entry, entry.State );
+                    var entity = entry.Entity as IEntity;
 
-                    if ( !preSavedEntities.Contains( model.Guid ) )
+                    // Get the context item to track audits
+                    var contextItem = new ContextItem( entity, this, entry, enableAuditing );
+                    updatedItems.Add( entity, contextItem );
+
+                    contextItem.InProcessSaveHooks = new List<IEntitySaveHook>();
+
+                    var saveHooks = EntitySaveHookProvider.GetHooksForEntityType( entity.GetType() ).ToList();
+                    foreach ( var hook in saveHooks )
                     {
-                        preSavedEntities.Add( model.Guid );
-                    }
-                }
-            }
-
-            // Then loop again, as new models may have been added by PreSaveChanges events
-            var updatedItems = new List<ContextItem>();
-            foreach ( var entry in dbContext.ChangeTracker.Entries()
-                .Where( c =>
-                    c.Entity is IEntity &&
-                    ( c.State == EntityState.Added || c.State == EntityState.Modified || c.State == EntityState.Deleted ) ) )
-            {
-                // Cast entry as IEntity
-                var entity = entry.Entity as IEntity;
-
-                // Get the context item to track audits
-                var contextItem = new ContextItem( entity, entry, enableAuditing );
-
-                // If entity was added or modified, update the Created/Modified fields
-                if ( entry.State == EntityState.Added || entry.State == EntityState.Modified )
-                {
-                    // instead of passing "true" the trigger model and UI would support a
-                    // on-value-changed checkbox (or perhaps it should be the default/only behavior)
-                    // and its value would be passed in to the onValueChange
-                    if ( !TriggerWorkflows( contextItem, WorkflowTriggerType.PreSave, personAlias ) )
-                    {
-                        return null;
+                        hook.PreSave( contextItem );
+                        contextItem.InProcessSaveHooks.Add( hook );
                     }
 
                     if ( entry.Entity is IModel )
                     {
                         var model = entry.Entity as IModel;
+                        model.PreSaveChanges( this, entry, entry.State );
 
                         if ( !preSavedEntities.Contains( model.Guid ) )
                         {
-                            model.PreSaveChanges( this, entry );
+                            preSavedEntities.Add( model.Guid );
+                        }
+                    }
+                }
+
+                // Then loop again, as new models may have been added by PreSaveChanges events
+                foreach ( var entry in dbContext.ChangeTracker.Entries()
+                    .Where( c =>
+                        c.Entity is IEntity &&
+                        ( c.State == EntityState.Added || c.State == EntityState.Modified || c.State == EntityState.Deleted ) ) )
+                {
+                    // Cast entry as IEntity
+                    var entity = entry.Entity as IEntity;
+
+                    if ( !updatedItems.TryGetValue( entity, out var contextItem ) )
+                    {
+                        // Entity was added by a previous save hook.
+                        contextItem = new ContextItem( entity, this, entry, enableAuditing );
+                        updatedItems.Add( entity, contextItem );
+
+                        contextItem.InProcessSaveHooks = new List<IEntitySaveHook>();
+
+                        var saveHooks = EntitySaveHookProvider.GetHooksForEntityType( entity.GetType() ).ToList();
+                        foreach ( var hook in saveHooks )
+                        {
+                            hook.PreSave( contextItem );
+                            contextItem.InProcessSaveHooks.Add( hook );
+                        }
+                    }
+
+                    // If entity was added or modified, update the Created/Modified fields
+                    if ( entry.State == EntityState.Added || entry.State == EntityState.Modified )
+                    {
+                        // instead of passing "true" the trigger model and UI would support a
+                        // on-value-changed checkbox (or perhaps it should be the default/only behavior)
+                        // and its value would be passed in to the onValueChange
+                        if ( !TriggerWorkflows( contextItem, WorkflowTriggerType.PreSave, personAlias ) )
+                        {
+                            // If any workflow has aborted the save operation
+                            // then let all the save hooks know the save was
+                            // aborted.
+                            CallSaveFailedHooks( updatedItems.Values );
+
+                            return null;
                         }
 
-                        // Update Guid/Created/Modified person and times
-                        if ( entry.State == EntityState.Added )
+                        if ( entry.Entity is IModel )
                         {
-                            if ( !model.CreatedDateTime.HasValue )
+                            var model = entry.Entity as IModel;
+
+                            if ( !preSavedEntities.Contains( model.Guid ) )
                             {
-                                model.CreatedDateTime = RockDateTime.Now;
-                            }
-                            if ( !model.CreatedByPersonAliasId.HasValue )
-                            {
-                                model.CreatedByPersonAliasId = personAliasId;
+                                model.PreSaveChanges( this, entry );
                             }
 
-                            if ( model.Guid == Guid.Empty )
+                            // Update Guid/Created/Modified person and times
+                            if ( entry.State == EntityState.Added )
                             {
-                                model.Guid = Guid.NewGuid();
-                            }
+                                if ( !model.CreatedDateTime.HasValue )
+                                {
+                                    model.CreatedDateTime = RockDateTime.Now;
+                                }
+                                if ( !model.CreatedByPersonAliasId.HasValue )
+                                {
+                                    model.CreatedByPersonAliasId = personAliasId;
+                                }
 
+                                if ( model.Guid == Guid.Empty )
+                                {
+                                    model.Guid = Guid.NewGuid();
+                                }
+
+                                model.ModifiedDateTime = RockDateTime.Now;
+
+                                if ( !model.ModifiedAuditValuesAlreadyUpdated || model.ModifiedByPersonAliasId == null )
+                                {
+                                    model.ModifiedByPersonAliasId = personAliasId;
+                                }
+                            }
+                            else if ( entry.State == EntityState.Modified )
+                            {
+                                model.ModifiedDateTime = RockDateTime.Now;
+
+                                if ( !model.ModifiedAuditValuesAlreadyUpdated || model.ModifiedByPersonAliasId == null )
+                                {
+                                    model.ModifiedByPersonAliasId = personAliasId;
+                                }
+                            }
+                        }
+                    }
+                    else if ( entry.State == EntityState.Deleted )
+                    {
+                        if ( !TriggerWorkflows( contextItem, WorkflowTriggerType.PreDelete, personAlias ) )
+                        {
+                            // Let all the hooks that were called know that
+                            // the save was aborted.
+                            CallSaveFailedHooks( updatedItems.Values );
+                            return null;
+                        }
+
+                        /*
+                             11/18/2021 - SK
+    
+                             Reason: It may look irrelevant to update the ModifiedByPersonAliasId and ModifiedDateTime here but
+                             this play vital role in displaying the Who column in history summary.
+                        */
+                        if ( entry.Entity is IModel )
+                        {
+                            var model = entry.Entity as IModel;
                             model.ModifiedDateTime = RockDateTime.Now;
-
                             if ( !model.ModifiedAuditValuesAlreadyUpdated || model.ModifiedByPersonAliasId == null )
                             {
                                 model.ModifiedByPersonAliasId = personAliasId;
                             }
                         }
-                        else if ( entry.State == EntityState.Modified )
-                        {
-                            model.ModifiedDateTime = RockDateTime.Now;
+                    }
 
-                            if ( !model.ModifiedAuditValuesAlreadyUpdated || model.ModifiedByPersonAliasId == null )
-                            {
-                                model.ModifiedByPersonAliasId = personAliasId;
-                            }
+                    if ( enableAuditing )
+                    {
+                        try
+                        {
+                            GetAuditDetails( dbContext, contextItem, personAliasId );
+                        }
+                        catch ( SystemException ex )
+                        {
+                            contextItem.Audit = null;
+                            System.Diagnostics.Debug.WriteLine( $"Exception when getting Audit details for {contextItem?.GetType().Name} - {ex}" );
+                            ExceptionLogService.LogException( ex, null );
                         }
                     }
                 }
-                else if ( entry.State == EntityState.Deleted )
-                {
-                    if ( !TriggerWorkflows( contextItem, WorkflowTriggerType.PreDelete, personAlias ) )
-                    {
-                        return null;
-                    }
-                }
+            }
+            catch
+            {
+                // If any errors happened let all the hooks that were called
+                // know that the save was aborted.
+                CallSaveFailedHooks( updatedItems.Values );
 
-                if ( enableAuditing )
-                {
-                    try
-                    {
-                        GetAuditDetails( dbContext, contextItem, personAliasId );
-                    }
-                    catch ( SystemException ex )
-                    {
-                        contextItem.Audit = null;
-                        System.Diagnostics.Debug.WriteLine( $"Exception when getting Audit details for {contextItem?.GetType().Name} - {ex}" );
-                        ExceptionLogService.LogException( ex, null );
-                    }
-                }
-
-                updatedItems.Add( contextItem );
+                throw;
             }
 
-            return updatedItems;
+            return updatedItems.Values.ToList();
         }
 
         /// <summary>
@@ -388,6 +512,9 @@ namespace Rock.Data
         /// <param name="enableAuditing">if set to <c>true</c> [enable auditing].</param>
         protected virtual void RockPostSave( List<ContextItem> updatedItems, PersonAlias personAlias, bool enableAuditing = false )
         {
+            // Triggers when the post-save actions have completed.
+            var tcsPostSave = new TaskCompletionSource<bool>();
+
             if ( enableAuditing )
             {
                 var audits = updatedItems
@@ -399,8 +526,8 @@ namespace Rock.Data
                 {
                     Task.Run( async () =>
                     {
-                        // Wait 1 second to allow all post save actions to complete
-                        await Task.Delay( 1000 );
+                        // Wait for all post-save tasks to complete.
+                        await tcsPostSave.Task;
 
                         try
                         {
@@ -419,38 +546,53 @@ namespace Rock.Data
                 }
             }
 
+            try
+            {
+                foreach ( var item in updatedItems )
+                {
+                    // Publish on the message bus if the entity type is configured
+                    EntityWasUpdatedMessage.PublishIfShould( item.Entity, item.PreSaveStateLegacy );
+
+                    if ( item.State == EntityContextState.Detached || item.State == EntityContextState.Deleted )
+                    {
+                        TriggerWorkflows( item, WorkflowTriggerType.PostDelete, personAlias );
+                    }
+                    else
+                    {
+                        if ( item.PreSaveState == EntityContextState.Added )
+                        {
+                            TriggerWorkflows( item, WorkflowTriggerType.PostAdd, personAlias );
+                        }
+
+                        TriggerWorkflows( item, WorkflowTriggerType.ImmediatePostSave, personAlias );
+                        TriggerWorkflows( item, WorkflowTriggerType.PostSave, personAlias );
+                    }
+
+                    if ( item.Entity is IModel )
+                    {
+                        var model = item.Entity as IModel;
+                        model.PostSaveChanges( this );
+                    }
+                }
+            }
+            finally
+            {
+                // At this point, even if a workflow trigger fails or a legacy
+                // PostSaveChanges() call fails, the save still worked so call
+                // all post save hooks with success state.
+                CallPostSaveHooks( updatedItems );
+
+                tcsPostSave.SetResult( true );
+            }
+
             var processEntityTypeIndexMsgs = new List<ProcessEntityTypeIndex.Message>();
             var deleteEntityTypeIndexMsgs = new List<DeleteEntityTypeIndex.Message>();
             foreach ( var item in updatedItems )
             {
-                // Publish on the message bus if the entity type is configured
-                EntityWasUpdatedMessage.PublishIfShould( item.Entity, item.PreSaveState );
-
-                if ( item.State == EntityState.Detached || item.State == EntityState.Deleted )
-                {
-                    TriggerWorkflows( item, WorkflowTriggerType.PostDelete, personAlias );
-                }
-                else
-                {
-                    if ( item.PreSaveState == EntityState.Added )
-                    {
-                        TriggerWorkflows( item, WorkflowTriggerType.PostAdd, personAlias );
-                    }
-
-                    TriggerWorkflows( item, WorkflowTriggerType.ImmediatePostSave, personAlias );
-                    TriggerWorkflows( item, WorkflowTriggerType.PostSave, personAlias );
-                }
-
-                if ( item.Entity is IModel )
-                {
-                    var model = item.Entity as IModel;
-                    model.PostSaveChanges( this );
-                }
-
                 // check if this entity should be passed on for indexing
                 if ( item.Entity is IRockIndexable )
                 {
-                    if ( item.State == EntityState.Detached || item.State == EntityState.Deleted )
+                    if ( item.State == EntityContextState.Detached || item.State == EntityContextState.Deleted )
                     {
                         var deleteEntityTypeIndexMsg = new DeleteEntityTypeIndex.Message
                         {
@@ -474,7 +616,30 @@ namespace Rock.Data
 
                 if ( item.Entity is ICacheable cacheable )
                 {
-                    cacheable.UpdateCache( item.PreSaveState, this );
+                    /* 04/14/2022 MDP
+
+                     If we are in WrapTransaction, some other thread could update the cached item from the
+                     database before we have committed the transaction. That could cause the cache to have the
+                     previous value instead of the new value. To prevent that from happening,
+                     we'll use the ContinueWith on WrappedTransactionCompletedTask take care of flushing the
+                     cache after the data is committed to the database.
+
+                     Using the TaskContinuationOptions.ExecuteSynchronously option so that it runs in the same thread
+                     as WrapTransaction.
+
+                    */
+
+                    WrappedTransactionCompletedTask.ContinueWith( ( task ) =>
+                    {
+                        var commitedSuccessfully = task.Result;
+                        if ( commitedSuccessfully )
+                        {
+                            using ( var rockContextUpdateCache = new RockContext() )
+                            {
+                                cacheable.UpdateCache( item.PreSaveStateLegacy, rockContextUpdateCache );
+                            }
+                        };
+                    }, TaskContinuationOptions.ExecuteSynchronously );
                 }
             }
 
@@ -486,10 +651,62 @@ namespace Rock.Data
                     var indexingEnabled = IndexContainer.GetActiveComponent() == null ? false : true;
                     if ( indexingEnabled )
                     {
-                        processEntityTypeIndexMsgs.ForEach( t => t.Send() );
-                        deleteEntityTypeIndexMsgs.ForEach( t => t.Send() );
+                        processEntityTypeIndexMsgs.ForEach( t => t.SendWhen( WrappedTransactionCompletedTask ) );
+                        deleteEntityTypeIndexMsgs.ForEach( t => t.SendWhen( WrappedTransactionCompletedTask ) );
                     }
                 } );
+            }
+        }
+
+        /// <summary>
+        /// Calls <see cref="IEntitySaveHook.PostSave(IEntitySaveEntry)"/> on
+        /// all hooks that had their <see cref="IEntitySaveHook.PreSave(IEntitySaveEntry)"/>
+        /// method called successfully already.
+        /// </summary>
+        /// <param name="contextItems">The context items.</param>
+        private void CallPostSaveHooks( IEnumerable<ContextItem> contextItems )
+        {
+            foreach ( var contextItem in contextItems )
+            {
+                foreach ( var hook in contextItem.InProcessSaveHooks )
+                {
+                    try
+                    {
+                        hook.PostSave( contextItem );
+                    }
+                    catch
+                    {
+                        // Intentionally ignored, this is cleanup so if one
+                        // thing fails to clean up don't let that affect the
+                        // rest of the cleanup.
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Calls <see cref="IEntitySaveHook.SaveFailed(IEntitySaveEntry)"/> on
+        /// all hooks that had their <see cref="IEntitySaveHook.PreSave(IEntitySaveEntry)"/>
+        /// method called successfully already.
+        /// </summary>
+        /// <param name="contextItems">The context items.</param>
+        private void CallSaveFailedHooks( IEnumerable<ContextItem> contextItems )
+        {
+            foreach ( var contextItem in contextItems )
+            {
+                foreach ( var hook in contextItem.InProcessSaveHooks )
+                {
+                    try
+                    {
+                        hook.SaveFailed( contextItem );
+                    }
+                    catch
+                    {
+                        // Intentionally ignored, this is cleanup so if one
+                        // thing fails to clean up don't let that affect the
+                        // rest of the cleanup.
+                    }
+                }
             }
         }
 
@@ -525,7 +742,7 @@ namespace Rock.Data
                 return new List<AchievementAttempt>();
             }
 
-            if ( updatedItem.State == EntityState.Detached || updatedItem.State == EntityState.Deleted || updatedItem.Entity == null )
+            if ( updatedItem.State == EntityContextState.Detached || updatedItem.State == EntityContextState.Deleted || updatedItem.Entity == null )
             {
                 return new List<AchievementAttempt>();
             }
@@ -725,7 +942,7 @@ namespace Rock.Data
                             EntityTypeId = entity.TypeId
                         };
 
-                        processWorkflowTriggerMsg.Send();
+                        processWorkflowTriggerMsg.SendWhen( this.WrappedTransactionCompletedTask );
                     }
                 }
             }
@@ -760,30 +977,46 @@ namespace Rock.Data
 
                     var currentProperty = propertyInfo.GetValue( item.Entity, null );
                     var currentValue = currentProperty != null ? currentProperty.ToString() : string.Empty;
+                    var alternateCurrentValue = currentValue; // used for comparisons of EntityTypeQualifierValue in case the user enters the numeric value of an enum.
+                    if ( propertyInfo.PropertyType.IsEnum )
+                    {
+                        alternateCurrentValue = Convert.ChangeType( currentProperty, Enum.GetUnderlyingType( currentProperty.GetType() ) ).ToString();
+                    }
+
                     var previousValue = string.Empty;
+                    var alternatePreviousValue = previousValue; // used for comparisons of EntityTypeQualifierValue in case the user enters the numeric value of an enum.
 
                     if ( item.OriginalValues != null && item.OriginalValues.ContainsKey( propertyInfo.Name ) )
                     {
-                        previousValue = item.OriginalValues[propertyInfo.Name].ToStringSafe();
+                        var previousProperty = item.OriginalValues[propertyInfo.Name];
+                        previousValue = previousProperty.ToStringSafe();
+                        if ( propertyInfo.PropertyType.IsEnum )
+                        {
+                            alternatePreviousValue = Convert.ChangeType( previousProperty, Enum.GetUnderlyingType( previousProperty.GetType() ) ).ToString();
+                        }
                     }
                     else
                     {
                         var dbPropertyEntry = dbEntity.Property( propertyInfo.Name );
-                        if ( dbPropertyEntry != null )
+                        if ( dbPropertyEntry != null && item.PreSaveState != EntityContextState.Added )
                         {
-                            previousValue = item.PreSaveState == EntityState.Added ? string.Empty : dbPropertyEntry.OriginalValue.ToStringSafe();
+                            previousValue = dbPropertyEntry.OriginalValue.ToStringSafe();
+                            if ( propertyInfo.PropertyType.IsEnum )
+                            {
+                                alternatePreviousValue = Convert.ChangeType( dbPropertyEntry.OriginalValue, Enum.GetUnderlyingType( dbPropertyEntry.OriginalValue.GetType() ) ).ToString();
+                            }
                         }
                     }
 
                     if ( trigger.WorkflowTriggerType == WorkflowTriggerType.PreDelete ||
                         trigger.WorkflowTriggerType == WorkflowTriggerType.PostDelete )
                     {
-                        match = ( previousValue == trigger.EntityTypeQualifierValue );
+                        match = ( previousValue == trigger.EntityTypeQualifierValue || alternatePreviousValue == trigger.EntityTypeQualifierValue );
                     }
 
                     if ( trigger.WorkflowTriggerType == WorkflowTriggerType.PostAdd )
                     {
-                        match = ( currentValue == trigger.EntityTypeQualifierValue );
+                        match = ( currentValue == trigger.EntityTypeQualifierValue || alternateCurrentValue == trigger.EntityTypeQualifierValue );
                     }
 
                     if ( trigger.WorkflowTriggerType == WorkflowTriggerType.ImmediatePostSave ||
@@ -792,26 +1025,30 @@ namespace Rock.Data
                     {
                         if ( trigger.WorkflowTriggerValueChangeType == WorkflowTriggerValueChangeType.ValueEqual )
                         {
-                            match = trigger.EntityTypeQualifierValue == currentValue;
+                            match = ( trigger.EntityTypeQualifierValue == currentValue || trigger.EntityTypeQualifierValue == alternateCurrentValue );
                         }
                         else
                         {
                             if ( hasCurrent && !hasPrevious )
                             {
                                 // ...and previous cannot be the same as the current (must be a change)
-                                match = ( currentValue == trigger.EntityTypeQualifierValue &&
-                                    currentValue != previousValue );
+                                match = ( currentValue != previousValue &&
+                                    ( currentValue == trigger.EntityTypeQualifierValue ||
+                                    alternateCurrentValue == trigger.EntityTypeQualifierValue ) );
                             }
                             else if ( !hasCurrent && hasPrevious )
                             {
                                 // ...and previous cannot be the same as the current (must be a change)
-                                match = ( previousValue == trigger.EntityTypeQualifierValuePrevious &&
-                                    previousValue != currentValue );
+                                match = ( previousValue != currentValue &&
+                                    ( previousValue == trigger.EntityTypeQualifierValuePrevious ||
+                                    alternatePreviousValue == trigger.EntityTypeQualifierValuePrevious ) );
                             }
                             else if ( hasCurrent && hasPrevious )
                             {
-                                match = ( currentValue == trigger.EntityTypeQualifierValue &&
-                                    previousValue == trigger.EntityTypeQualifierValuePrevious );
+                                match = ( ( currentValue == trigger.EntityTypeQualifierValue ||
+                                    alternateCurrentValue == trigger.EntityTypeQualifierValue ) &&
+                                    ( previousValue == trigger.EntityTypeQualifierValuePrevious ||
+                                    alternatePreviousValue == trigger.EntityTypeQualifierValuePrevious ) );
                             }
                             else if ( !hasCurrent && !hasPrevious )
                             {
@@ -943,7 +1180,7 @@ namespace Rock.Data
         /// State of entity being changed during a context save
         /// </summary>
         [System.Diagnostics.DebuggerDisplay( "{Entity.GetType()}:{Entity}, State:{State}" )]
-        protected class ContextItem
+        protected class ContextItem : IEntitySaveEntry
         {
             /// <summary>
             /// Gets or sets the entity.
@@ -953,27 +1190,45 @@ namespace Rock.Data
             /// </value>
             public IEntity Entity { get; set; }
 
+            /// <inheritdoc/>
+            object IEntitySaveEntry.Entity => Entity;
+
             /// <summary>
             /// Gets or sets the current state of the item in the ChangeTracker. Note: Use PreSaveState to see the state of the item before SaveChanges was called.
             /// </summary>
             /// <value>
             /// The state.
             /// </value>
-            public EntityState State
-            {
-                get
-                {
-                    return this.DbEntityEntry.State;
-                }
-            }
+            public EntityContextState State { get; }
+
+            /// <inheritdoc/>
+            public EntityContextState PreSaveState { get; private set; }
 
             /// <summary>
-            /// Gets the EntityState of the item (before it was saved the to database)
+            /// Gets or sets the save hooks that have had their
+            /// <see cref="IEntitySaveHook.PreSave(IEntitySaveEntry)"/> method
+            /// called and return successfully. In other words, these are save
+            /// hooks that will need to have either <see cref="IEntitySaveHook.SaveFailed(IEntitySaveEntry)"/>
+            /// or <see cref="IEntitySaveHook.PostSave(IEntitySaveEntry)"/> called.
             /// </summary>
             /// <value>
-            /// The state of the pre save.
+            /// The save hooks that are pending completion.
             /// </value>
-            public EntityState PreSaveState { get; private set; }
+            internal List<IEntitySaveHook> InProcessSaveHooks { get; set; }
+
+            /// <summary>
+            /// Gets the pre-save state legacy value.
+            /// </summary>
+            /// <value>
+            /// The pre-save state legacy value.
+            /// </value>
+            /// <remarks>
+            /// This can be removed once the Model{T}.PostSaveChanges() methods are removed.
+            /// </remarks>
+            internal EntityState PreSaveStateLegacy { get; }
+
+            /// <inheritdoc/>
+            public object DataContext { get; private set; }
 
             /// <summary>
             /// Gets or sets the database entity entry.
@@ -993,23 +1248,28 @@ namespace Rock.Data
 
             /// <summary>
             /// Gets or sets the collection of original entity values before the save occurs,
-            /// only valid when the entity-state is Modified.
+            /// only valid when the entity-state is <seealso cref="EntityState.Modified"/>
+            /// or <seealso cref="EntityState.Deleted"/>.
             /// </summary>
             /// <value>
             /// The original entity values.
             /// </value>
-            public Dictionary<string, object> OriginalValues { get; set; }
+            public IReadOnlyDictionary<string, object> OriginalValues { get; set; }
 
             /// <summary>
             /// Initializes a new instance of the <see cref="ContextItem" /> class.
             /// </summary>
             /// <param name="entity">The entity.</param>
+            /// <param name="dbContext">The database context that is tracking this entity.</param>
             /// <param name="dbEntityEntry">The database entity entry.</param>
-            /// <param name="enableAuditing">if set to <c>true</c> [enable auditing].</param>
-            public ContextItem( IEntity entity, DbEntityEntry dbEntityEntry, bool enableAuditing )
+            /// <param name="enableAuditing">if set to <c>true</c> then auditing is enabled for this entity item.</param>
+            public ContextItem( IEntity entity, DbContext dbContext, DbEntityEntry dbEntityEntry, bool enableAuditing )
             {
                 Entity = entity;
                 DbEntityEntry = dbEntityEntry;
+                State = DbEntityEntry.State.ToEntityContextState();
+                DataContext = dbContext;
+
                 if ( enableAuditing )
                 {
                     Audit = new Audit();
@@ -1034,24 +1294,19 @@ namespace Rock.Data
                     }
                 }
 
-                PreSaveState = dbEntityEntry.State;
+                PreSaveState = dbEntityEntry.State.ToEntityContextState();
+                PreSaveStateLegacy = dbEntityEntry.State;
 
-                if ( dbEntityEntry.State == EntityState.Modified )
-
+                if ( dbEntityEntry.State == EntityState.Modified || dbEntityEntry.State == EntityState.Deleted )
                 {
-                    var triggers = WorkflowTriggersCache.Triggers( entity.TypeName )
-                        .Where( t => t.WorkflowTriggerType == WorkflowTriggerType.ImmediatePostSave || t.WorkflowTriggerType == WorkflowTriggerType.PostSave );
-
-                    if ( triggers.Any() )
+                    var originalValues = new Dictionary<string, object>();
+                    foreach ( var p in DbEntityEntry.OriginalValues.PropertyNames )
                     {
-                        OriginalValues = new Dictionary<string, object>();
-                        foreach ( var p in DbEntityEntry.OriginalValues.PropertyNames )
-                        {
-                            OriginalValues.Add( p, DbEntityEntry.OriginalValues[p] );
-                        }
+                        originalValues.Add( p, DbEntityEntry.OriginalValues[p] );
                     }
-                }
 
+                    OriginalValues = originalValues;
+                }
             }
         }
     }

@@ -75,6 +75,17 @@ namespace Rock.Mobile
 
 </ListView>";
 
+        private const string _defaultToastXaml = @"<StackLayout>
+    <Frame HasShadow=""False"">
+        <StackLayout>
+            {% if ToastTitle != '' %}
+            <Label StyleClass=""title"" Text=""{Binding ToastTitle}"" />
+            {% endif %}
+            <Label Text=""{Binding ToastMessage}"" />
+        </StackLayout>
+    </Frame>
+</StackLayout>";
+
         #endregion
 
         /// <summary>
@@ -194,6 +205,14 @@ namespace Rock.Mobile
         public string FlyoutXaml { get; set; } = _defaultFlyoutXaml;
 
         /// <summary>
+        /// Gets or sets the toast xaml.
+        /// </summary>
+        /// <value>
+        /// The toast xaml.
+        /// </value>
+        public string ToastXaml { get; set; } = _defaultToastXaml;
+
+        /// <summary>
         /// Gets or sets the locked phone orientation.
         /// </summary>
         /// <value>
@@ -256,5 +275,13 @@ namespace Rock.Mobile
         ///   <c>true</c> if application should enable notifications automatically; otherwise, <c>false</c>.
         /// </value>
         public bool EnableNotificationsAutomatically { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets a value indicating a push token update has been requested.
+        /// </summary>
+        /// <value>
+        /// A value indicating a push token update has been requested.
+        /// </value>
+        public string PushTokenUpdateValue { get; set; }
     }
 }

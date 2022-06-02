@@ -895,7 +895,8 @@ ORDER BY [Text]",
                 int? LocationIdParam = PageParameter( PageParameterKey.LocationId ).AsIntegerOrNull();
 
                 // Try to set the locationId to the value specified by the block setting (preferred) or PageParameter. A null is okay here.
-                int? locationId = locationGuid.HasValue ? new LocationService( rockContext ).GetId( locationGuid.Value ) : LocationIdParam;
+                var selectedLocationId = locationGuid.HasValue ? new LocationService( rockContext ).GetId( locationGuid.Value ) : LocationIdParam;
+                int? locationId = null;
                 int? scheduleId = null;
                 var campusCurrentDateTime = RockDateTime.Now;
 
@@ -911,14 +912,19 @@ ORDER BY [Text]",
                     }
 
                     // If we have the location and it is valid then use it
-                    if ( locationId.HasValue && group.GroupLocations.Select( l => l.LocationId == locationId ).Any() )
+                    if ( selectedLocationId.HasValue && group.GroupLocations.Select( l => l.LocationId == selectedLocationId ).Any() )
                     {
-                        GroupLocation groupLocation = group.GroupLocations.Where( l => l.LocationId == locationId ).FirstOrDefault();
-                        var schedule = groupLocation.Schedules.Where( a => a.WasScheduleActive( campusCurrentDateTime ) ).FirstOrDefault();
-                        if ( schedule != null )
+                        GroupLocation groupLocation = group.GroupLocations.Where( l => l.LocationId == selectedLocationId ).FirstOrDefault();
+                        if ( groupLocation != null )
                         {
-                            scheduleId = schedule.Id;
-                            attendanceGroup = group;
+                            var schedule = groupLocation.Schedules.Where( a => a.WasScheduleActive( campusCurrentDateTime ) ).FirstOrDefault();
+                            if ( schedule != null )
+                            {
+                                locationId = selectedLocationId;
+                                scheduleId = schedule.Id;
+                                attendanceGroup = group;
+                                break;
+                            }
                         }
                     }
 
@@ -936,11 +942,6 @@ ORDER BY [Text]",
                                 break;
                             }
                         }
-                    }
-
-                    if ( scheduleId.HasValue )
-                    {
-                        break;
                     }
                 }
 
@@ -1007,7 +1008,7 @@ ORDER BY [Text]",
                             }
                             parameters.Add( "CheckedInPersonIds", personIds.AsDelimited( "," ) );
 
-                            primaryPerson.LaunchWorkflow( workflowTypeGuid, primaryPerson.FullName, parameters );
+                            primaryPerson.LaunchWorkflow( workflowTypeGuid, primaryPerson.FullName, parameters, null );
 
                         }
                         catch ( Exception ex )

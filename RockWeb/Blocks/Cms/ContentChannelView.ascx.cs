@@ -787,14 +787,12 @@ $(document).ready(function() {
                     rssLink.Attributes.Add( "title", contentItemList.Select( c => c.ContentChannel.Name ).FirstOrDefault() );
 
                     var context = HttpContext.Current;
-                    string channelRssUrl = string.Format( "{0}://{1}{2}{3}{4}",
-                                        context.Request.Url.Scheme,
-                                        WebRequestHelper.GetHostNameFromRequest( context ),
-                                        context.Request.Url.Port == 80
-                                            ? string.Empty
-                                            : ":" + context.Request.Url.Port,
-                                        RockPage.ResolveRockUrl( "~/GetChannelFeed.ashx?ChannelId=" ),
-                                        contentItemList.Select( c => c.ContentChannelId ).FirstOrDefault() );
+                    var proxySafeUrl = context.Request.UrlProxySafe();
+                    var proxySafeHostName = WebRequestHelper.GetHostNameFromRequest( context );
+                    var proxySafePort = proxySafeUrl.Port == 80 ? string.Empty : ":" + proxySafeUrl.Port;
+                    var resolvedRockUrl = RockPage.ResolveRockUrl( "~/GetChannelFeed.ashx?ChannelId=" );
+                    var contentChannelItem = contentItemList.Select( c => c.ContentChannelId ).FirstOrDefault();
+                    var channelRssUrl = $"{proxySafeUrl.Scheme}://{proxySafeHostName}{proxySafePort}{resolvedRockUrl}{contentChannelItem}";
 
                     rssLink.Attributes.Add( "href", channelRssUrl );
                     RockPage.Header.Controls.Add( rssLink );
@@ -819,19 +817,21 @@ $(document).ready(function() {
 
                     if ( !string.IsNullOrWhiteSpace( attributeValue ) )
                     {
+                        var proxySafeUri = Request.UrlProxySafe();
+
                         HtmlMeta metaDescription = new HtmlMeta();
                         metaDescription.Name = "og:image";
-                        metaDescription.Content = string.Format( "{0}://{1}/GetImage.ashx?guid={2}", Request.Url.Scheme, Request.Url.Authority, attributeValue );
+                        metaDescription.Content = $"{proxySafeUri.Scheme}://{proxySafeUri.Authority}/GetImage.ashx?guid={attributeValue}";
                         RockPage.Header.Controls.Add( metaDescription );
 
                         HtmlLink imageLink = new HtmlLink();
                         imageLink.Attributes.Add( "rel", "image_src" );
-                        imageLink.Attributes.Add( "href", string.Format( "{0}://{1}/GetImage.ashx?guid={2}", Request.Url.Scheme, Request.Url.Authority, attributeValue ) );
+                        imageLink.Attributes.Add( "href", $"{proxySafeUri.Scheme}://{proxySafeUri.Authority}/GetImage.ashx?guid={attributeValue}" );
                         RockPage.Header.Controls.Add( imageLink );
                     }
                 }
 
-                if ( LavaEngine.CurrentEngine.EngineType == LavaEngineTypeSpecifier.RockLiquid )
+                if ( LavaService.RockLiquidIsEnabled )
                 {
                     var template = GetTemplate();
 
@@ -841,11 +841,11 @@ $(document).ready(function() {
                 {
                     var template = GetLavaTemplate();
 
-                    var lavaContext = LavaEngine.CurrentEngine.NewRenderContext( mergeFields );
+                    var lavaContext = LavaService.NewRenderContext( mergeFields, GetAttributeValue( AttributeKey.EnabledLavaCommands ).SplitDelimitedValues() );
 
-                    lavaContext.SetEnabledCommands( GetAttributeValue( AttributeKey.EnabledLavaCommands ).SplitDelimitedValues() );
+                    var renderResult = LavaService.RenderTemplate( template, lavaContext );
 
-                    outputContents = template.Render( lavaContext );
+                    outputContents = renderResult.Text;
                 }
 
                 if ( OutputCacheDuration.HasValue && OutputCacheDuration.Value > 0 )
@@ -903,7 +903,7 @@ $(document).ready(function() {
 
                 if ( template == null )
                 {
-                    var parseResult = LavaEngine.CurrentEngine.ParseTemplate( GetAttributeValue( AttributeKey.Template ) );
+                    var parseResult = LavaService.ParseTemplate( GetAttributeValue( AttributeKey.Template ) );
 
                     if ( parseResult.HasErrors )
                     {
@@ -921,7 +921,7 @@ $(document).ready(function() {
             }
             catch ( Exception ex )
             {
-                var parseResult = LavaEngine.CurrentEngine.ParseTemplate( string.Format( "Lava error: {0}", ex.Message ) );
+                var parseResult = LavaService.ParseTemplate( string.Format( "Lava error: {0}", ex.Message ) );
 
                 template = parseResult.Template;
             }
@@ -951,6 +951,8 @@ $(document).ready(function() {
                 if ( template == null )
                 {
                     template = Template.Parse( GetAttributeValue( AttributeKey.Template ) );
+
+                    LavaHelper.VerifyParseTemplateForCurrentEngine( GetAttributeValue( AttributeKey.Template ) );
 
                     if ( ItemCacheDuration.HasValue && ItemCacheDuration.Value > 0 )
                     {

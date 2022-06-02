@@ -26,9 +26,18 @@ namespace Rock.Lava
     public interface ILavaTemplateCacheService
     {
         /// <summary>
-        /// The LavaEngine instance that is responsible for compiling a template before it is added to the cache.
+        /// Initialize the cache service for use with a specific engine instance.
         /// </summary>
-        ILavaEngine LavaEngine { get; set; }
+        /// <param name="engine"></param>
+        void Initialize( string cacheKeyPrefix );
+
+        /// <summary>
+        /// Adds a compiled template to the cache.
+        /// </summary>
+        /// <param name="template">The template.</param>
+        /// <param name="cacheKey">A key that uniquely identifies the template. If the key exists in the cache, the existing template will be replaced.</param>
+        /// <returns></returns>
+        void AddTemplate( ILavaTemplate template, string cacheKey );
 
         /// <summary>
         /// Gets a compiled template from cache or adds it to the cache if it does not already exist.
@@ -36,7 +45,7 @@ namespace Rock.Lava
         /// <param name="templateContent">The template source text.</param>
         /// <param name="cacheKey">An optional key that uniquely identifies the template. If not specified, the template source text is used to calculate a key for cache storage and retrieval.</param>
         /// <returns></returns>
-        ILavaTemplate GetOrAddTemplate( string templateContent, string cacheKey = null );
+        ILavaTemplate GetOrAddTemplate( ILavaEngine engine, string templateContent, string cacheKey = null );
 
         /// <summary>
         /// Remove all templates from the cache.
@@ -44,11 +53,18 @@ namespace Rock.Lava
         void ClearCache();
 
         /// <summary>
-        /// Gets a flag indicating if the cache contains the specified template.
+        /// Gets a flag indicating if the cache contains a template identified by the specified key.
+        /// </summary>
+        /// <param name="key">The key that uniquely identifies the template in the cache.</param>
+        /// <returns></returns>
+        bool ContainsKey( string key );
+
+        /// <summary>
+        /// Calculates a cache key for the specified template.
         /// </summary>
         /// <param name="content"></param>
         /// <returns></returns>
-        bool ContainsTemplate( string content );
+        string GetCacheKeyForTemplate( string content );
 
         /// <summary>
         /// Removes the specified template from the cache.
@@ -56,6 +72,13 @@ namespace Rock.Lava
         /// <param name="content"></param>
         /// <returns></returns>
         void RemoveTemplate( string content );
+
+        /// <summary>
+        /// Removes the template associated with the specified key from the cache.
+        /// </summary>
+        /// <param name="key">The key that uniquely identifies the template in the cache.</param>
+        /// <returns></returns>
+        void RemoveKey( string key );
 
         /// <summary>
         /// Gets the number of times a request for a template has been satisfied from the cache.

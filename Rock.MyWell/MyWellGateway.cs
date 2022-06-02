@@ -21,21 +21,24 @@ using System.ComponentModel.Composition;
 using System.Linq;
 using System.Text;
 using System.Web.UI;
+
 using Newtonsoft.Json;
+
 using RestSharp;
+
 using Rock.Attribute;
 using Rock.Financial;
 using Rock.Model;
 using Rock.MyWell.Controls;
-using Rock.Security;
 using Rock.Web.Cache;
+
 // Use Newtonsoft RestRequest which is the same as RestSharp.RestRequest but uses the JSON.NET serializer.
 using RestRequest = RestSharp.Newtonsoft.Json.RestRequest;
 
 namespace Rock.MyWell
 {
     /// <summary>
-    /// 
+    ///
     /// </summary>
     /// <seealso cref="Rock.Financial.GatewayComponent" />
     [Description( "The My Well Gateway is the primary gateway to use with My Well giving." )]
@@ -57,6 +60,13 @@ namespace Rock.MyWell
         Description = "The public API Key used for web client operations",
         Order = 2 )]
 
+    [TextField(
+        "Card Sync Webhook Signature",
+        Key = AttributeKey.CardSyncWebhookSignature,
+        IsRequired = false,
+        Description = "The Webhook Signature for CardSync. This field is required if using CardSync. See <a href='https://sandbox.gotnpgateway.com/docs/webhooks/#security'>webhook security documentation.</a>",
+        Order = 3 )]
+
     [CustomRadioListField(
         "Mode",
         Key = AttributeKey.Mode,
@@ -64,7 +74,7 @@ namespace Rock.MyWell
         ListSource = "Live,Sandbox",
         IsRequired = true,
         DefaultValue = "Live",
-        Order = 3 )]
+        Order = 4 )]
 
     [DecimalField(
         "Credit Card Fee Coverage Percentage",
@@ -72,7 +82,7 @@ namespace Rock.MyWell
         Description = @"The credit card fee percentage that will be used to determine what to add to the person's donation, if they want to cover the fee.",
         IsRequired = false,
         DefaultValue = null,
-        Order = 4 )]
+        Order = 5 )]
 
     [CurrencyField(
         "ACH Transaction Fee Coverage Amount",
@@ -80,10 +90,10 @@ namespace Rock.MyWell
         Description = "The  dollar amount to add to an ACH transaction, if they want to cover the fee.",
         IsRequired = false,
         DefaultValue = null,
-        Order = 5 )]
+        Order = 6 )]
 
     #endregion Component Attributes
-    public class MyWellGateway : GatewayComponent, IHostedGatewayComponent, IAutomatedGatewayComponent, IFeeCoverageGatewayComponent
+    public class MyWellGateway : GatewayComponent, IHostedGatewayComponent, IAutomatedGatewayComponent, IFeeCoverageGatewayComponent/*, IObsidianFinancialGateway*/
     {
         #region Attribute Keys
 
@@ -116,9 +126,46 @@ namespace Rock.MyWell
             /// The ach transaction fee coverage amount
             /// </summary>
             public const string ACHTransactionFeeCoverageAmount = "ACHTransactionFeeCoverageAmount";
+
+            /// <summary>
+            /// The card sync webhook signature
+            /// See https://sandbox.gotnpgateway.com/docs/webhooks/#security
+            /// </summary>
+            public const string CardSyncWebhookSignature = "CardSyncWebhookSignature";
         }
 
         #endregion Attribute Keys
+
+        #region Obsidian
+
+        ///// <summary>
+        ///// Gets the Obsidian control file URL.
+        ///// </summary>
+        ///// <param name="financialGateway">The financial gateway.</param>
+        ///// <returns></returns>
+        ///// <value>
+        ///// The control file URL.
+        ///// </value>
+        //public string GetObsidianControlFileUrl( FinancialGateway financialGateway )
+        //{
+        //    return "/Obsidian/Controls/MyWellGatewayControl.js";
+        //}
+
+        ///// <summary>
+        ///// Gets the obsidian control settings.
+        ///// </summary>
+        ///// <param name="financialGateway">The financial gateway.</param>
+        ///// <returns></returns>
+        //public object GetObsidianControlSettings( FinancialGateway financialGateway )
+        //{
+        //    return new
+        //    {
+        //        PublicApiKey = GetPublicApiKey( financialGateway ),
+        //        GatewayUrl = GetGatewayUrl( financialGateway )
+        //    };
+        //}
+
+        #endregion Obsidian
 
         /// <summary>
         /// Gets the gateway URL.
@@ -164,6 +211,106 @@ namespace Rock.MyWell
             return this.GetAttributeValue( financialGateway, AttributeKey.PrivateApiKey );
         }
 
+        /// <summary>
+        /// Gets the CardSync signature.
+        /// </summary>
+        /// <param name="financialGateway">The financial gateway.</param>
+        /// <returns>System.String.</returns>
+        private string GetCardSyncSignature( FinancialGateway financialGateway )
+        {
+            return this.GetAttributeValue( financialGateway, AttributeKey.CardSyncWebhookSignature );
+        }
+
+        /// <summary>
+        /// Verifies the signature of a POST to a webhook,
+        /// </summary>
+        /// <param name="financialGateway">The financial gateway.</param>
+        /// <param name="postedSignature">The posted signature.</param>
+        /// <param name="postedBody">The posted body.</param>
+        /// <returns><c>true</c> if XXXX, <c>false</c> otherwise.</returns>
+        public bool VerifySignature( FinancialGateway financialGateway, string postedSignature, string postedBody )
+        {
+            if ( postedSignature.IsNullOrWhiteSpace() )
+            {
+                return false;
+            }
+
+            // From C# example at https://sandbox.gotnpgateway.com/docs/webhooks/#security
+
+            // ClientSecret is the 'Signature' from the WebHook at https://app.gotnpgateway.com/merchant/settings/webhooks/search
+            string clientSecret = GetCardSyncSignature( financialGateway );
+            if ( clientSecret.IsNullOrWhiteSpace() )
+            {
+                // no CardSyncSignature specified, so don't do signature validation
+                return true;
+            }
+
+            byte[] clientSecretBytes = Encoding.ASCII.GetBytes( clientSecret );
+
+            // From C# example at https://sandbox.gotnpgateway.com/docs/webhooks/#security
+            // NOTE: The MyWell API may include a linefeed character ('\n' = 10 = 0x0A).
+            //       If you do not include this linefeed character but we do, your
+            //       signature will not match. To test with this linefeed character,
+            //       add '\n' to the end of the string.
+            //
+            //       For example, the string below would change to:
+            //       var body = "{\"data\":\"this is test data\"}\n";
+            //
+            //       If you're reading in the request body, in byte form, then you
+            //       shouldn't have to change anything as it should include this
+            //       linefeed if sent in the body.
+
+            byte[] bodyBytes = Encoding.ASCII.GetBytes( postedBody );
+
+            // Hash body to create signature.
+            var hash = new System.Security.Cryptography.HMACSHA256( clientSecretBytes );
+            byte[] signature = hash.ComputeHash( bodyBytes );
+
+            // Base64 decode test signature.
+            byte[] testSignature = Base64UrlDecode( postedSignature );
+
+            // Compare signatures.
+            if ( !signature.SequenceEqual( testSignature ) )
+            {
+                // Signatures do not match"
+                return false;
+            }
+
+            // "Signatures match"
+            return true;
+        }
+
+        /// <summary>
+        /// Decodes an RFC4648 Base64 URL encoded string.
+        /// </summary>
+        private static byte[] Base64UrlDecode( string s )
+        {
+            // From C# example at https://sandbox.gotnpgateway.com/docs/webhooks/#security
+
+            // 62nd char of encoding.
+            s = s.Replace( '-', '+' );
+
+            // 63rd char of encoding.
+            s = s.Replace( '_', '/' );
+
+            // Check for padding.
+            switch ( s.Length % 4 )
+            {
+                case 0:
+                    break;
+                case 2:
+                    s += "==";
+                    break;
+                case 3:
+                    s += "=";
+                    break;
+                default:
+                    throw new InvalidOperationException( "could not add padding" );
+            }
+
+            return Convert.FromBase64String( s );
+        }
+
         #region IAutomatedGatewayComponent
 
         /// <summary>
@@ -206,11 +353,11 @@ namespace Rock.MyWell
                 {
                     AccountNumberMasked = paymentDetail.AccountNumberMasked,
                     Amount = paymentInfo.Amount,
-                    ExpirationMonthEncrypted = paymentDetail.ExpirationMonthEncrypted,
-                    ExpirationYearEncrypted = paymentDetail.ExpirationYearEncrypted,
+                    ExpirationMonth = paymentDetail.ExpirationMonth,
+                    ExpirationYear = paymentDetail.ExpirationYear,
                     IsSettled = transaction.IsSettled,
                     SettledDate = transaction.SettledDate,
-                    NameOnCardEncrypted = paymentDetail.NameOnCardEncrypted,
+                    NameOnCard = paymentDetail.NameOnCard,
                     Status = transaction.Status,
                     StatusMessage = transaction.StatusMessage,
                     TransactionCode = transaction.TransactionCode,
@@ -501,7 +648,7 @@ namespace Rock.MyWell
 
         /// <summary>
         /// Updates the customer address.
-        /// https://sandbox.gotnpgateway.com/docs/api/#update-a-specific-customer-address
+        /// https://sandbox.gotnpgateway.com/docs/api/#update-address-token-deprecated
         /// </summary>
         /// <param name="gatewayUrl">The gateway URL.</param>
         /// <param name="apiKey">The API key.</param>
@@ -740,7 +887,7 @@ namespace Rock.MyWell
                 billingFrequency = BillingFrequency.twice_monthly;
 
                 /* 2020-07-30 MDP
-                  - When setting up a 1st/15th schedule, MyWell will report the NextBillDate as whatever we tell it, 
+                  - When setting up a 1st/15th schedule, MyWell will report the NextBillDate as whatever we tell it,
                     but it really end up posting on whatever the next 1st or 15th lands on (which is what we want to happen).
                     For example, if we set up a 1st/15th schedule to start on July 23rd, it'll report that the NextBillDate is July 23rd,
                     but it won't really bill until Aug 1st. From then on, the NextBillDate will get reported as whatever the next 1st and 15th is.
@@ -905,6 +1052,26 @@ namespace Rock.MyWell
         }
 
         /// <summary>
+        /// Sets the subscription status.
+        /// Undocumented - Email from MyWell on 6/10/2021 told us about it
+        /// </summary>
+        /// <param name="gatewayUrl">The gateway URL.</param>
+        /// <param name="apiKey">The API key.</param>
+        /// <param name="subscriptionId">The subscription identifier.</param>
+        /// <param name="subscriptionStatus">The subscription status.</param>
+        /// <returns></returns>
+        private SubscriptionResponse SetSubscriptionStatus( string gatewayUrl, string apiKey, string subscriptionId, MyWellSubscriptionStatus subscriptionStatus )
+        {
+            var restClient = new RestClient( gatewayUrl );
+            RestRequest restRequest = new RestRequest( $"/api/recurring/subscription/{subscriptionId}/status/{subscriptionStatus.ConvertToString( false )}", Method.GET );
+            restRequest.AddHeader( "Authorization", apiKey );
+
+            var response = restClient.Execute( restRequest );
+
+            return ParseResponse<SubscriptionResponse>( response );
+        }
+
+        /// <summary>
         /// Updates the subscription.
         /// https://sandbox.gotnpgateway.com/docs/api/#update-a-subscription
         /// </summary>
@@ -995,7 +1162,7 @@ namespace Rock.MyWell
         #region Exceptions
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <seealso cref="System.Exception" />
         public class ReferencePaymentInfoRequired : Exception
@@ -1009,7 +1176,7 @@ namespace Rock.MyWell
             }
         }
 
-        #endregion 
+        #endregion
 
         #region GatewayComponent implementation
 
@@ -1059,7 +1226,7 @@ namespace Rock.MyWell
                 var exception = new MyWellGatewayException( $"Error processing MyWell transaction. Message:  {response.Message}, " +
                     $"processorResponseCode: {response.ProcessorResponseCode}, " +
                     $"processorResponseText: {response.ProcessorResponseText} " );
-                
+
                 ExceptionLogService.LogException( exception );
 
                 return null;
@@ -1085,7 +1252,7 @@ namespace Rock.MyWell
             if ( billingAddressResponse != null )
             {
                 // Since we are using a token for payment, it is possible that the Gateway has a different address associated with the payment method.
-                financialPaymentDetail.NameOnCardEncrypted = Encryption.EncryptString( $"{billingAddressResponse.FirstName} {billingAddressResponse.LastName}" );
+                financialPaymentDetail.NameOnCard = $"{billingAddressResponse.FirstName} {billingAddressResponse.LastName}";
 
                 // If address wasn't collected when entering the transaction, set the address to the billing info returned from the gateway (if any).
                 if ( paymentInfo.Street1.IsNullOrWhiteSpace() )
@@ -1114,8 +1281,8 @@ namespace Rock.MyWell
 
                 if ( creditCardResponse.ExpirationDate?.Length == 5 )
                 {
-                    financialPaymentDetail.ExpirationMonthEncrypted = Encryption.EncryptString( creditCardResponse.ExpirationDate.Substring( 0, 2 ) );
-                    financialPaymentDetail.ExpirationYearEncrypted = Encryption.EncryptString( creditCardResponse.ExpirationDate.Substring( 3, 2 ) );
+                    financialPaymentDetail.ExpirationMonth = creditCardResponse.ExpirationDate.Substring( 0, 2 ).AsIntegerOrNull();
+                    financialPaymentDetail.ExpirationYear = creditCardResponse.ExpirationDate.Substring( 3, 2 ).AsIntegerOrNull();
                 }
 
                 //// The gateway tells us what the CreditCardType is since it was selected using their hosted payment entry frame.
@@ -1286,6 +1453,32 @@ namespace Rock.MyWell
             }
         }
 
+        internal static Rock.Model.FinancialScheduledTransactionStatus? GetFinancialScheduledTransactionStatus( MyWellSubscriptionStatus? subscriptionStatus )
+        {
+            if ( subscriptionStatus == null )
+            {
+                return null;
+            }
+
+            switch ( subscriptionStatus )
+            {
+                case MyWellSubscriptionStatus.active:
+                    return FinancialScheduledTransactionStatus.Active;
+                case MyWellSubscriptionStatus.canceled:
+                    return FinancialScheduledTransactionStatus.Canceled;
+                case MyWellSubscriptionStatus.completed:
+                    return FinancialScheduledTransactionStatus.Completed;
+                case MyWellSubscriptionStatus.failed:
+                    return FinancialScheduledTransactionStatus.Failed;
+                case MyWellSubscriptionStatus.past_due:
+                    return FinancialScheduledTransactionStatus.PastDue;
+                case MyWellSubscriptionStatus.paused:
+                    return FinancialScheduledTransactionStatus.Paused;
+                default:
+                    return subscriptionStatus.ConvertToString( false ).ConvertToEnumOrNull<FinancialScheduledTransactionStatus>();
+            }
+        }
+
         /// <summary>
         /// Updates the scheduled payment.
         /// </summary>
@@ -1337,7 +1530,30 @@ namespace Rock.MyWell
                     subscriptionParameters.Customer = new SubscriptionCustomer { Id = referencedPaymentInfo.GatewayPersonIdentifier };
                 }
 
-                var subscriptionResult = this.UpdateSubscription( gatewayUrl, apiKey, subscriptionId, subscriptionParameters );
+                SubscriptionResponse subscriptionResult;
+                var subscriptionStatusResult = this.GetSubscription( gatewayUrl, apiKey, subscriptionId );
+                if ( subscriptionStatusResult?.Data?.SubscriptionStatus != MyWellSubscriptionStatus.active )
+                {
+                    // If subscription isn't active (it might be cancelled due to expired card),
+                    // change the status back to active
+                    var setSubscriptionStatusResult = this.SetSubscriptionStatus( gatewayUrl, apiKey, subscriptionId, MyWellSubscriptionStatus.active );
+
+                    if ( !setSubscriptionStatusResult.IsSuccessStatus() )
+                    {
+                        // Write decline/error as an exception.
+                        // Note: MyWell doesn't include processor errors when creating subscriptions, probably because the processor doesn't do anything until the transactions are charged.
+                        var exception = new MyWellGatewayException( $"Error re-activating MyWell subscription. Message:  {setSubscriptionStatusResult.Message} " );
+
+                        ExceptionLogService.LogException( exception );
+
+                        errorMessage = setSubscriptionStatusResult.Message;
+
+                        return false;
+                    }
+                }
+
+                subscriptionResult = this.UpdateSubscription( gatewayUrl, apiKey, subscriptionId, subscriptionParameters );
+
                 if ( !subscriptionResult.IsSuccessStatus() )
                 {
                     // Write decline/error as an exception.
@@ -1348,6 +1564,22 @@ namespace Rock.MyWell
                     errorMessage = subscriptionResult.Message;
 
                     return false;
+                }
+
+                subscriptionId = subscriptionResult?.Data?.Id;
+
+                if ( subscriptionId != scheduledTransaction.GatewayScheduleId )
+                {
+                    // Shouldn't happen, but just in case...
+                    if ( scheduledTransaction.PreviousGatewayScheduleIds == null )
+                    {
+                        scheduledTransaction.PreviousGatewayScheduleIds = new List<string>();
+                    }
+
+                    scheduledTransaction.PreviousGatewayScheduleIds.Add( scheduledTransaction.GatewayScheduleId );
+
+                    referencedPaymentInfo.TransactionCode = subscriptionId;
+                    scheduledTransaction.GatewayScheduleId = subscriptionId;
                 }
             }
             else
@@ -1380,6 +1612,7 @@ namespace Rock.MyWell
 
             scheduledTransaction.FinancialPaymentDetail = PopulatePaymentInfo( paymentInfo, customerInfo?.Data?.PaymentMethod, customerInfo?.Data?.BillingAddress );
             scheduledTransaction.TransactionCode = customerId;
+
             try
             {
                 GetScheduledPaymentStatus( scheduledTransaction, out errorMessage );
@@ -1464,8 +1697,19 @@ namespace Rock.MyWell
                 var subscriptionInfo = subscriptionResult.Data;
                 if ( subscriptionInfo != null )
                 {
-                    scheduledTransaction.NextPaymentDate = subscriptionInfo.NextBillDateUTC?.Date;
+                    var gatewayNextBillDate = subscriptionInfo.NextBillDateUTC?.Date;
+                    if ( gatewayNextBillDate.HasValue )
+                    {
+                        // Rock DateTimes don't keep any TimeZone or offset, so make sure the date is DateTimeKind.Unspecified instead of UTC.
+                        // Note that the DateTime stored to the database will get the DateTimeKind stripped off, so this is only issue for DateTime data
+                        // that isn't saved to the database yet.
+                        gatewayNextBillDate = DateTime.SpecifyKind( gatewayNextBillDate.Value, DateTimeKind.Unspecified );
+                    }
+
+                    scheduledTransaction.NextPaymentDate = gatewayNextBillDate;
                     scheduledTransaction.FinancialPaymentDetail.GatewayPersonIdentifier = subscriptionInfo.Customer?.Id;
+                    scheduledTransaction.StatusMessage = subscriptionInfo.SubscriptionStatusRaw;
+                    scheduledTransaction.Status = GetFinancialScheduledTransactionStatus( subscriptionInfo.SubscriptionStatus );
                 }
 
                 scheduledTransaction.LastStatusUpdateDateTime = RockDateTime.Now;
@@ -1500,7 +1744,24 @@ namespace Rock.MyWell
         {
             QueryTransactionStatusRequest queryTransactionStatusRequest = new QueryTransactionStatusRequest
             {
-                DateTimeRangeUTC = new QueryDateTimeRange( startDateTime, endDateTime )
+                DateTimeRangeUTC = new QueryDateTimeRange( startDateTime, endDateTime ),
+
+                /*
+                 04/13/2022 MDP
+
+                We only care about 'Sale' transaction. Here is why
+                - Scheduled Transactions would normally be 'sale' transactions. Rock wouldn't have recorded these yet since the Gateway does the transaction according to the schedule. If the Gateway
+                   ends up doing a 'sale' transaction due the scheduled transaction, then we want to know about it. If it was a scheduled transaction that is somehow a 'credit/refund/void', then we don't want it.
+
+                - 'Sale' transactions could also be one time transactions (not scheduled). We already have those recorded, but we want to know if the settle status has changed. Or if somehow ended up rejected.
+
+                - Any Refunds/Voids/Credits that were initialized by Rock would already be recorded as a FinancialTransaction in Rock. Since we know about those already, we don't need to get those from a Gateway. We also don't want
+                them because Rock might not know what do with them and would record it as a new transactions. Resulting in duplicates.
+
+                */
+
+                // Only search for transactions that were a 'sale' (see above engineering note)
+                TransactionTypeSearch = new QuerySearchTransactionType( TransactionType.sale )
             };
 
             var searchResult = this.SearchTransactions( this.GetGatewayUrl( financialGateway ), this.GetPrivateApiKey( financialGateway ), queryTransactionStatusRequest );
@@ -1524,6 +1785,13 @@ namespace Rock.MyWell
 
             foreach ( var transaction in searchResult.Data )
             {
+                if ( !transaction.TransactionType.HasValue || ( transaction.TransactionType != TransactionType.sale ) )
+                {
+                    // We limited our search request to 'sale' transaction, but if we somehow got a transaction that wasn't a 'sale',
+                    // skip it (see above engineering note)
+                    continue;
+                }
+
                 var gatewayScheduleId = transaction.SubscriptionId;
                 var payment = new Payment
                 {
@@ -1549,7 +1817,7 @@ namespace Rock.MyWell
                     //// ScheduleActive doesn't apply because MyWell subscriptions are either active or deleted (don't exist).
                     ////   - GetScheduledPaymentStatus will take care of setting ScheduledTransaction.IsActive to false
                     //// SettledGroupId isn't included in the response from MyWell (this is an open issue)
-                    //// NameOnCardEncrypted, ExpirationMonthEncrypted, ExpirationYearEncrypted are set when the FinancialScheduledTransaction record is created
+                    //// NameOnCard, ExpirationMonth, ExpirationYear are set when the FinancialScheduledTransaction record is created
                 };
 
                 if ( transaction.PaymentType == "ach" )

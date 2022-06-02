@@ -71,7 +71,7 @@ namespace Rock.Tests.Integration.Lava
 
             if ( fi == null )
             {
-                return $"File Load Failed. The file \"{templateName}\" could not be found.";
+                throw new Exception( $"File Load Failed. The file \"{templateName}\" could not be found." );
             }
 
             var sb = new StringBuilder();
@@ -93,6 +93,11 @@ namespace Rock.Tests.Integration.Lava
         public bool FileExists( string filePath )
         {
             return _files.ContainsKey( filePath );
+        }
+
+        IChangeToken IFileProvider.Watch( string filter )
+        {
+            throw new NotImplementedException();
         }
 
         #endregion

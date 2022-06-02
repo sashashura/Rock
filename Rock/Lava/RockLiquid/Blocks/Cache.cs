@@ -286,9 +286,12 @@ namespace Rock.Lava.RockLiquid.Blocks
             // Add variables in the scope (defined in the lava itself via assign)
             if ( context.Scopes?.Count > 0 )
             {
-                foreach ( var item in context.Scopes[0] )
+                foreach ( var scope in context.Scopes )
                 {
-                    lavaMergeFields.Add( item.Key, item.Value );
+                    foreach ( var item in scope )
+                    {
+                        lavaMergeFields.Add( item.Key, item.Value );
+                    }
                 }
             }
 
@@ -343,7 +346,7 @@ namespace Rock.Lava.RockLiquid.Blocks
                 {
                     var value = itemParts[1];
 
-                    if ( value.HasMergeFields() )
+                    if ( value.IsLavaTemplate() )
                     {
                         value = value.ResolveMergeFields( internalMergeFields );
                     }

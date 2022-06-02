@@ -89,12 +89,19 @@ BEGIN
 				FROM @LessActiveGroupMembersIdsToDelete
 				)
 
+		-- Delete the GroupMemberAssignment Records for the @LessActiveGroupMembersIdsToDelete
+		DELETE FROM [GroupMemberAssignment]
+		WHERE [GroupMemberId] IN (
+				SELECT [Id]
+				FROM @LessActiveGroupMembersIdsToDelete
+				)
+
 		-- If there is GroupMemberHistory, we can't delete, so create a list of GroupMemberIds that we'll archive instead of delete
 		INSERT INTO @GroupMembersIdsToArchive 
 			SELECT [Id]	FROM @LessActiveGroupMembersIdsToDelete WHERE Id IN (SELECT GroupMemberId FROM GroupMemberHistorical)
 
 		DELETE FROM @LessActiveGroupMembersIdsToDelete 
-			WHERE Id IN (SELECT Id FROM @LessActiveGroupMembersIdsToDelete)
+			WHERE Id IN (SELECT Id FROM @GroupMembersIdsToArchive)
 
 		-- Delete the @LessActiveGroupMembersIdsToDelete for any GroupMember records that don't have GroupMemberHistory
 		DELETE
@@ -127,6 +134,16 @@ BEGIN
 			FROM [GroupMember]
 			WHERE [PersonId] = @OldId
 		)
+
+
+		-- Delete any Group Assignments that point to a group member about to be deleted
+		DELETE FROM [GroupMemberAssignment]
+		WHERE [GroupMemberId] IN (
+			SELECT [Id]
+			FROM [GroupMember]
+			WHERE [PersonId] = @OldId
+		)
+
 
 		-- If there is GroupMemberHistory, we can't delete, so add any other GroupMemberIds for the old PersonId to our @GroupMembersIdsToArchive list
 		INSERT INTO @GroupMembersIdsToArchive 
@@ -224,6 +241,16 @@ BEGIN
 		-----------------------------------------------------------------------------------------------
 		-- Update any followings that are associated to the old person to be associated to the new 
 		-- person. 
+        /*
+		  NEXT 2 QUERIES TO BE DELETED?
+
+		  5/26/2022 - CWR
+		  These "Following" queries do not work as intended to update or delete, and should be removed.
+		  These queries use the "Person" Entity Type (@PersonEntityTypeId), and "Following" people should use "PersonAlias" Entity Type.
+          Because "Following" uses a different entity type, these queries do not alter data.
+		  Person-related "Following" records use PersonAliasId (of the followed person) as EntityId and PersonAliasId (of the follower person) as PersonAliasId.
+		  This query also does not update "follower" records, which should set the PersonAliasId value to the Merge Person's primary alias Id.
+		*/
 		UPDATE F
 			SET [EntityId] = @NewId
 		FROM [Following] F
@@ -363,6 +390,30 @@ BEGIN
 
 		DELETE Person
 		WHERE [Id] = @OldId
+
+        -- Reset FirstTime Attendance for all but the to the oldest first time record.
+        DECLARE @Records AS TABLE(Id INT, StartDateTime DATETIME)
+
+        INSERT INTO @Records
+        SELECT Attendance.Id, Attendance.StartDateTime
+        FROM Attendance
+        INNER JOIN PersonAlias ON PersonAlias.Id = Attendance.PersonAliasId
+        WHERE PersonId = @NewId AND IsFirstTime = 1
+
+        DECLARE @FirstTimeRecordId AS INT
+        SELECT TOP 1 @FirstTimeRecordId = a.Id
+        FROM @Records a
+        ORDER BY a.StartDateTime ASC
+
+        UPDATE Attendance
+        SET IsFirstTime = 0
+        FROM Attendance
+        INNER JOIN PersonAlias ON PersonAlias.Id = Attendance.PersonAliasId
+        WHERE Attendance.Id IN (
+		    SELECT a.Id
+		    FROM @Records a
+		)
+        AND Attendance.Id != @FirstTimeRecordId
 
 	END
 

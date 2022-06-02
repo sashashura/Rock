@@ -12,14 +12,14 @@
 
                 <div class="panel-labels hidden-xs">
                     <button id="btnHelp" runat="server"
-                        class="btn btn-link p-0 text-color focus-no-outline"
+                        class="btn btn-default btn-xs btn-square"
                         onclick="$('#filter-drawer').slideToggle();return false;">
                         <i class='fa fa-question'></i>
                     </button>
 
                     <button id="btnCopyToClipboard" runat="server" disabled="disabled"
                         data-toggle="tooltip" data-placement="bottom" data-trigger="hover" data-delay="250" title="Copy Report Link to Clipboard"
-                        class="btn btn-link p-0 btn-copy-to-clipboard text-color"
+                        class="btn btn-default btn-xs btn-square btn-copy-to-clipboard"
                         onclick="$(this).attr('data-original-title', 'Copied').tooltip('show').attr('data-original-title', 'Copy Link to Clipboard');return false;">
                         <i class='fa fa-clipboard'></i>
                     </button>
@@ -122,7 +122,7 @@
                                 <div class="btn-group">
                                     <div class="dropdown-toggle btn btn-xs btn-tool" data-toggle="dropdown">
                                         <i class="fa fa-list-ul"></i>
-                                        <asp:HiddenField ID="hfSchedulerResourceListSourceType" runat="server" />
+                                        <%--<asp:HiddenField ID="hfSchedulerResourceListSourceType" runat="server" />--%>
                                         List: <asp:Literal ID="lSelectedResourceTypeDropDownText" runat="server" Text="Group Members" />
                                     </div>
 
@@ -152,7 +152,7 @@
                                 <div class="d-flex">
                                     <Rock:GroupPicker ID="gpPickedGroups" runat="server" Label="" AllowMultiSelect="true" OnValueChanged="gpPickedGroups_ValueChanged" CssClass="occurrences-groups-picker" LimitToSchedulingEnabledGroups="true" />
                                     <div>
-                                    <asp:LinkButton ID="btnShowChildGroups" runat="server" CssClass="btn" Text="<i class='fa fa-square'></i> Show Child Groups" AutoPostBack="true" OnClick="btnShowChildGroups_Click" />
+                                    <asp:LinkButton ID="btnShowChildGroups" runat="server" CssClass="btn btn-xs btn-tool" Text="<i class='fa fa-square'></i> Show Child Groups" AutoPostBack="true" OnClick="btnShowChildGroups_Click" />
                                     </div>
                                 </div>
 
@@ -179,7 +179,7 @@
                                     <asp:Panel ID="pnlLocationFilter" CssClass="btn-group" runat="server">
 
                                             <div class="dropdown-toggle btn btn-xs btn-tool" data-toggle="dropdown">
-                                                <asp:HiddenField ID="hfPickedLocationIds" runat="server" />
+                                                <%--<Rock:HiddenFieldWithClass ID="hfPickedLocationIds" runat="server" CssClass="js-attendance-occurrence-location-ids"/>--%>
                                                 <asp:Literal ID="lSelectedLocationFilterText" runat="server" Text="Locations...." />
                                             </div>
 
@@ -259,8 +259,10 @@
                                             <Rock:HiddenFieldWithClass ID="hfOccurrenceScheduleIds" CssClass="js-occurrence-schedule-ids" runat="server" />
                                             <Rock:HiddenFieldWithClass ID="hfResourceGroupId" CssClass="js-resource-group-id" runat="server" />
                                             <Rock:HiddenFieldWithClass ID="hfResourceGroupMemberFilterType" CssClass="js-resource-groupmemberfiltertype" runat="server" />
+                                            <Rock:HiddenFieldWithClass ID="hfSchedulerResourceListSourceType" CssClass="js-resource-scheduler-resource-list-source-type" runat="server" />
                                             <Rock:HiddenFieldWithClass ID="hfResourceDataViewId" CssClass="js-resource-dataview-id" runat="server" />
                                             <Rock:HiddenFieldWithClass ID="hfResourceAdditionalPersonIds" CssClass="js-resource-additional-person-ids" runat="server" />
+                                            <Rock:HiddenFieldWithClass ID="hfPickedLocationIds" runat="server" CssClass="js-attendance-occurrence-location-ids"/>
                                             </div>
                                             <div class="js-unscheduled-resource-template" style="display: none">
                                                 <%-- template that groupScheduler.js uses to populate unscheduled resources, data-status will always be "unscheduled" when it is in the list of unscheduled resources --%>
@@ -269,7 +271,7 @@
                                                     <div class="flex">
                                                         <span class="resource-name js-resource-name flex-grow-1"></span>
                                                         <div class="js-resource-name-meta">
-                                                        <span class="resource-member-role js-resource-member-role"></span>
+                                                            <span class="resource-member-role js-resource-member-role"></span>
                                                         </div>
                                                         <div class="dropdown js-resource-actions hide-transit">
                                                             <button class="btn btn-link btn-overflow" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><i class="fa fa-ellipsis-v"></i></button>
@@ -444,7 +446,7 @@
                                                                     <asp:Panel ID="pnlStatusLabels" runat="server" CssClass="panel-labels">
                                                                         <div class="scheduling-status js-scheduling-status" data-placement="bottom">
                                                                             <div class="scheduling-status-progress">
-                                                                                <div class="progress js-scheduling-progress">
+                                                                                <div class="progress rounded-0 js-scheduling-progress">
                                                                                     <div class="progress-bar scheduling-progress-confirmed js-scheduling-progress-confirmed" style="width: 0%">
                                                                                         <span class="sr-only"><span class="js-progress-text-percent"></span>% Complete (confirmed)</span>
                                                                                     </div>

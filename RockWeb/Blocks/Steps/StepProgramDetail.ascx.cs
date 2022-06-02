@@ -67,7 +67,7 @@ namespace RockWeb.Blocks.Steps
 
     #endregion Block Attributes
 
-    public partial class StepProgramDetail : RockBlock, IDetailBlock
+    public partial class StepProgramDetail : RockBlock
     {
         #region Attribute Keys
 
@@ -118,6 +118,13 @@ namespace RockWeb.Blocks.Steps
         private List<StepWorkflowTriggerViewModel> WorkflowsState { get; set; }
 
         #endregion
+
+        #region Private Variables
+
+        private StepProgram _program = null;
+        private int _stepProgramId = 0;
+
+        #endregion Private Variables
 
         #region Control Methods
 
@@ -180,6 +187,7 @@ namespace RockWeb.Blocks.Steps
             base.OnInit( e );
 
             InitializeBlockNotification( nbBlockStatus, pnlDetails );
+            InitializeBlockContext();
             InitializeStatusesGrid();
             InitializeWorkflowsGrid();
             InitializeActionButtons();
@@ -188,6 +196,10 @@ namespace RockWeb.Blocks.Steps
             InitializeSettingsNotification( upStepProgram );
 
             var editAllowed = IsUserAuthorized( Authorization.EDIT );
+            if ( !editAllowed && _program != null )
+            {
+                editAllowed = _program.IsAuthorized( Authorization.EDIT, CurrentPerson );
+            }
             InitializeAttributesGrid( editAllowed );
         }
 
@@ -276,7 +288,6 @@ namespace RockWeb.Blocks.Steps
         private void InitializeActionButtons()
         {
             btnDelete.Attributes["onclick"] = string.Format( "javascript: return Rock.dialogs.confirmDelete(event, '{0}', 'All associated Step Types and Step Participants will also be deleted!');", StepProgram.FriendlyTypeName );
-
             btnSecurity.EntityTypeId = EntityTypeCache.Get( typeof( Rock.Model.StepProgram ) ).Id;
         }
 
@@ -341,6 +352,16 @@ namespace RockWeb.Blocks.Steps
         protected void btnCancel_Click( object sender, EventArgs e )
         {
             CancelEditMode();
+        }
+
+        /// <summary>
+        /// Handles the Click event of the btnDelete control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
+        protected void btnDelete_Click ( object sender, EventArgs e )
+        {
+            this.DeleteRecord();
         }
 
         /// <summary>
@@ -871,7 +892,8 @@ namespace RockWeb.Blocks.Steps
 
             if ( stepProgram != null )
             {
-                if ( !stepProgram.IsAuthorized( Authorization.ADMINISTRATE, this.CurrentPerson ) )
+                // Earlier only Person with admin rights were allowed edit the block.That was changed to look for Edit after the Parent Authority for Step Type and Program is set.
+                if ( !stepProgram.IsAuthorized( Authorization.EDIT, this.CurrentPerson ) )
                 {
                     mdDeleteWarning.Show( "You are not authorized to delete this item.", ModalAlertType.Information );
                     return;
@@ -1050,6 +1072,11 @@ namespace RockWeb.Blocks.Steps
                     stepProgram.AllowPerson( Authorization.EDIT, CurrentPerson, rockContext );
                 }
 
+                if ( !stepProgram.IsAuthorized( Authorization.MANAGE_STEPS, CurrentPerson ) )
+                {
+                    stepProgram.AllowPerson( Authorization.MANAGE_STEPS, CurrentPerson, rockContext );
+                }
+
                 if ( !stepProgram.IsAuthorized( Authorization.ADMINISTRATE, CurrentPerson ) )
                 {
                     stepProgram.AllowPerson( Authorization.ADMINISTRATE, CurrentPerson, rockContext );
@@ -1096,48 +1123,63 @@ namespace RockWeb.Blocks.Steps
                 pdAuditDetails.Visible = false;
             }
 
-            // Admin rights are required to edit a Step Program. Edit rights only allow adding/removing items.
-            bool adminAllowed = UserCanAdministrate || stepProgram.IsAuthorized( Authorization.ADMINISTRATE, CurrentPerson );
             pnlDetails.Visible = true;
-            hfStepProgramId.Value = stepProgram.Id.ToString();
-            lIcon.Text = string.Format( "<i class='{0}'></i>", stepProgram.IconCssClass );
-            bool readOnly = false;
-
-            nbEditModeMessage.Text = string.Empty;
-            if ( !adminAllowed )
+            if ( stepProgram != null && stepProgram.IsAuthorized( Authorization.VIEW, CurrentPerson ) )
             {
-                readOnly = true;
-                nbEditModeMessage.Text = EditModeMessage.ReadOnlyEditActionNotAllowed( StepProgram.FriendlyTypeName );
-            }
+                /*
+                SK - 10/28/2021
+                Earlier only Person with admin rights were allowed edit the block. That was changed to look for Edit after the Parent Authority for Step Type and Program is set.
+                */
+                bool editAllowed = stepProgram.IsAuthorized( Authorization.EDIT, CurrentPerson );
+                hfStepProgramId.Value = stepProgram.Id.ToString();
+                lIcon.Text = string.Format( "<i class='{0}'></i>", stepProgram.IconCssClass );
+                bool readOnly = false;
 
-            rblDefaultListView.Items.Clear();
-            rblDefaultListView.Items.Add( new ListItem( "Cards", StepProgram.ViewMode.Cards.ToString() ) );
-            rblDefaultListView.Items.Add( new ListItem( "Grid", StepProgram.ViewMode.Grid.ToString() ) );
-
-            if ( readOnly )
-            {
-                btnEdit.Visible = false;
-                btnDelete.Visible = false;
-                btnSecurity.Visible = false;
-                ShowReadonlyDetails( stepProgram );
-            }
-            else
-            {
-                btnEdit.Visible = true;
-                btnDelete.Visible = true;
-                btnSecurity.Visible = true;
-
-                btnSecurity.Title = "Secure " + stepProgram.Name;
-                btnSecurity.EntityId = stepProgram.Id;
-
-                if ( !stepProgramId.Equals( 0 ) )
+                nbEditModeMessage.Visible = false;
+                nbEditModeMessage.Text = string.Empty;
+                if ( !editAllowed )
                 {
+                    readOnly = true;
+                    nbEditModeMessage.Text = EditModeMessage.ReadOnlyEditActionNotAllowed( StepProgram.FriendlyTypeName );
+                }
+
+                rblDefaultListView.Items.Clear();
+                rblDefaultListView.Items.Add( new ListItem( "Cards", StepProgram.ViewMode.Cards.ToString() ) );
+                rblDefaultListView.Items.Add( new ListItem( "Grid", StepProgram.ViewMode.Grid.ToString() ) );
+
+                if ( readOnly )
+                {
+                    btnEdit.Visible = false;
+                    btnDelete.Visible = false;
+                    btnSecurity.Visible = false;
                     ShowReadonlyDetails( stepProgram );
                 }
                 else
                 {
-                    ShowEditDetails( stepProgram );
+                    btnEdit.Visible = true;
+                    btnDelete.Visible = true;
+                    btnSecurity.Visible = true;
+                    btnSecurity.Visible = stepProgram.IsAuthorized( Authorization.ADMINISTRATE, CurrentPerson );
+                    btnSecurity.Title = "Secure " + stepProgram.Name;
+                    btnSecurity.EntityId = stepProgram.Id;
+
+                    if ( !stepProgramId.Equals( 0 ) )
+                    {
+                        ShowReadonlyDetails( stepProgram );
+                    }
+                    else
+                    {
+                        ShowEditDetails( stepProgram );
+                    }
                 }
+            }
+            else
+            {
+                nbEditModeMessage.Visible = true;
+                nbEditModeMessage.Text = EditModeMessage.NotAuthorizedToView( ContentChannel.FriendlyTypeName );
+                pnlEditDetails.Visible = false;
+                pnlViewDetails.Visible = false;
+                this.HideSecondaryBlocks( true );
             }
         }
 
@@ -1863,6 +1905,23 @@ namespace RockWeb.Blocks.Steps
             _detailContainerControl = detailContainerControl;
 
             ClearBlockNotification();
+        }
+
+        /// <summary>
+        /// Initialize the essential context in which this block is operating.
+        /// </summary>
+        /// <returns>True, if the block context is valid.</returns>
+        private bool InitializeBlockContext()
+        {
+            _stepProgramId = PageParameter( PageParameterKey.StepProgramId ).AsInteger();
+            if ( _stepProgramId != 0 )
+            {
+                var dataContext = this.GetDataContext();
+                var stepProgramService = new StepProgramService( dataContext );
+                _program = stepProgramService.Queryable().Where( g => g.Id == _stepProgramId ).FirstOrDefault();
+            }
+
+            return true;
         }
 
         /// <summary>

@@ -35,6 +35,9 @@ namespace Rock.Client
         public int Id { get; set; }
 
         /// <summary />
+        public int /* AccountProtectionProfile*/ AccountProtectionProfile { get; set; }
+
+        /// <summary />
         public Rock.Client.Enums.AgeClassification AgeClassification { get; set; }
 
         /// <summary />
@@ -132,6 +135,9 @@ namespace Rock.Client
         public int? PhotoId { get; set; }
 
         /// <summary />
+        public int? PreferredLanguageValueId { get; set; }
+
+        /// <summary />
         public int? PrimaryCampusId { get; set; }
 
         /// <summary />
@@ -209,6 +215,7 @@ namespace Rock.Client
         public void CopyPropertiesFrom( Person source )
         {
             this.Id = source.Id;
+            this.AccountProtectionProfile = source.AccountProtectionProfile;
             this.AgeClassification = source.AgeClassification;
             this.AnniversaryDate = source.AnniversaryDate;
             this.BirthDay = source.BirthDay;
@@ -240,6 +247,7 @@ namespace Rock.Client
             this.ModifiedAuditValuesAlreadyUpdated = source.ModifiedAuditValuesAlreadyUpdated;
             this.NickName = source.NickName;
             this.PhotoId = source.PhotoId;
+            this.PreferredLanguageValueId = source.PreferredLanguageValueId;
             this.PrimaryCampusId = source.PrimaryCampusId;
             this.PrimaryFamilyId = source.PrimaryFamilyId;
             this.RecordStatusLastModifiedDateTime = source.RecordStatusLastModifiedDateTime;
@@ -293,6 +301,9 @@ namespace Rock.Client
 
         /// <summary />
         public BinaryFile Photo { get; set; }
+
+        /// <summary />
+        public DefinedValue PreferredLanguageValue { get; set; }
 
         /// <summary>
         /// The Primary PersonAliasId of the Person

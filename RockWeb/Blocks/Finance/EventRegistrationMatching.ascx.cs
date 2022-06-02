@@ -494,7 +494,7 @@ namespace RockWeb.Blocks.Finance
                 .Where( r => r.PersonAlias != null && r.PersonAlias.Person != null );
             if ( isEdit )
             {
-                registrationName += string.Format( "- {0} - {1}", registration.CreatedDateTime.ToShortDateString(), registrantNames.Select( a => a.Person.NickName ).ToList().AsDelimited( "," ) );
+                registrationName += string.Format( "- {0} - {1}", registration.CreatedDateTime.ToShortDateString(), registrantNames.Select( a => a.Person.NickName ).ToList().AsDelimited( ", " ) );
             }
             else
             {
@@ -559,6 +559,10 @@ namespace RockWeb.Blocks.Finance
                 registationListForInstance = registationListForInstance.Where( a => a.BalanceDue > 0 );
             }
 
+            /*
+             * 2021-05-20 ETD
+             * Run the query now to prevent EF from hitting the DB every interation to get the includes.
+            */
             var registationListForInstanceFiltered = registationListForInstance.ToList();
 
             foreach ( var ddlRegistration in phTableRows.ControlsOfTypeRecursive<RockDropDownList>().Where( a => a.ID.StartsWith( "ddlRegistration_" ) ) )

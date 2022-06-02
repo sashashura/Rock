@@ -153,7 +153,7 @@ Total: {{ '3,5,7' | Split:',' | Sum }}
 
             lavaTemplate = lavaTemplate.Replace( "`", "\"" );
 
-            TestHelper.AssertTemplateOutput( "Total:15", lavaTemplate, null, ignoreWhitespace: true );
+            TestHelper.AssertTemplateOutput( "Total:15", lavaTemplate, LavaRenderParameters.Default, ignoreWhitespace: true );
         }
 
         #endregion
@@ -161,7 +161,7 @@ Total: {{ '3,5,7' | Split:',' | Sum }}
         #region Filter Tests: Dictionaries
 
         [TestMethod]
-        public void AddToDictionary_AddMultipleKeyValuePairs_ReturnsUpdatedDictionary()
+         public void AddToDictionary_AddMultipleKeyValuePairs_ReturnsUpdatedDictionary()
         {
             var lavaTemplate = @"
         {% assign dict = '' | AddToDictionary:'key1','value2' %}
@@ -169,7 +169,7 @@ Total: {{ '3,5,7' | Split:',' | Sum }}
         {{ dict | AllKeysFromDictionary }}
 ";
 
-            TestHelper.AssertTemplateOutput( "key1key2key3", lavaTemplate, null, ignoreWhitespace: true );
+            TestHelper.AssertTemplateOutput( "key1key2key3", lavaTemplate, LavaRenderParameters.Default, ignoreWhitespace: true );
         }
 
         [TestMethod]
@@ -181,7 +181,7 @@ Total: {{ '3,5,7' | Split:',' | Sum }}
 {{ dict | AllKeysFromDictionary }}
 ";
 
-            TestHelper.AssertTemplateOutput( "key1key3", lavaTemplate, null, ignoreWhitespace: true );
+            TestHelper.AssertTemplateOutput( "key1key3", lavaTemplate, LavaRenderParameters.Default, ignoreWhitespace: true );
         }
 
         [TestMethod]
@@ -192,7 +192,7 @@ Total: {{ '3,5,7' | Split:',' | Sum }}
 {{ dict | AllKeysFromDictionary }}
 ";
 
-            TestHelper.AssertTemplateOutput( "key1key2key3", lavaTemplate, null, ignoreWhitespace: true );
+            TestHelper.AssertTemplateOutput( "key1key2key3", lavaTemplate, LavaRenderParameters.Default, ignoreWhitespace: true );
         }
 
         #endregion
@@ -358,13 +358,13 @@ Total: {{ '3,5,7' | Split:',' | Sum }}
         {
             var orderedOutput = _TestOrderedList.JoinStrings( ";" ) + ";";
 
-            TestHelper.ExecuteTestAction( ( engine ) =>
+            TestHelper.ExecuteForActiveEngines( ( engine ) =>
             {
                 // Add a copy of the test list to the context, as it will be modified during the rendering process.
                 var mergeValues = new LavaDataDictionary { { "OrderedList", new List<string>( _TestOrderedList ) } };
 
                 // First, verify that the unshuffled lists are equal.
-                var orderedResult = TestHelper.GetTemplateOutput( engine.EngineType, "{% assign items = OrderedList %}{% for item in items %}{{ item }};{% endfor %}", mergeValues );
+                var orderedResult = TestHelper.GetTemplateOutput( engine, "{% assign items = OrderedList %}{% for item in items %}{{ item }};{% endfor %}", mergeValues );
 
                 Assert.That.Equal( orderedOutput, orderedResult );
 
@@ -377,7 +377,7 @@ Total: {{ '3,5,7' | Split:',' | Sum }}
                 string shuffledResult = string.Empty;
                 for ( int i = 0; i < 10; i++ )
                 {
-                    shuffledResult = TestHelper.GetTemplateOutput( engine.EngineType, "{% assign items = OrderedList | Shuffle %}{% for item in items %}{{ item }};{% endfor %}", mergeValues );
+                    shuffledResult = TestHelper.GetTemplateOutput( engine, "{% assign items = OrderedList | Shuffle %}{% for item in items %}{{ item }};{% endfor %}", mergeValues );
 
                     if ( orderedOutput != shuffledResult )
                     {
@@ -393,21 +393,43 @@ Total: {{ '3,5,7' | Split:',' | Sum }}
         /// Selecting an existing property from a collection returns a list of values.
         /// </summary>
         [TestMethod]
-        public void Select_ValidItemPropertyFromItemCollection_ReturnsValueCollection()
+        public void Select_ItemPropertyFromLavaDataDictionaryCollection_ReturnsValue()
         {
-            LavaDataDictionary mergeValues;
-
-            //if ( TestHelper.LavaEngine.EngineType == LavaEngineTypeSpecifier.RockLiquid )
-            //{
-            //    mergeValues = new LavaDataDictionary { { "People", TestHelper.GetTestPersonCollectionForDeckerRockLiquid() } };
-            //}
-            //else
-            //{
-                mergeValues = new LavaDataDictionary { { "People", TestHelper.GetTestPersonCollectionForDecker() } };
-            //}
+            // The Select filter should work correctly on any collection of objects that supports the
+            // ILavaDataDictionary interface. This includes objects that inherit from LavaDataObject,
+            // or are proxied using LavaDataObject.
+            var mergeValues = new LavaDataDictionary { { "People", TestHelper.GetTestPersonCollectionForDecker() } };
 
             TestHelper.AssertTemplateOutput( "Edward;Cindy;Noah;Alex;",
                 "{% assign names = People | Select:'FirstName' %}{% for name in names %}{{ name }};{% endfor %}",
+                mergeValues );
+        }
+
+        /// <summary>
+        /// Selecting a specific key-value pair from a collection of dictionaries returns a list of values.
+        /// </summary>
+        [TestMethod]
+        public void Select_KeyValueFromDictionaryCollection_ReturnsListOfValues()
+        {
+            // The Select filter should work correctly on any collection of objects that supports the
+            // IDictionary<string,object> interface.
+            var dictionary1 = new Dictionary<string, object>()
+            {
+                { "Key1", "Value1-1" },
+                { "Key2", "Value1-2" },
+                { "Key3", "Value1-3" },
+            };
+            var dictionary2 = new Dictionary<string, object>()
+            {
+                { "Key1", "Value2-1" },
+                { "Key2", "Value2-2" },
+                { "Key3", "Value2-3" },
+            };
+
+            var mergeValues = new LavaDataDictionary { { "Dictionaries", new List<Dictionary<string, object>> { dictionary1, dictionary2 } } };
+
+            TestHelper.AssertTemplateOutput( "Value1-2;Value2-2;",
+                "{% assign values = Dictionaries | Select:'Key2' %}{% for value in values %}{{ value }};{% endfor %}",
                 mergeValues );
         }
 

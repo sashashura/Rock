@@ -30,6 +30,7 @@ using Rock.Security;
 using Rock.Web;
 using Rock.Web.Cache;
 using Rock.Web.UI;
+using Rock.Web.UI.Controls;
 
 namespace RockWeb.Blocks.Cms
 {
@@ -40,7 +41,7 @@ namespace RockWeb.Blocks.Cms
     [Category( "CMS" )]
     [Description( "Edit details of a Media Folder" )]
 
-    public partial class MediaFolderDetail : RockBlock, IDetailBlock
+    public partial class MediaFolderDetail : RockBlock
     {
         #region PageParameterKeys
 
@@ -74,8 +75,6 @@ namespace RockWeb.Blocks.Cms
         protected override void OnLoad( EventArgs e )
         {
             base.OnLoad( e );
-
-            nbActionResult.Text = string.Empty;
 
             if ( !Page.IsPostBack )
             {
@@ -234,7 +233,8 @@ namespace RockWeb.Blocks.Cms
         protected void btnSyncContentChannelItems_Click( object sender, EventArgs e )
         {
             Task.Run( () => MediaFolderService.AddMissingSyncedContentChannelItems( hfId.ValueAsInt() ) );
-            nbActionResult.Text = "Content channel item creation has started and will continue in the background.";
+
+            mdSyncMessage.Show( "Content channel item creation has started and will continue in the background.", ModalAlertType.Information );
         }
 
         /// <summary>

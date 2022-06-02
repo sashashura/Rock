@@ -45,6 +45,8 @@ namespace Rock.CheckIn
             }
         }
 
+        private static string _rockVersion = Rock.VersionInfo.VersionInfo.GetRockProductVersionFullName();
+
         /// <summary>
         /// Gets the local device configuration status.
         /// </summary>
@@ -71,18 +73,15 @@ namespace Rock.CheckIn
 
             CheckinConfigurationHelper.CheckinStatus checkinStatus = CheckinConfigurationHelper.GetCheckinStatus( checkInState );
 
-            var rockVersion = Rock.VersionInfo.VersionInfo.GetRockProductVersionFullName();
-
             CheckIn.CheckinType checkinType = new Rock.CheckIn.CheckinType( localDeviceConfiguration.CurrentCheckinTypeId.Value );
 
             var configurationData = new
             {
                 CheckinType = checkinType,
                 IsMobileAndExpired = isMobileAndExpired,
-                Kiosk = kiosk,
                 CheckinStatus = checkinStatus,
                 NextActiveDateTime = nextActiveDateTime,
-                RockVersion = rockVersion
+                RockVersion = _rockVersion
             };
 
             var configurationString = configurationData.ToJson();
@@ -95,7 +94,7 @@ namespace Rock.CheckIn
 
             LocalDeviceConfigurationStatus localDeviceConfigurationStatus = new LocalDeviceConfigurationStatus();
 
-            localDeviceConfigurationStatus.ConfigurationHash = Rock.Security.Encryption.GetSHA1Hash( configurationString );
+            localDeviceConfigurationStatus.ConfigurationHash = configurationString.XxHash();
             localDeviceConfigurationStatus.ServerCurrentDateTime = RockDateTime.Now;
             localDeviceConfigurationStatus.CampusCurrentDateTime = campusCurrentDateTime;
             localDeviceConfigurationStatus.NextActiveDateTime = nextActiveDateTime;
@@ -209,6 +208,27 @@ namespace Rock.CheckIn
             /// </summary>
             Closed,
         }
+
+        /// <summary>
+        /// If a group has more than one available location how should one be chosen. Choosing an option other than "Ask" will auto select a location for the user.
+        /// </summary>
+        public enum LocationSelectionStrategy
+        {
+            /// <summary>
+            /// The Ask strategy will present a list of rooms to the user so they can select one. This is the default behavior.
+            /// </summary>
+            Ask = 0,
+
+            /// <summary>
+            /// The balance strategy will attempt to fill all locations with an equal number of persons up to the soft threshold
+            /// </summary>
+            Balance = 1,
+
+            /// <summary>
+            /// The Fill In Order strategy will fill in the locations in a group in their sort order. When the location's soft threshold is reached the next one is used untill it fills up.
+            /// </summary>
+            FillInOrder = 2
+        }
     }
 
     /// <summary>
@@ -247,7 +267,5 @@ namespace Rock.CheckIn
         /// This cookie should expire 8 hours after last use
         /// </summary>
         public static readonly string AttendanceSessionGuids = "Checkin.AttendanceSessionGuids";
-
-        
     }
 }

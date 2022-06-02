@@ -21,8 +21,7 @@ using System.Linq;
 
 using Rock.BulkExport;
 using Rock.Data;
-using Rock.SystemKey;
-using Rock.Utility.Settings.GivingAnalytics;
+using Rock.Utility.Settings.Giving;
 using Rock.Web.Cache;
 using Rock.Web.UI.Controls;
 
@@ -33,17 +32,6 @@ namespace Rock.Model
     /// </summary>
     public partial class FinancialTransactionService
     {
-        /// <summary>
-        /// Gets a transaction by its transaction code.
-        /// </summary>
-        /// <param name="transactionCode">The transaction code.</param>
-        /// <returns></returns>
-        [RockObsolete( "1.8" )]
-        [Obsolete( "Use GetByTransactionCode(financialGatewayId, transaction). This one could return incorrect results if transactions from different financial gateways happen to use the same transaction code", true )]
-        public FinancialTransaction GetByTransactionCode( string transactionCode )
-        {
-            return this.GetByTransactionCode( null, transactionCode );
-        }
 
         /// <summary>
         /// Gets a transaction by its transaction code.
@@ -164,6 +152,7 @@ namespace Rock.Model
             refundTransaction.FinancialGatewayId = transaction.FinancialGatewayId;
             refundTransaction.TransactionTypeValueId = transaction.TransactionTypeValueId;
             refundTransaction.SourceTypeValueId = transaction.SourceTypeValueId;
+            refundTransaction.ForeignCurrencyCodeValueId = transaction.ForeignCurrencyCodeValueId;
 
             if ( transaction.FinancialPaymentDetail != null )
             {
@@ -172,16 +161,20 @@ namespace Rock.Model
                 refundTransaction.FinancialPaymentDetail.BillingLocationId = transaction.FinancialPaymentDetail.BillingLocationId;
                 refundTransaction.FinancialPaymentDetail.CreditCardTypeValueId = transaction.FinancialPaymentDetail.CreditCardTypeValueId;
                 refundTransaction.FinancialPaymentDetail.CurrencyTypeValueId = transaction.FinancialPaymentDetail.CurrencyTypeValueId;
-                refundTransaction.FinancialPaymentDetail.ExpirationMonthEncrypted = transaction.FinancialPaymentDetail.ExpirationMonthEncrypted;
-                refundTransaction.FinancialPaymentDetail.ExpirationYearEncrypted = transaction.FinancialPaymentDetail.ExpirationYearEncrypted;
-                refundTransaction.FinancialPaymentDetail.NameOnCardEncrypted = transaction.FinancialPaymentDetail.NameOnCardEncrypted;
+                refundTransaction.FinancialPaymentDetail.ExpirationMonth = transaction.FinancialPaymentDetail.ExpirationMonth;
+                refundTransaction.FinancialPaymentDetail.ExpirationYear = transaction.FinancialPaymentDetail.ExpirationYear;
+                refundTransaction.FinancialPaymentDetail.NameOnCard = transaction.FinancialPaymentDetail.NameOnCard;
             }
 
             decimal remainingBalance = amount.Value;
+            decimal? foreignCurrencyAmount = transaction.TransactionDetails.Select( d => d.ForeignCurrencyAmount ).Sum();
+            decimal remainingForeignBalance = foreignCurrencyAmount ?? 0.0m;
+
             /*
              * If the refund is for a currency other then the Organization's currency it is up to the
              * gateway to return the correct transaction details.
              */
+
             if ( refundTransaction.TransactionDetails?.Any() != true )
             {
                 foreach ( var account in transaction.TransactionDetails.Where( a => a.Amount > 0 ) )
@@ -203,7 +196,21 @@ namespace Rock.Model
                         remainingBalance = 0.0m;
                     }
 
-                    if ( remainingBalance <= 0.0m )
+                    if ( account.ForeignCurrencyAmount.HasValue )
+                    {
+                        if ( remainingForeignBalance >= account.ForeignCurrencyAmount.Value )
+                        {
+                            transactionDetail.ForeignCurrencyAmount = 0 - account.ForeignCurrencyAmount.Value;
+                            remainingForeignBalance -= account.ForeignCurrencyAmount.Value;
+                        }
+                        else
+                        {
+                            transactionDetail.ForeignCurrencyAmount = 0 - remainingForeignBalance;
+                            remainingForeignBalance = 0.0m;
+                        }
+                    }
+
+                    if ( remainingBalance <= 0.0m && remainingForeignBalance <= 0.0m )
                     {
                         break;
                     }
@@ -259,7 +266,7 @@ namespace Rock.Model
             var batch = batchService.GetByNameAndDate( batchName, refundTransaction.TransactionDateTime.Value, timespan );
 
             // If this is a new Batch, SaveChanges so that we can get the Batch.Id
-            if ( batch.Id == 0)
+            if ( batch.Id == 0 )
             {
                 rockContext.SaveChanges();
             }
@@ -341,48 +348,229 @@ namespace Rock.Model
         }
 
         /// <summary>
-        /// Gets the giving analytics (see Giving Analytics job) source transaction query.
+        /// Gets the giving automation source transaction query by giving identifier.
+        /// </summary>
+        /// <param name="givingId">The giving identifier.</param>
+        /// <returns>IQueryable&lt;FinancialTransaction&gt;.</returns>
+        public IQueryable<FinancialTransaction> GetGivingAutomationSourceTransactionQueryByGivingId( string givingId )
+        {
+            var givingIdPersonAliasIdQuery = new PersonAliasService( this.Context as RockContext ).Queryable().Where( a => a.Person.GivingId == givingId ).Select( a => a.Id );
+
+            return GetGivingAutomationSourceTransactionQuery().Where( a => a.AuthorizedPersonAliasId.HasValue && givingIdPersonAliasIdQuery.Contains( a.AuthorizedPersonAliasId.Value ) );
+        }
+
+        /// <summary>
+        /// Gets the giving automation source transaction query.
+        /// This is used by <see cref="Rock.Jobs.GivingAutomation"/>.
         /// </summary>
         /// <returns></returns>
-        public IQueryable<FinancialTransaction> GetGivingAnalyticsSourceTransactionQuery()
+        public IQueryable<FinancialTransaction> GetGivingAutomationSourceTransactionQuery()
         {
             var query = Queryable().AsNoTracking();
-            var settings =
-                Web.SystemSettings.GetValue( SystemSetting.GIVING_ANALYTICS_CONFIGURATION ).FromJsonOrNull<GivingAnalyticsSetting>() ??
-                new GivingAnalyticsSetting();
+            var settings = GivingAutomationSettings.LoadGivingAutomationSettings();
 
             // Filter by transaction type (defaults to contributions only)
-            var transactionTypeGuids =
-                settings.TransactionTypeGuids ??
-                new List<Guid> { SystemGuid.DefinedValue.TRANSACTION_TYPE_CONTRIBUTION.AsGuid() };
-            var transactionTypeIds = transactionTypeGuids.Select( DefinedValueCache.Get ).Select( dv => dv.Id ).ToList();
-            query = query.Where( t => transactionTypeIds.Contains( t.TransactionTypeValueId ) );
+            var transactionTypeIds = settings.TransactionTypeGuids.Select( DefinedValueCache.Get ).Select( dv => dv.Id ).ToList();
 
-            // Filter accounts, defaults to tax deductable only
-            var accountGuids = settings.FinancialAccountGuids ?? new List<Guid>();
+            if ( transactionTypeIds.Count() == 1 )
+            {
+                var transactionTypeId = transactionTypeIds[0];
+                query = query.Where( t => t.TransactionTypeValueId == transactionTypeId );
+            }
+            else
+            {
+                query = query.Where( t => transactionTypeIds.Contains( t.TransactionTypeValueId ) );
+            }
 
-            if ( !accountGuids.Any() )
+            List<int> accountIds;
+            if ( settings.FinancialAccountGuids?.Any() == true )
+            {
+                accountIds = new FinancialAccountService( this.Context as RockContext ).GetByGuids( settings.FinancialAccountGuids ).Select( a => a.Id ).ToList();
+            }
+            else
+            {
+                accountIds = new List<int>();
+            }
+
+            // Filter accounts, defaults to tax deductible only
+            if ( !accountIds.Any() )
             {
                 query = query.Where( t => t.TransactionDetails.Any( td => td.Account.IsTaxDeductible ) );
             }
             else if ( settings.AreChildAccountsIncluded == true )
             {
-                query = query.Where( t => t.TransactionDetails.Any( td =>
-                    accountGuids.Contains( td.Account.Guid ) ||
-                    accountGuids.Contains( td.Account.ParentAccount.Guid ) ) );
+                if ( accountIds.Count() == 1 )
+                {
+                    var accountId = accountIds[0];
+                    query = query.Where( t => t.TransactionDetails.Any( td => td.AccountId == accountId ||
+                        ( td.Account.ParentAccountId.HasValue && accountId == td.Account.ParentAccountId.Value ) ) );
+
+                }
+                else
+                {
+                    query = query.Where( t => t.TransactionDetails.Any( td =>
+                        accountIds.Contains( td.AccountId ) ||
+                        ( td.Account.ParentAccountId.HasValue && accountIds.Contains( td.Account.ParentAccountId.Value ) ) ) );
+                }
             }
             else
             {
-                query = query.Where( t => t.TransactionDetails.Any( td => accountGuids.Contains( td.Account.Guid ) ) );
+                if ( accountIds.Count() == 1 )
+                {
+                    var accountId = accountIds[0];
+                    query = query.Where( t => t.TransactionDetails.Any( td => accountId == td.AccountId ) );
+                }
+                else
+                {
+                    query = query.Where( t => t.TransactionDetails.Any( td => accountIds.Contains( td.AccountId ) ) );
+                }
             }
 
-            // Remove transactions that have refunds
-            query = query.Where( t => !t.Refunds.Any() );
+            // We'll need to factor in partial amount refunds...
+            // Exclude transactions that have full refunds.
+            // If it does have a refund, include the transaction if it is just a partial refund
+            query = query.Where( t =>
+                    // Limit to ones that don't have refunds, or has a partial refund
+                    !t.Refunds.Any()
+                    ||
+                    // If it does have refunds, we can exclude the transaction if the refund amount is the same amount (full refund)
+                    // Otherwise, we'll have to include the transaction and figure out the partial amount left after the refund.
+                    (
+                        (
+                        // total original amount
+                        t.TransactionDetails.Sum( xx => xx.Amount )
 
-            // Remove transactions with $0 or negative amounts
-            query = query.Where( t => t.TransactionDetails.Sum( d => d.Amount ) > 0 );
+                           // total amount of any refund(s) for this transaction
+                           + t.Refunds.Sum( r => r.FinancialTransaction.TransactionDetails.Sum( d => ( decimal? ) d.Amount ) ?? 0.00M )
+                        )
+
+                        != 0.00M
+                    )
+                );
+
+            // Remove transactions with $0 or negative amounts. If those are refunds, those will factored in above
+            query = query.Where( t => t.TransactionDetails.Any( d => d.Amount > 0M ) );
 
             return query;
         }
+
+        /// <summary>
+        /// Gets the giving automation monthly account giving history. This is used for the Giving Overview block's monthly
+        /// bar chart and also yearly summary.
+        /// </summary>
+        /// <returns></returns>
+        public List<MonthlyAccountGivingHistory> GetGivingAutomationMonthlyAccountGivingHistory( string givingId )
+        {
+            return GetGivingAutomationMonthlyAccountGivingHistory( givingId, null );
+        }
+
+        /// <summary>
+        /// Gets the giving automation monthly account giving history. This is used for the Giving Overview block's monthly
+        /// bar chart and also yearly summary.
+        /// </summary>
+        /// <param name="givingId">The giving identifier.</param>
+        /// <param name="startDateTime">The start date time.</param>
+        /// <returns>List&lt;MonthlyAccountGivingHistory&gt;.</returns>
+        public List<MonthlyAccountGivingHistory> GetGivingAutomationMonthlyAccountGivingHistory( string givingId, DateTime? startDateTime )
+        {
+            var givingIdPersonAliasIdQuery = new PersonAliasService( this.Context as RockContext )
+                .Queryable()
+                .Where( a => a.Person.GivingId == givingId )
+                .Select( a => a.Id );
+
+            var qry = GetGivingAutomationSourceTransactionQuery()
+                .AsNoTracking()
+                .Where( t =>
+                    t.TransactionDateTime.HasValue &&
+                    t.AuthorizedPersonAliasId.HasValue &&
+                    givingIdPersonAliasIdQuery.Contains( t.AuthorizedPersonAliasId.Value ) );
+
+            if ( startDateTime.HasValue )
+            {
+                qry = qry.Where( t => t.TransactionDateTime >= startDateTime );
+            }
+
+            var views = qry
+                .SelectMany( t => t.TransactionDetails.Select( td => new
+                {
+                    TransactionDateTime = t.TransactionDateTime.Value,
+                    td.AccountId,
+                    td.Amount,
+
+                        // For each Refund (there could be more than one) get the refund amount for each if the refunds's Detail records for the Account.
+                        // Then sum that up for the total refund amount for the account
+                        AccountRefundAmount = td.Transaction
+                        .Refunds.Select( a => a.FinancialTransaction.TransactionDetails.Where( rrr => rrr.AccountId == td.AccountId )
+                        .Sum( rrrr => ( decimal? ) rrrr.Amount ) ).Sum() ?? 0.0M
+                } ) )
+                .ToList();
+
+            var monthlyAccountGivingHistoryList = views
+                .GroupBy( a => new { a.TransactionDateTime.Year, a.TransactionDateTime.Month, a.AccountId } )
+                .Select( t => new MonthlyAccountGivingHistory
+                {
+                    Year = t.Key.Year,
+                    Month = t.Key.Month,
+                    AccountId = t.Key.AccountId,
+                    Amount = t.Sum( d => d.Amount + d.AccountRefundAmount )
+                } )
+                .OrderByDescending( a => a.Year )
+                .ThenByDescending( a => a.Month )
+                .ToList();
+
+            return monthlyAccountGivingHistoryList;
+        }
+
+        /// <summary>
+        /// Gets the giving automation monthly account giving history that was stored as JSON in an attribute. This is used for the
+        /// Giving Overview block's monthly bar chart and also yearly summary.
+        /// </summary>
+        /// <returns></returns>
+        [RockObsolete( "1.13" )]
+        [Obsolete( "Use GetGivingAutomationMonthlyAccountGivingHistory instead" )]
+        public static List<MonthlyAccountGivingHistory> GetGivingAutomationMonthlyAccountGivingHistoryFromJson( string json )
+        {
+            var monthlyAccountGivingHistoryList = json.FromJsonOrNull<List<MonthlyAccountGivingHistory>>();
+            return monthlyAccountGivingHistoryList ?? new List<MonthlyAccountGivingHistory>();
+        }
+    }
+
+    /// <summary>
+    /// A POCO that represents a single month of giving history for a single financial account
+    /// </summary>
+    public sealed class MonthlyAccountGivingHistory
+    {
+        /// <summary>
+        /// Gets or sets the year.
+        /// </summary>
+        /// <value>
+        /// The year.
+        /// </value>
+        public int Year { get; set; }
+
+        /// <summary>
+        /// Gets or sets the month. 1 = January (not zero based)
+        /// </summary>
+        /// <value>
+        /// The month.
+        /// </value>
+        public int Month { get; set; }
+
+        /// <summary>
+        /// Gets or sets the account identifier.
+        /// </summary>
+        /// <value>
+        /// The account identifier.
+        /// </value>
+        public int AccountId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the amount.
+        /// Note that this amount factors in refunds, so no additional adjustment is needed.
+        /// </summary>
+        /// <value>
+        /// The amount.
+        /// </value>
+        public decimal Amount { get; set; }
     }
 }

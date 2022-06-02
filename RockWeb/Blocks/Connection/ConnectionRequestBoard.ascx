@@ -1,5 +1,11 @@
 <%@ Control Language="C#" AutoEventWireup="true" CodeFile="ConnectionRequestBoard.ascx.cs" Inherits="RockWeb.Blocks.Connection.ConnectionRequestBoard" %>
 
+<style>
+    .can-edit-false,.can-connect-false {
+        display: none;
+    }
+</style>
+
 <script type="text/javascript">
     // This is the source for the "dragscroll" library. It has a modification in the
     // mousedown handler. The modification is to prevent dragscroll from acting
@@ -146,7 +152,7 @@
                     <h2 class="panel-title">
                         <asp:Literal ID="lTitle" runat="server" />
                     </h2>
-                    <div class="d-block">
+                    <div class="panel-labels">
                         <asp:LinkButton ID="btnAddCampaignRequests" runat="server" OnClick="btnAddCampaignRequests_Click" CssClass="btn btn-default btn-xs">
                                 <i class="fa fa-plus"></i>
                                 Campaign Requests
@@ -194,7 +200,8 @@
                                             <asp:Repeater ID="rptConnectionOpportunities" runat="server" OnItemCommand="rptConnectionOpportunities_ItemCommand">
                                                 <ItemTemplate>
                                                     <li>
-                                                        <asp:LinkButton runat="server" CommandArgument='<%# Eval("Id") %>'>
+                                                        <asp:LinkButton runat="server" CommandArgument='<%# Eval("Id") %>'
+                                                            OnClick='<%# UpdateConnectionQuerystring(Eval("Id").ToString()) %>'>
                                                                     <i class="<%# Eval("IconCssClass") %>"></i>
                                                                     <%# Eval("PublicName") %>
                                                         </asp:LinkButton>
@@ -336,7 +343,7 @@
                                 <Rock:RockLiteralField ID="lStatusIcons" HeaderText="" HeaderStyle-CssClass="w-1" ItemStyle-CssClass="w-1 align-middle" />
                                 <Rock:RockBoundField DataField="PersonFullname" HeaderText="Name" />
                                 <Rock:RockBoundField DataField="CampusName" HeaderText="Campus" />
-                                <Rock:RockBoundField DataField="GroupName" HeaderText="Group" />
+                                <Rock:RockBoundField DataField="GroupNameWithRoleAndStatus" HeaderText="Group" />
                                 <Rock:RockBoundField DataField="ConnectorPersonFullname" HeaderText="Connector" />
                                 <Rock:RockBoundField DataField="LastActivityText" HeaderText="Last Activity" HtmlEncode="false" />
                                 <Rock:RockLiteralField ID="lState" HeaderText="State" HeaderStyle-CssClass="w-1" ItemStyle-CssClass="w-1" />
@@ -488,6 +495,7 @@
                             <div class="actions d-flex mb-4 mt-md-4 mb-md-5">
                                 <asp:LinkButton ID="btnRequestModalViewModeEdit" runat="server" Text="Edit" CssClass="btn btn-primary" OnClick="btnRequestModalViewModeEdit_Click" CausesValidation="false" />
                                 <asp:LinkButton ID="btnRequestModalViewModeTransfer" runat="server" Text="Transfer" CssClass="btn btn-link" CausesValidation="false" OnClick="btnRequestModalViewModeTransfer_Click" />
+                                <asp:LinkButton ID="btnRequestViewModeViewHistory" runat="server" Text="View History" CssClass="btn btn-link" CausesValidation="false" OnClick="btnRequestViewModeViewHistory_Click" />
                                 <asp:LinkButton ID="btnRequestModalViewModeConnect" runat="server" Text="Connect" CssClass="btn btn-primary ml-auto" CausesValidation="false" OnClick="btnRequestModalViewModeConnect_Click" />
                             </div>
 
@@ -553,7 +561,7 @@
                                         <Rock:NotificationBox
                                             runat="server"
                                             ID="nbTranferFailed"
-                                            Text="You must select a new opportunity to transfer this request."
+                                            Text="You must select a new opportunity or connector to transfer this request."
                                             NotificationBoxType="Warning"
                                             Visible="false"></Rock:NotificationBox>
                                     </div>
@@ -747,23 +755,19 @@
                         </button>
                         <ul class="dropdown-menu">
                             <li>
-                                <a href="javascript:void(0);" class="js-view">View Details
-                                </a>
+                                <a href="javascript:void(0);" class="js-view">View Details</a>
                             </li>
                             <li class="can-connect-{{CanConnect}}">
-                                <a href="javascript:void(0);" class="js-connect">Connect
-                                </a>
+                                <a href="javascript:void(0);" class="js-connect">Connect</a>
                             </li>
                             <% if ( ShowSecurityButton ) { %>
                             <li>
-                                <a href="javascript:Rock.controls.modal.show($(this), '/Secure/<%= ConnectionRequestEntityTypeId %>/{{Id}}?t=Security&pb=&sb=Done')">Security
-                                </a>
+                                <a href="javascript:Rock.controls.modal.show($(this), '/Secure/<%= ConnectionRequestEntityTypeId %>/{{Id}}?t=Security&pb=&sb=Done')">Security</a>
                             </li>
                             <% } %>
-                            <li role="separator" class="divider can-connect-{{CanCurrentUserEdit}}"></li>
-                            <li class="can-connect-{{CanCurrentUserEdit}}">
-                                <a href="javascript:void(0);" class="dropdown-item-danger js-delete">Delete
-                                </a>
+                            <li role="separator" class="divider can-edit-{{CanCurrentUserEdit}}"></li>
+                            <li class="can-edit-{{CanCurrentUserEdit}}">
+                                <a href="javascript:void(0);" class="dropdown-item-danger js-delete">Delete</a>
                             </li>
                         </ul>
                     </div>

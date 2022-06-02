@@ -103,37 +103,39 @@ namespace Rock.Lava.Blocks
             if ( cacheKey == string.Empty )
             {
                 result.Write( "* No cache key provided. *" );
-                base.OnRender( context, result );
                 return;
             }
 
-            // Get content from cache
-            var cachedResult = RockCache.Get( cacheKey, true ) as CacheLavaTag;
+            var cacheDuration = parms["duration"].AsInteger();
 
-            // Check that the cached value is current
-            if ( cachedResult != null )
+            if ( cacheDuration > 0 )
             {
-                var currentHash = CalculateContentHash( _blockMarkup.ToString() );
-                if ( currentHash != cachedResult.Hash )
-                {
-                    cachedResult = null;
-                }
-            }
+                // Get content from cache
+                var cachedResult = RockCache.Get( cacheKey, true ) as CacheLavaTag;
 
-            // Use the cached value
-            if ( cachedResult != null )
-            {
-                if ( twoPassEnabled )
+                // Check that the cached value is current
+                if ( cachedResult != null )
                 {
-                    result.Write( MergeLava( cachedResult.Content, context ) );
-                }
-                else
-                {
-                    result.Write( cachedResult.Content );
+                    var currentHash = CalculateContentHash( _blockMarkup.ToString() );
+                    if ( currentHash != cachedResult.Hash )
+                    {
+                        cachedResult = null;
+                    }
                 }
 
-                base.OnRender( context, result );
-                return;
+                // Use the cached value
+                if ( cachedResult != null )
+                {
+                    if ( twoPassEnabled )
+                    {
+                        result.Write( MergeLava( cachedResult.Content, context ) );
+                    }
+                    else
+                    {
+                        result.Write( cachedResult.Content );
+                    }
+                    return;
+                }
             }
 
             // Cached value not available so render the template and cache it
@@ -141,8 +143,6 @@ namespace Rock.Lava.Blocks
 
             if ( lavaResults != null )
             {
-                var cacheDuration = parms["duration"].AsInteger();
-
                 if ( cacheDuration > 0 )
                 {
                     // Don't cache if it's too large
@@ -164,10 +164,6 @@ namespace Rock.Lava.Blocks
             }
 
             result.Write( lavaResults );
-
-
-            // TODO: Removed to fix for DotLiquid implementation - if present, output prints twice.
-            //base.OnRender( context, result );
         }
 
         /// <summary>
@@ -215,13 +211,15 @@ namespace Rock.Lava.Blocks
         private string MergeLava( string lavaTemplate, ILavaRenderContext context )
         {
             // Resolve the Lava template contained in this block in a new context.
-            var newContext = LavaEngine.CurrentEngine.NewRenderContext();
+            var engine = context.GetService<ILavaEngine>();
+
+            var newContext = engine.NewRenderContext();
 
             newContext.SetMergeFields( context.GetMergeFields() );
             newContext.SetInternalFields( context.GetInternalFields() );
 
             // Resolve the inner template.
-            var result = LavaEngine.CurrentEngine.RenderTemplate( lavaTemplate, LavaRenderParameters.WithContext( newContext ) );
+            var result = engine.RenderTemplate( lavaTemplate, LavaRenderParameters.WithContext( newContext ) );
 
             return result.Text;
         }
@@ -235,8 +233,6 @@ namespace Rock.Lava.Blocks
         private Dictionary<string, string> ParseMarkup( string markup, ILavaRenderContext context )
         {
             // first run lava across the inputted markup
-            var internalMergeFields = context.GetMergeFields();
-
             var parms = new Dictionary<string, string>();
             parms.Add( "key", string.Empty );
             parms.Add( "tags", string.Empty );
@@ -256,10 +252,7 @@ namespace Rock.Lava.Blocks
                 {
                     var value = itemParts[1];
 
-                    if ( value.HasMergeFields() )
-                    {
-                        value = value.ResolveMergeFields( internalMergeFields );
-                    }
+                    value = MergeLava( value, context );
 
                     parms.AddOrReplace( itemParts[0].Trim().ToLower(), value.Substring( 1, value.Length - 2 ).Trim() );
                 }

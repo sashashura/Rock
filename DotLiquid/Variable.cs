@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -58,23 +59,16 @@ namespace DotLiquid
 
 		public void Render(Context context, TextWriter result)
 		{
-			object output = RenderInternal(context);
+            // Do not apply transforms here as it will be done below.
+			object output = RenderInternal(context, false);
 
 			if (output is ILiquidizable)
 				output = null;
 
 			if (output != null)
 			{
-                // see if this context has a ValueTypeTranformer for the type
-                var transformer = context.GetValueTypeTransformer(output.GetType());
-                if (transformer == null)
-                {
-                    // if the context doesn't have a ValueTypeTranformer for the type, get the global one (if there is one)
-                    transformer = Template.GetValueTypeTransformer(output.GetType());
-                }
-                
-                if(transformer != null)
-                    output = transformer(output);
+                // Apply any required transforms to the context value prior to passing it to the filter pipeline.
+                output = ApplyValueTypeTransforms( context, output );
 
 				string outputString;
 				if (output is IEnumerable)
@@ -83,23 +77,29 @@ namespace DotLiquid
 #else
 					outputString = string.Join(string.Empty, ((IEnumerable)output).Cast<object>());
 #endif
-				else if (output is bool)
-					outputString = output.ToString().ToLower();
-				else
-					outputString = output.ToString();
+                else if (output is bool)
+                    outputString = output.ToString().ToLower();
+                else if (output is DateTimeOffset dto)
+                    // Change the default output for a DateTimeOffset to omit the timezone offset.
+                    outputString = dto.ToString( "G" );
+                else
+                    outputString = output.ToString();
 				result.Write(outputString);
 			}
 		}
 
-		private object RenderInternal(Context context)
+		private object RenderInternal(Context context, bool applyTransforms = true)
 		{
 			if (Name == null)
 				return null;
 
 			object output = context[Name];
 
-            // Apply any required transforms to the context value prior to passing it to the filter pipeline.
-            output = ApplyValueTypeTransforms( context, output );
+            if ( applyTransforms )
+            {
+                // Apply any required transforms to the context value prior to passing it to the filter pipeline.
+                output = ApplyValueTypeTransforms( context, output );
+            }
 
             Filters.ToList().ForEach(filter =>
 			{

@@ -26,6 +26,7 @@ using System.Web.UI.WebControls;
 using Rock;
 using Rock.Attribute;
 using Rock.Data;
+using Rock.Lava;
 using Rock.Model;
 using Rock.Security;
 using Rock.Web.Cache;
@@ -107,6 +108,7 @@ namespace RockWeb.Blocks.Connection
         private static class UserPreferenceKey
         {
             public const string MyActiveOpportunitiesChecked = "MyActiveOpportunitiesChecked";
+            public const string ConnectionOpportunitiesSelectedCampus = "ConnectionOpportunitiesSelectedCampus";
         }
 
         /// <summary>
@@ -115,6 +117,7 @@ namespace RockWeb.Blocks.Connection
         private static class PageParameterKey
         {
             public const string ConnectionOpportunityId = "ConnectionOpportunityId";
+            public const string CampusId = "CampusId";
         }
 
         /// <summary>
@@ -130,7 +133,7 @@ namespace RockWeb.Blocks.Connection
         #region Attribute Default values
 
         private const string StatusTemplateDefaultValue = @"
-<div class='badge-legend expand-on-hover padding-r-md'>
+<div class='badge-legend expand-on-hover mr-3'>
     <span class='badge badge-info badge-circle js-legend-badge'>Assigned To You</span>
     <span class='badge badge-warning badge-circle js-legend-badge'>Unassigned Item</span>
     <span class='badge badge-critical badge-circle js-legend-badge'>Critical Status</span>
@@ -192,7 +195,11 @@ namespace RockWeb.Blocks.Connection
 
             if ( !Page.IsPostBack )
             {
+                // NOTE: Don't include Inactive Campuses for the "Campus Filter for Page"
+                cpCampusFilter.Campuses = CampusCache.All( false );
+                cpCampusFilter.Items[0].Text = "All";
                 tglMyActiveOpportunities.Checked = GetUserPreference( UserPreferenceKey.MyActiveOpportunitiesChecked ).AsBoolean();
+                cpCampusFilter.SelectedCampusId = GetUserPreference( UserPreferenceKey.ConnectionOpportunitiesSelectedCampus ).AsIntegerOrNull();
                 GetSummaryData();
             }
         }
@@ -232,6 +239,17 @@ namespace RockWeb.Blocks.Connection
         {
             SetUserPreference( UserPreferenceKey.MyActiveOpportunitiesChecked, tglMyActiveOpportunities.Checked.ToString() );
             BindSummaryData();
+        }
+
+        /// <summary>
+        /// Handles the SelectedIndexChanged event of the cpCampusPicker control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
+        protected void cpCampusPicker_SelectedIndexChanged( object sender, EventArgs e )
+        {
+            SetUserPreference( UserPreferenceKey.ConnectionOpportunitiesSelectedCampus, cpCampusFilter.SelectedCampusId.ToString() );
+            GetSummaryData();
         }
 
         /// <summary>
@@ -279,7 +297,8 @@ namespace RockWeb.Blocks.Connection
             var template = GetAttributeValue( AttributeKey.OpportunitySummaryTemplate );
 
             var mergeFields = Rock.Lava.LavaHelper.GetCommonMergeFields( this.RockPage, this.CurrentPerson, new Rock.Lava.CommonMergeFieldsOptions { GetLegacyGlobalMergeFields = false } );
-            mergeFields.Add( "OpportunitySummary", DotLiquid.Hash.FromAnonymousObject( opportunitySummary ) );
+
+            mergeFields.Add( "OpportunitySummary", opportunitySummary );
 
             string result = null;
             using ( var rockContext = new RockContext() )
@@ -304,9 +323,13 @@ namespace RockWeb.Blocks.Connection
 
             if ( e.CommandName == "Select" )
             {
-                NavigateToLinkedPage( AttributeKey.OpportunityDetailPage, new Dictionary<string, string> {
-                    { PageParameterKey.ConnectionOpportunityId, selectedOpportunityId.ToString() }
-                } );
+                var queryParams = new Dictionary<string, string> { { PageParameterKey.ConnectionOpportunityId, selectedOpportunityId.ToString() } };
+                if ( cpCampusFilter.SelectedCampusId.HasValue )
+                {
+                    queryParams.Add( PageParameterKey.CampusId, cpCampusFilter.SelectedCampusId.ToString() );
+                }
+
+                NavigateToLinkedPage( AttributeKey.OpportunityDetailPage, queryParams );
             }
             else if ( e.CommandName == "ToggleFollow" )
             {
@@ -456,7 +479,8 @@ namespace RockWeb.Blocks.Connection
                             Opportunities = new List<OpportunitySummary>(),
                             IconMarkup = opportunity.ConnectionType.IconCssClass.IsNullOrWhiteSpace() ?
                                 string.Empty :
-                                string.Format( @"<i class=""{0}""></i>", opportunity.ConnectionType.IconCssClass )
+                                $@"<i class=""{opportunity.ConnectionType.IconCssClass}""></i>",
+                            Order = opportunity.ConnectionType.Order
                         };
                         SummaryState.Add( connectionTypeSummary );
                     }
@@ -464,6 +488,10 @@ namespace RockWeb.Blocks.Connection
                     // get list of idle requests (no activity in past X days)
 
                     var connectionRequestsQry = new ConnectionRequestService( rockContext ).Queryable().Where( a => a.ConnectionOpportunityId == opportunity.Id );
+                    if ( cpCampusFilter.SelectedCampusId.HasValue )
+                    {
+                        connectionRequestsQry = connectionRequestsQry.Where( a => a.CampusId.HasValue && a.CampusId == cpCampusFilter.SelectedCampusId );
+                    }
 
                     var currentDateTime = RockDateTime.Now;
                     int activeRequestCount = connectionRequestsQry
@@ -547,6 +575,11 @@ namespace RockWeb.Blocks.Connection
                     ConnectorPersonId = r.ConnectorPersonAlias != null ? r.ConnectorPersonAlias.PersonId : -1
                 } );
 
+            if ( cpCampusFilter.SelectedCampusId.HasValue )
+            {
+                activeRequestsQry = activeRequestsQry.Where( a => a.CampusId.HasValue && a.CampusId == cpCampusFilter.SelectedCampusId );
+            }
+
             var activeRequests = activeRequestsQry.ToList();
 
             // Based on the active requests, set additional properties for each opportunity
@@ -619,7 +652,9 @@ namespace RockWeb.Blocks.Connection
 
             nbNoOpportunities.Visible = !viewableOpportunityIds.Any();
 
-            rptConnnectionTypes.DataSource = SummaryState.Where( t => t.Opportunities.Any( o => viewableOpportunityIds.Contains( o.Id ) ) );
+            rptConnnectionTypes.DataSource = SummaryState
+                .Where( t => t.Opportunities.Any( o => viewableOpportunityIds.Contains( o.Id ) ) )
+                .OrderBy( a => a.Order ).ThenBy( a => a.Name );
             rptConnnectionTypes.DataBind();
 
             // Bind favorites
@@ -642,7 +677,7 @@ namespace RockWeb.Blocks.Connection
         #region Helper Classes
 
         [Serializable]
-        public class ConnectionTypeSummary
+        public class ConnectionTypeSummary : LavaDataObject
         {
             public int Id { get; set; }
             public string Name { get; set; }
@@ -651,10 +686,11 @@ namespace RockWeb.Blocks.Connection
             public int? ConnectionRequestDetailPageId { get; set; }
             public int? ConnectionRequestDetailPageRouteId { get; set; }
             public List<OpportunitySummary> Opportunities { get; set; }
+            public int Order { get; set; }
         }
 
         [Serializable]
-        public class OpportunitySummary
+        public class OpportunitySummary : LavaDataObject
         {
             public int Id { get; set; }
             public int Order { get; set; }

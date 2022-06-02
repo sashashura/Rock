@@ -72,7 +72,7 @@ namespace RockWeb.Blocks.GroupScheduling
             public const string GroupIds = "GroupIds";
             public const string ShowChildGroups = "ShowChildGroups";
 
-            public const string SundayDate = "SundayDate";
+            public const string EndOfWeekDate = "EndOfWeekDate";
 
             public const string SelectAllSchedules = "SelectAllSchedules";
             public const string ScheduleId = "ScheduleId";
@@ -105,7 +105,7 @@ namespace RockWeb.Blocks.GroupScheduling
             // the value of the ShowChildGroups checkbox
             public const string ShowChildGroups = PageParameterKey.ShowChildGroups;
 
-            public const string SelectedDate = PageParameterKey.SundayDate;
+            public const string SelectedDate = PageParameterKey.EndOfWeekDate;
 
             public const string SelectAllSchedules = PageParameterKey.SelectAllSchedules;
             public const string SelectedIndividualScheduleId = PageParameterKey.ScheduleId;
@@ -215,27 +215,24 @@ btnCopyToClipboard.ClientID );
 
         #region Methods
 
-        private List<DateTime> _listedSundayDates = null;
+        private List<DateTime> _listedEndOfWeekDates = null;
 
         /// <summary>
         /// Loads the drop downs.
         /// </summary>
         private void LoadDropDowns()
         {
+            _listedEndOfWeekDates = new List<DateTime>();
             int numOfWeeks = GetAttributeValue( AttributeKey.FutureWeeksToShow ).AsIntegerOrNull() ?? 6;
+            var endOfWeekDate = RockDateTime.Now.EndOfWeek( RockDateTime.FirstDayOfWeek );
 
-            _listedSundayDates = new List<DateTime>();
-
-            var sundayDate = RockDateTime.Now.SundayDate();
-            int weekNum = 0;
-            while ( weekNum < numOfWeeks )
+            for ( int i = 0; i < numOfWeeks; i++ )
             {
-                _listedSundayDates.Add( sundayDate );
-                weekNum++;
-                sundayDate = sundayDate.AddDays( 7 );
+                _listedEndOfWeekDates.Add( endOfWeekDate );
+                endOfWeekDate = endOfWeekDate.AddDays( 7 );
             }
 
-            rptWeekSelector.DataSource = _listedSundayDates;
+            rptWeekSelector.DataSource = _listedEndOfWeekDates;
             rptWeekSelector.DataBind();
         }
 
@@ -348,7 +345,7 @@ btnCopyToClipboard.ClientID );
         }
 
         /// <summary>
-        /// Gets the authorized listed groups
+        /// Gets the authorized listed groups for which the current person has EDIT or SCHEDULE permission
         /// </summary>
         /// <returns></returns>
         private List<Group> GetAuthorizedListedGroups()
@@ -422,14 +419,17 @@ btnCopyToClipboard.ClientID );
         /// </summary>
         private void LoadFilterFromUserPreferencesOrURL()
         {
-            DateTime selectedSundayDate = this.GetUrlSettingOrBlockUserPreference( PageParameterKey.SundayDate, UserPreferenceKey.SelectedDate ).AsDateTime() ?? RockDateTime.Now.SundayDate();
-            if ( _listedSundayDates != null && _listedSundayDates.Contains( selectedSundayDate ) )
+            DateTime selectedEndOfWeekDate =
+                this.GetUrlSettingOrBlockUserPreference( PageParameterKey.EndOfWeekDate, UserPreferenceKey.SelectedDate ).AsDateTime()
+                ?? RockDateTime.Now.EndOfWeek( RockDateTime.FirstDayOfWeek );
+
+            if ( _listedEndOfWeekDates != null && _listedEndOfWeekDates.Contains( selectedEndOfWeekDate ) )
             {
-                hfWeekSundayDate.Value = selectedSundayDate.ToISO8601DateString();
+                hfWeekSundayDate.Value = selectedEndOfWeekDate.ToISO8601DateString();
             }
             else
             {
-                hfWeekSundayDate.Value = RockDateTime.Now.SundayDate().ToISO8601DateString();
+                hfWeekSundayDate.Value = RockDateTime.Now.EndOfWeek( RockDateTime.FirstDayOfWeek ).ToISO8601DateString();
             }
 
             int? selectedGroupId = null;
@@ -451,7 +451,6 @@ btnCopyToClipboard.ClientID );
                 }
 
                 pickerGroupIds = pageParameterGroupIds;
-                gpPickedGroups.Enabled = false;
                 btnShowChildGroups.Enabled = false;
                 showChildGroups = this.PageParameter( PageParameterKey.ShowChildGroups ).AsBoolean();
             }
@@ -516,14 +515,19 @@ btnCopyToClipboard.ClientID );
             }
 
             SchedulerResourceGroupMemberFilterType groupMemberFilterType;
-            var resourceListSourceType = this.GetUrlSettingOrBlockUserPreference( PageParameterKey.ResourceListSourceType, UserPreferenceKey.SelectedResourceListSourceType ).ConvertToEnumOrNull<GroupSchedulerResourceListSourceType>() ?? GroupSchedulerResourceListSourceType.GroupMembers;
+            var resourceListSourceType = this.GetUrlSettingOrBlockUserPreference( PageParameterKey.ResourceListSourceType, UserPreferenceKey.SelectedResourceListSourceType )
+                .ConvertToEnumOrNull<GroupSchedulerResourceListSourceType>()
+                ?? GroupSchedulerResourceListSourceType.GroupMembers;
+
             if ( resourceListSourceType == GroupSchedulerResourceListSourceType.GroupMatchingPreference )
             {
                 groupMemberFilterType = SchedulerResourceGroupMemberFilterType.ShowMatchingPreference;
             }
             else
             {
-                groupMemberFilterType = this.GetUrlSettingOrBlockUserPreference( PageParameterKey.GroupMemberFilterType, UserPreferenceKey.GroupMemberFilterType ).ConvertToEnumOrNull<SchedulerResourceGroupMemberFilterType>() ?? SchedulerResourceGroupMemberFilterType.ShowAllGroupMembers;
+                groupMemberFilterType = this.GetUrlSettingOrBlockUserPreference( PageParameterKey.GroupMemberFilterType, UserPreferenceKey.GroupMemberFilterType )
+                    .ConvertToEnumOrNull<SchedulerResourceGroupMemberFilterType>()
+                    ?? SchedulerResourceGroupMemberFilterType.ShowAllGroupMembers;
             }
 
             // if PageParameters have a DataViewId or AlternateGroupId, but didn't specify ResourceListSourceType,
@@ -542,8 +546,8 @@ btnCopyToClipboard.ClientID );
             }
 
             // NOTE: if PageParameters or UserPreferences specify an invalid combination of ResourceSourceType and GroupId,
-            // For example, an AlternateGroupId but when a Group has GroupRequirements, 
-            // ApplyFilter() will correct for it 
+            // For example, an AlternateGroupId but when a Group has GroupRequirements,
+            // ApplyFilter() will correct for it
             SetResourceListSourceType( resourceListSourceType, groupMemberFilterType );
 
             gpResourceListAlternateGroup.SetValue( this.GetUrlSettingOrBlockUserPreference( PageParameterKey.AlternateGroupId, UserPreferenceKey.AlternateGroupId ).AsIntegerOrNull() );
@@ -636,15 +640,15 @@ btnCopyToClipboard.ClientID );
 
             List<int> scheduleIds = GetSelectedScheduleIds( authorizedListedGroups );
 
-            var sundayDate = hfWeekSundayDate.Value.AsDateTime() ?? RockDateTime.Now.SundayDate();
+            var endOfWeekDate = hfWeekSundayDate.Value.AsDateTime() ?? RockDateTime.Now.EndOfWeek( RockDateTime.FirstDayOfWeek );
 
-            lWeekFilterText.Text = string.Format( "<i class='fa fa-calendar-alt'></i> Week: {0}", sundayDate.ToShortDateString() );
+            lWeekFilterText.Text = string.Format( "<i class='fa fa-calendar-alt'></i> Week: {0}", endOfWeekDate.ToShortDateString() );
 
             this.SetBlockUserPreference( UserPreferenceKey.SelectedGroupId, selectedGroupId.ToString(), false );
             this.SetBlockUserPreference( UserPreferenceKey.PickerGroupIds, gpPickedGroups.SelectedIds.ToList().AsDelimited( "," ), false );
             this.SetBlockUserPreference( UserPreferenceKey.ShowChildGroups, btnShowChildGroups.Attributes["show-child-groups"], false );
 
-            this.SetBlockUserPreference( UserPreferenceKey.SelectedDate, sundayDate.ToISO8601DateString(), false );
+            this.SetBlockUserPreference( UserPreferenceKey.SelectedDate, endOfWeekDate.ToISO8601DateString(), false );
 
             this.SetBlockUserPreference( UserPreferenceKey.PickedLocationIds, hfPickedLocationIds.Value, false );
             bool selectAllSchedules = hfSelectedScheduleId.Value.AsIntegerOrNull() == null;
@@ -691,11 +695,16 @@ btnCopyToClipboard.ClientID );
             var resourceListSourceType = ( GroupSchedulerResourceListSourceType ) hfSchedulerResourceListSourceType.Value.AsInteger();
             var groupMemberFilterType = ( SchedulerResourceGroupMemberFilterType ) hfResourceGroupMemberFilterType.Value.AsInteger();
 
-            List<GroupSchedulerResourceListSourceType> schedulerResourceListSourceTypes = Enum.GetValues( typeof( GroupSchedulerResourceListSourceType ) ).OfType<GroupSchedulerResourceListSourceType>().ToList();
+            List<GroupSchedulerResourceListSourceType> schedulerResourceListSourceTypes = typeof( GroupSchedulerResourceListSourceType ).GetOrderedValues<GroupSchedulerResourceListSourceType>().ToList();
 
             if ( selectedGroup != null && selectedGroup.SchedulingMustMeetRequirements )
             {
-                var sameGroupSourceTypes = new GroupSchedulerResourceListSourceType[] { GroupSchedulerResourceListSourceType.GroupMembers, GroupSchedulerResourceListSourceType.GroupMatchingPreference };
+                var sameGroupSourceTypes = new GroupSchedulerResourceListSourceType[]
+                {
+                    GroupSchedulerResourceListSourceType.GroupMembers,
+                    GroupSchedulerResourceListSourceType.GroupMatchingPreference,
+                    GroupSchedulerResourceListSourceType.GroupMatchingAssignment
+                };
 
                 // if SchedulingMustMeetRequirements
                 // -- don't show options for other groups or people
@@ -842,7 +851,7 @@ btnCopyToClipboard.ClientID );
                 pageReference.Parameters.AddOrReplace( pagePageParameterKey, this.GetBlockUserPreference( pagePageParameterKey ) );
             }
 
-            Uri requestUri = new Uri( Request.Url.ToString() );
+            Uri requestUri = new Uri( Request.UrlProxySafe().ToString() );
             var linkUrl = requestUri.GetLeftPart( UriPartial.Authority ) + pageReference.BuildUrl();
             btnCopyToClipboard.Attributes["data-clipboard-text"] = linkUrl;
             btnCopyToClipboard.Disabled = false;
@@ -1055,6 +1064,7 @@ btnCopyToClipboard.ClientID );
             {
                 case GroupSchedulerResourceListSourceType.GroupMembers:
                 case GroupSchedulerResourceListSourceType.GroupMatchingPreference:
+                case GroupSchedulerResourceListSourceType.GroupMatchingAssignment:
                     {
                         resourceGroupId = groupId;
                         break;
@@ -1082,7 +1092,7 @@ btnCopyToClipboard.ClientID );
 
             hfOccurrenceGroupId.Value = groupId.ToString();
             hfOccurrenceScheduleIds.Value = scheduleIds.AsDelimited( "," );
-            hfOccurrenceSundayDate.Value = ( hfWeekSundayDate.Value.AsDateTime() ?? RockDateTime.Now.SundayDate() ).ToISO8601DateString();
+            hfOccurrenceSundayDate.Value = ( hfWeekSundayDate.Value.AsDateTime() ?? RockDateTime.Now.EndOfWeek( RockDateTime.FirstDayOfWeek ) ).ToISO8601DateString();
 
             hfResourceGroupId.Value = resourceGroupId.ToString();
             hfResourceDataViewId.Value = resourceDataViewId.ToString();
@@ -1095,13 +1105,13 @@ btnCopyToClipboard.ClientID );
         /// </summary>
         private void BindAttendanceOccurrences( List<Group> authorizedListedGroups, List<int> selectedLocationIds )
         {
-            var occurrenceSundayDate = hfOccurrenceSundayDate.Value.AsDateTime().Value.Date;
-            var occurrenceSundayWeekStartDate = occurrenceSundayDate.AddDays( -6 );
+            var occurrenceDateEndRange = hfOccurrenceSundayDate.Value.AsDateTime().Value.Date;
+            var occurrenceDateStartRange = occurrenceDateEndRange.AddDays( -6 );
 
             // make sure we don't let them schedule dates in the past
-            if ( occurrenceSundayWeekStartDate <= RockDateTime.Today )
+            if ( occurrenceDateStartRange <= RockDateTime.Today )
             {
-                occurrenceSundayWeekStartDate = RockDateTime.Today;
+                occurrenceDateStartRange = RockDateTime.Today;
             }
 
             var scheduleIds = GetSelectedScheduleIds( authorizedListedGroups );
@@ -1123,7 +1133,7 @@ btnCopyToClipboard.ClientID );
                 // we only want create occurrences start times for this specific schedule
                 // Note that it could be more than once a week if it is a daily scheduled, or it might not be in the selected week if it is every 2 weeks, etc
                 var scheduleOccurrenceDates = occurrenceSchedule
-                    .GetScheduledStartTimes( occurrenceSundayWeekStartDate, occurrenceSundayDate.AddDays( 1 ) )
+                    .GetScheduledStartTimes( occurrenceDateStartRange, occurrenceDateEndRange.AddDays( 1 ) )
                     .Select( a => a.Date )
                     .Distinct()
                     .ToList();
@@ -1341,7 +1351,7 @@ btnCopyToClipboard.ClientID );
                     } )
                     .OrderBy( a => a.OccurrenceDate )
                     .ThenBy( a => a.Schedule.Order )
-                    .ThenBy( a => a.Schedule.GetNextStartDateTime( occurrenceSundayWeekStartDate ) )
+                    .ThenBy( a => a.Schedule.GetNextStartDateTime( occurrenceDateStartRange ) )
                     .ToList();
             }
 
@@ -1828,7 +1838,7 @@ btnCopyToClipboard.ClientID );
         }
 
         /// <summary>
-        /// Sets the type of the resource list source.
+        /// Sets the hidden field values for GroupSchedulerResourceListSourceType and SchedulerResourceGroupMemberFilterType and updates the text of the filter controls.
         /// </summary>
         /// <param name="schedulerResourceListSourceType">Type of the scheduler resource list source.</param>
         /// <param name="schedulerResourceGroupMemberFilterType">Type of the scheduler resource group member filter.</param>
@@ -1836,55 +1846,8 @@ btnCopyToClipboard.ClientID );
         {
             hfSchedulerResourceListSourceType.Value = schedulerResourceListSourceType.ConvertToInt().ToString();
             hfResourceGroupMemberFilterType.Value = schedulerResourceGroupMemberFilterType.ConvertToInt().ToString();
-
-            switch ( schedulerResourceListSourceType )
-            {
-                case GroupSchedulerResourceListSourceType.GroupMembers:
-                case GroupSchedulerResourceListSourceType.GroupMatchingPreference:
-                    {
-                        if ( schedulerResourceGroupMemberFilterType == SchedulerResourceGroupMemberFilterType.ShowMatchingPreference )
-                        {
-                            lSelectedResourceTypeDropDownText.Text = "Group Members (Matching Preference)";
-                        }
-                        else
-                        {
-                            lSelectedResourceTypeDropDownText.Text = "Group Members";
-                        }
-
-                        sfResource.Placeholder = "Search";
-
-                        break;
-                    }
-
-                case GroupSchedulerResourceListSourceType.AlternateGroup:
-                    {
-                        lSelectedResourceTypeDropDownText.Text = "Alternate Group";
-                        sfResource.Placeholder = "Search Alternate Group";
-                        break;
-                    }
-
-                case GroupSchedulerResourceListSourceType.DataView:
-                    {
-                        lSelectedResourceTypeDropDownText.Text = "Data View";
-                        sfResource.Placeholder = "Search Data View";
-                        break;
-                    }
-
-                case GroupSchedulerResourceListSourceType.ParentGroup:
-                    {
-                        lSelectedResourceTypeDropDownText.Text = "Parent Group";
-                        sfResource.Placeholder = "Search";
-                        break;
-                    }
-
-                default:
-                    {
-                        // another case statement should have done this, but just in case
-                        lSelectedResourceTypeDropDownText.Text = "Group Members";
-                        sfResource.Placeholder = "Search";
-                        break;
-                    }
-            }
+            lSelectedResourceTypeDropDownText.Text = schedulerResourceListSourceType.GetDescription();
+            sfResource.Placeholder = $"Search \"{lSelectedResourceTypeDropDownText.Text.Replace( "Group Members - ", string.Empty )}\"";
         }
 
         /// <summary>
@@ -2120,12 +2083,12 @@ btnCopyToClipboard.ClientID );
         /// <param name="e">The <see cref="RepeaterItemEventArgs"/> instance containing the event data.</param>
         protected void rptWeekSelector_ItemDataBound( object sender, RepeaterItemEventArgs e )
         {
-            var sundayDate = ( DateTime ) e.Item.DataItem;
-            string weekTitle = string.Format( "{0} to {1}", sundayDate.AddDays( -6 ).ToShortDateString(), sundayDate.ToShortDateString() );
+            var endOfWeekDate = ( DateTime ) e.Item.DataItem;
+            string weekTitle = $"{endOfWeekDate.AddDays( -6 ).ToShortDateString()} to {endOfWeekDate.ToShortDateString()}";
 
             var btnSelectWeek = e.Item.FindControl( "btnSelectWeek" ) as LinkButton;
             btnSelectWeek.Text = weekTitle;
-            btnSelectWeek.CommandArgument = sundayDate.ToISO8601DateString();
+            btnSelectWeek.CommandArgument = endOfWeekDate.ToISO8601DateString();
         }
 
         /// <summary>
@@ -2289,9 +2252,9 @@ btnCopyToClipboard.ClientID );
             var group = groupMemberPerson.Group;
 
             /* 2020-07-23 MDP
-             *  Note that an Attendance record is for a Person, not a GroupMemberId, so GroupMemberId would be whatever GroupMember record was found for this 
+             *  Note that an Attendance record is for a Person, not a GroupMemberId, so GroupMemberId would be whatever GroupMember record was found for this
              *  Person in the Occurrence group.
-             *  So, if the person is in the group multiple times, the groupMember record would be first group member record for that person, sorted by GroupTypeRole.Order. 
+             *  So, if the person is in the group multiple times, the groupMember record would be first group member record for that person, sorted by GroupTypeRole.Order.
              *  But, they could have preferences for multiple group members records, so lookup by personId instead of GroupMemberId
              */
             var preferencesForGroup = groupMemberAssignmentQuery
@@ -2308,7 +2271,7 @@ btnCopyToClipboard.ClientID );
                 var currentSchedulePreferencesHTMLBuilder = new StringBuilder();
                 currentSchedulePreferencesHTMLBuilder.AppendLine( "<span class='control-label'>These other preferences will be removed and replaced.</span>" );
                 currentSchedulePreferencesHTMLBuilder.AppendLine( "<ul>" );
-                var occurrenceDate = RockDateTime.Now.SundayDate().AddDays( 1 );
+                var occurrenceDate = RockDateTime.Now.EndOfWeek( RockDateTime.FirstDayOfWeek ).AddDays( 1 );
                 var otherPreferencesSortedBySchedule = otherPreferencesForGroup
                     .OrderBy( a => a.Schedule.Order )
                     .ThenBy( a => a.Schedule.GetNextStartDateTime( occurrenceDate ) )
@@ -2340,7 +2303,7 @@ btnCopyToClipboard.ClientID );
                 nbGroupScheduleAssignmentUpdatePreferenceInformation.Text = string.Empty;
             }
 
-            mdGroupScheduleAssignmentPreference.SubTitle = string.Format( "{0}, {1} - {2} ", groupMemberPerson.Person, attendanceOccurrence.Schedule.Name, attendanceOccurrence.Location.Name );
+            mdGroupScheduleAssignmentPreference.SubTitle = string.Format( "{0}, {1} - {2} ", groupMemberPerson.Person, attendanceOccurrence.Schedule?.Name ?? "No Schedule", attendanceOccurrence.Location?.Name ?? "No Location Preference" );
 
             nbGroupScheduleAssignmentUpdatePreferenceInformation.Visible = rblGroupScheduleAssignmentUpdateOption.SelectedValue == "UpdatePreference";
 
@@ -2465,9 +2428,9 @@ btnCopyToClipboard.ClientID );
             var groupMemberAssignmentQuery = groupMemberAssignmentService.Queryable();
 
             /* 2020-07-23 MDP
-             *  Note that an Attendance record is for a Person, not a GroupMemberId, so GroupMemberId would be whatever GroupMember record was found for this 
+             *  Note that an Attendance record is for a Person, not a GroupMemberId, so GroupMemberId would be whatever GroupMember record was found for this
              *  Person in the Occurrence group.
-             *  So, f the person is in the group multiple times, the groupMember record would be first group member record for that person, sorted by GroupTypeRole.Order. 
+             *  So, f the person is in the group multiple times, the groupMember record would be first group member record for that person, sorted by GroupTypeRole.Order.
              *  But, they could have preferences for multiple group members records, so lookup by personId instead of GroupMemberId
              */
             int groupMemberPersonId = groupMember.PersonId;
@@ -2491,7 +2454,7 @@ btnCopyToClipboard.ClientID );
             groupMember.ScheduleTemplateId = ddlGroupMemberScheduleTemplate.SelectedValueAsId();
 
             /* 2020-07-23 MDP
-                 - 'Update Preference' means that the selected Schedule/Location is now their *only* preference for this Group. 
+                 - 'Update Preference' means that the selected Schedule/Location is now their *only* preference for this Group.
                     So, if they have preferences for other schedules for this group, delete them
                     see https://app.asana.com/0/0/1185765604320009/f
 
@@ -2514,6 +2477,9 @@ btnCopyToClipboard.ClientID );
             }
 
             rockContext.SaveChanges();
+
+            ApplyFilter();
+
         }
 
         #endregion Events

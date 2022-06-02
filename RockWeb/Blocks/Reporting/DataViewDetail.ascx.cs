@@ -40,7 +40,6 @@ namespace RockWeb.Blocks.Reporting
     /// Shows the details of the given data view.
     /// </summary>
     /// <seealso cref="Rock.Web.UI.RockBlock" />
-    /// <seealso cref="Rock.Web.UI.IDetailBlock" />
     [DisplayName( "Data View Detail" )]
     [Category( "Reporting" )]
     [Description( "Shows the details of the given data view." )]
@@ -80,7 +79,7 @@ namespace RockWeb.Blocks.Reporting
         DefaultIntegerValue = 180,
         Order = 4 )]
 
-    public partial class DataViewDetail : RockBlock, IDetailBlock
+    public partial class DataViewDetail : RockBlock
     {
         #region Attribute Keys
 
@@ -585,6 +584,13 @@ $(document).ready(function() {
 
                 // hide the panel drawer that show created and last modified dates
                 pdAuditDetails.Visible = false;
+            }
+            else
+            {
+                string quickReturnLava = "{{ Dataview.Name | AddQuickReturn:'Data Views', 30 }}";
+                var quickReturnMergeFields = Rock.Lava.LavaHelper.GetCommonMergeFields( this.RockPage, this.CurrentPerson, new Rock.Lava.CommonMergeFieldsOptions { GetLegacyGlobalMergeFields = false } );
+                quickReturnMergeFields.Add( "Dataview", dataView );
+                quickReturnLava.ResolveMergeFields( quickReturnMergeFields );
             }
 
             if ( !dataView.IsAuthorized( Authorization.VIEW, CurrentPerson ) )

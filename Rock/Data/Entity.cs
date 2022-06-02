@@ -18,14 +18,13 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
 
 using Newtonsoft.Json;
 using Rock.Lava;
-using Rock.Model;
 using Rock.Tasks;
+using Rock.Utility;
 using Rock.Web.Cache;
 
 namespace Rock.Data
@@ -51,17 +50,44 @@ namespace Rock.Data
         [Key]
         [DataMember]
         [IncludeForReporting]
+        [CodeGenExclude( CodeGenFeature.ViewModelFile )] // Excluded because the ViewModelBase provides this through inheritance
         public int Id { get; set; }
 
         /// <summary>
-        /// Gets or sets a <see cref="System.Guid"/> value that is a guaranteed unique identifier for the entity object.  This value 
+        /// Gets the <see cref="Id"/> as a hashed identifier that can be used
+        /// to lookup the entity later. This hides the actual <see cref="Id"/>
+        /// number so that individuals cannot attempt to guess the next sequential
+        /// identifier numbers.
+        /// </summary>
+        /// <value>The hashed identifier key.</value>
+        [DataMember]
+        [NotMapped]
+        [IncludeForReporting]
+        public string IdKey
+        {
+            get
+            {
+                try
+                {
+                    return IdHasher.Instance.GetHash( Id );
+                }
+                catch
+                {
+                    return string.Empty;
+                }
+            }
+            private set { /* Make DataContract happy. */ }
+        }
+
+        /// <summary>
+        /// Gets or sets a <see cref="System.Guid"/> value that is a guaranteed unique identifier for the entity object.  This value
         /// is an alternate key for the object, and should be used when interacting with external systems and when comparing and synchronizing
         /// objects across across data stores or external /implementations of Rock
         /// </summary>
         /// <remarks>
-        /// A good place for a Guid to be used is when comparing or syncing data across two implementations of Rock. For example, if you 
-        /// were creating a <see cref="Rock.Web.UI.RockBlock"/> with a data migration that adds/remove a new defined value object to the database. You would want to 
-        /// search based on the Guid because it would be guaranteed to be unique across all implementations of Rock. 
+        /// A good place for a Guid to be used is when comparing or syncing data across two implementations of Rock. For example, if you
+        /// were creating a <see cref="Rock.Web.UI.RockBlock"/> with a data migration that adds/remove a new defined value object to the database. You would want to
+        /// search based on the Guid because it would be guaranteed to be unique across all implementations of Rock.
         /// </remarks>
         /// <value>
         /// A <see cref="System.Guid"/> value that will uniquely identify the entity/object across all implementations of Rock.
@@ -70,6 +96,7 @@ namespace Rock.Data
         [DataMember]
         [IncludeForReporting]
         [NotEmptyGuidAttribute]
+        [CodeGenExclude( CodeGenFeature.ViewModelFile )] // Excluded because the ViewModelBase provides this through inheritance
         public Guid Guid
         {
             get { return _guid; }
@@ -85,6 +112,7 @@ namespace Rock.Data
         /// </value>
         [DataMember]
         [HideFromReporting]
+        [CodeGenExclude( CodeGenFeature.ViewModelFile )]
         public int? ForeignId { get; set; }
 
         /// <summary>
@@ -95,6 +123,7 @@ namespace Rock.Data
         /// </value>
         [DataMember]
         [HideFromReporting]
+        [CodeGenExclude( CodeGenFeature.ViewModelFile )]
         public Guid? ForeignGuid { get; set; }
 
         /// <summary>
@@ -106,6 +135,7 @@ namespace Rock.Data
         [MaxLength( 100 )]
         [DataMember]
         [HideFromReporting]
+        [CodeGenExclude( CodeGenFeature.ViewModelFile )]
         public string ForeignKey { get; set; }
 
         #endregion
@@ -117,7 +147,7 @@ namespace Rock.Data
         /// for the object type it will be created
         /// </summary>
         /// <value>
-        /// An <see cref="System.Int32"/> that represents the identifier for the current Entity object type. 
+        /// An <see cref="System.Int32"/> that represents the identifier for the current Entity object type.
         /// </value>
         [LavaVisible]
         public virtual int TypeId
@@ -292,7 +322,7 @@ namespace Rock.Data
 
         /// <summary>
         /// Creates a dictionary containing the majority of the entity object's properties. The only properties that are excluded
-        /// are the Id, Guid and Order.  
+        /// are the Id, Guid and Order.
         /// </summary>
         /// <returns>A <see cref="Dictionary{String, Object}"/> that represents the current entity object. Each <see cref="KeyValuePair{String, Object}"/> includes the property
         /// name as the key and the property value as the value.</returns>
@@ -500,19 +530,33 @@ namespace Rock.Data
         /// </summary>
         /// <param name="workflowTypeGuid">The workflow type unique identifier.</param>
         /// <param name="workflowName">Name of the workflow.</param>
-        /// <param name="workflowAttributeValues">Any workflow attribute values that should be set.</param>
+        /// <param name="workflowAttributeValues">The workflow attribute values.</param>
+        [Obsolete( "Use the override that does not provide the default values instead." )]
+        [RockObsolete( "1.13" )]
         public void LaunchWorkflow( Guid? workflowTypeGuid, string workflowName = "", Dictionary<string, string> workflowAttributeValues = null )
+        {
+            LaunchWorkflow( workflowTypeGuid, workflowName, workflowAttributeValues, null );
+        }
+
+        /// <summary>
+        /// Creates a transaction to launch a workflow for this entity.
+        /// </summary>
+        /// <param name="workflowTypeGuid">The workflow type unique identifier.</param>
+        /// <param name="workflowName">Name of the workflow.</param>
+        /// <param name="workflowAttributeValues">Any workflow attribute values that should be set.</param>
+        /// <param name="initiatorPersonAliasId">The Initiator Person Alias Identifier.</param>
+        public void LaunchWorkflow( Guid? workflowTypeGuid, string workflowName, Dictionary<string, string> workflowAttributeValues, int? initiatorPersonAliasId )
         {
             if ( workflowTypeGuid.HasValue )
             {
-                new LaunchWorkflow.Message
+                var transaction = new Rock.Transactions.LaunchWorkflowTransaction<T>( workflowTypeGuid.Value, workflowName, Id );
+                if ( workflowAttributeValues != null )
                 {
-                    WorkflowTypeGuid = workflowTypeGuid.Value,
-                    WorkflowName = workflowName,
-                    EntityId = Id,
-                    EntityTypeId = TypeId,
-                    WorkflowAttributeValues = workflowAttributeValues
-                }.Send();
+                    transaction.WorkflowAttributeValues = workflowAttributeValues;
+                }
+                transaction.InitiatorPersonAliasId = initiatorPersonAliasId;
+
+                Rock.Transactions.RockQueue.TransactionQueue.Enqueue( transaction );
             }
         }
 
@@ -521,19 +565,33 @@ namespace Rock.Data
         /// </summary>
         /// <param name="workflowTypeId">The workflow type identifier.</param>
         /// <param name="workflowName">Name of the workflow.</param>
-        /// <param name="workflowAttributeValues">Any workflow attribute values that should be set.</param>
+        /// <param name="workflowAttributeValues">The workflow attribute values.</param>
+        [Obsolete( "Use the override that does not provide the default values instead." )]
+        [RockObsolete( "1.13" )]
         public void LaunchWorkflow( int? workflowTypeId, string workflowName = "", Dictionary<string, string> workflowAttributeValues = null )
+        {
+            LaunchWorkflow( workflowTypeId, workflowName, workflowAttributeValues, null );
+        }
+
+        /// <summary>
+        /// Creates a transaction to launch a workflow for this entity.
+        /// </summary>
+        /// <param name="workflowTypeId">The workflow type identifier.</param>
+        /// <param name="workflowName">Name of the workflow.</param>
+        /// <param name="workflowAttributeValues">Any workflow attribute values that should be set.</param>
+        /// <param name="initiatorPersonAliasId">The Initiator Person Alias Identifier.</param>
+        public void LaunchWorkflow( int? workflowTypeId, string workflowName, Dictionary<string, string> workflowAttributeValues, int? initiatorPersonAliasId )
         {
             if ( workflowTypeId.HasValue )
             {
-                new LaunchWorkflow.Message
+                var transaction = new Rock.Transactions.LaunchWorkflowTransaction<T>( workflowTypeId.Value, workflowName, Id );
+                if ( workflowAttributeValues != null )
                 {
-                    WorkflowTypeId = workflowTypeId.Value,
-                    WorkflowName = workflowName,
-                    EntityId = Id,
-                    EntityTypeId = TypeId,
-                    WorkflowAttributeValues = workflowAttributeValues
-                }.Send();
+                    transaction.WorkflowAttributeValues = workflowAttributeValues;
+                }
+                transaction.InitiatorPersonAliasId = initiatorPersonAliasId;
+
+                Rock.Transactions.RockQueue.TransactionQueue.Enqueue( transaction );
             }
         }
 
@@ -546,7 +604,7 @@ namespace Rock.Data
         /// </summary>
         /// <param name="json">A <see cref="System.String"/> containing a JSON formatted representation of the object.</param>
         /// <returns>An instance of the entity object based on the provided JSON string.</returns>
-        [System.Diagnostics.DebuggerStepThrough()] 
+        [System.Diagnostics.DebuggerStepThrough()]
         public static T FromJson( string json )
         {
             return JsonConvert.DeserializeObject( json, typeof( T ) ) as T;
@@ -584,7 +642,7 @@ namespace Rock.Data
         /// <param name="key">The key.</param>
         /// <returns></returns>
         [Obsolete("Use ContainsKey(string) instead.")]
-        [RockObsolete( "13.0" )]
+        [RockObsolete( "1.13.0" )]
         public virtual bool ContainsKey( object key )
         {
             string propertyKey = key.ToStringSafe();
@@ -602,7 +660,7 @@ namespace Rock.Data
         }
 
         /// <summary>
-        /// Creates a DotLiquid compatible dictionary that represents the current entity object. 
+        /// Creates a DotLiquid compatible dictionary that represents the current entity object.
         /// </summary>
         /// <returns>DotLiquid compatible dictionary.</returns>
         public object ToLiquid()
@@ -616,7 +674,7 @@ namespace Rock.Data
     #region KeyEntity
 
     /// <summary>
-    /// Object used for current model (context) implementation 
+    /// Object used for current model (context) implementation
     /// </summary>
     internal class KeyEntity
     {

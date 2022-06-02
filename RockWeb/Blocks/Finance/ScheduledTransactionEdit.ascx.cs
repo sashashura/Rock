@@ -19,11 +19,14 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data.Entity;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Web.UI;
 using System.Web.UI.HtmlControls;
 using System.Web.UI.WebControls;
+
 using Rock;
 using Rock.Attribute;
+using Rock.Bus.Message;
 using Rock.Data;
 using Rock.Financial;
 using Rock.Model;
@@ -126,6 +129,14 @@ achieve our mission.  We are so grateful for your commitment.
             /// The impersonator can see saved accounts
             /// </summary>
             public const string ImpersonatorCanSeeSavedAccounts = "ImpersonatorCanSeeSavedAccounts";
+        }
+
+        private static class PageParameterKey
+        {
+            [RockObsolete( "1.13.1" )]
+            [Obsolete( "Pass the GUID instead using the key ScheduledTransactionGuid.")]
+            public const string ScheduledTransactionId = "ScheduledTransactionId";
+            public const string ScheduledTransactionGuid = "ScheduledTransactionGuid";
         }
 
         #region Fields
@@ -304,7 +315,7 @@ achieve our mission.  We are so grateful for your commitment.
                     SetSavedAccounts( scheduledTransaction );
 
                     dtpStartDate.SelectedDate = scheduledTransaction.NextPaymentDate;
-                    tbSummary.Text = scheduledTransaction.Summary;
+                    tbComments.Text = scheduledTransaction.Summary;
 
                     dvpForeignCurrencyCode.SelectedDefinedValueId = scheduledTransaction.ForeignCurrencyCodeValueId;
                     dvpForeignCurrencyCode.Visible = !new RockCurrencyCodeInfo( scheduledTransaction.ForeignCurrencyCodeValueId ).IsOrganizationCurrency;
@@ -538,16 +549,10 @@ achieve our mission.  We are so grateful for your commitment.
         {
             var qryParams = new Dictionary<string, string>();
 
-            string personParam = PageParameter( "Person" );
-            if ( !string.IsNullOrWhiteSpace( personParam ) )
+            var scheduledTransactionGuid = GetScheduledTransactionGuidFromUrl();
+            if ( scheduledTransactionGuid.HasValue )
             {
-                qryParams.Add( "Person", personParam );
-            }
-
-            string txnParam = PageParameter( "ScheduledTransactionId" );
-            if ( !string.IsNullOrWhiteSpace( txnParam ) )
-            {
-                qryParams.Add( "ScheduledTransactionId", txnParam );
+                qryParams.Add( PageParameterKey.ScheduledTransactionGuid, scheduledTransactionGuid.ToString() );
             }
 
             NavigateToParentPage( qryParams );
@@ -594,74 +599,93 @@ achieve our mission.  We are so grateful for your commitment.
         #region Initialization
 
         /// <summary>
+        /// Gets the scheduled transaction Guid based on what is specified in the URL
+        /// </summary>
+        /// <param name="refresh">if set to <c>true</c> [refresh].</param>
+        /// <returns></returns>
+        private Guid? GetScheduledTransactionGuidFromUrl()
+        {
+            var financialScheduledTransactionGuid = PageParameter( PageParameterKey.ScheduledTransactionGuid ).AsGuidOrNull();
+
+#pragma warning disable CS0618
+            var financialScheduledTransactionId = PageParameter( PageParameterKey.ScheduledTransactionId ).AsIntegerOrNull();
+#pragma warning restore CS0618
+
+            if ( financialScheduledTransactionGuid.HasValue )
+            {
+                return financialScheduledTransactionGuid.Value;
+            }
+
+            if ( financialScheduledTransactionId.HasValue )
+            {
+                return new FinancialScheduledTransactionService( new RockContext() ).GetGuid( financialScheduledTransactionId.Value );
+            }
+
+            return null;
+        }
+
+        /// <summary>
         /// Gets the scheduled transaction.
         /// </summary>
         /// <param name="refresh">if set to <c>true</c> [refresh].</param>
         /// <returns></returns>
         private FinancialScheduledTransaction GetScheduledTransaction( bool refresh = false )
         {
-            Person targetPerson = null;
+            // Default target to the current person
+            Person targetPerson = CurrentPerson;
+
             using ( var rockContext = new RockContext() )
             {
-                // If impersonation is allowed, and a valid person key was used, set the target to that person
-                if ( IsImpersonationAllowed() )
+                var financialScheduledTransactionGuid = GetScheduledTransactionGuidFromUrl();
+
+                if ( !financialScheduledTransactionGuid.HasValue )
                 {
-                    string personKey = PageParameter( "Person" );
-                    if ( !string.IsNullOrWhiteSpace( personKey ) )
-                    {
-                        targetPerson = new PersonService( rockContext ).GetByUrlEncodedKey( personKey );
-                    }
+                    return null;
                 }
 
-                if ( targetPerson == null )
+                var financialScheduledTransactionService = new FinancialScheduledTransactionService( rockContext );
+                var scheduledTransactionQuery = financialScheduledTransactionService
+                    .Queryable( "AuthorizedPersonAlias.Person,ScheduledTransactionDetails,FinancialGateway,FinancialPaymentDetail.CurrencyTypeValue,FinancialPaymentDetail.CreditCardTypeValue" )
+                    .Where( t => t.Guid == financialScheduledTransactionGuid.Value );
+
+                // If the block allows impersonation then just get the scheduled transaction
+                if ( !GetAttributeValue( AttributeKey.Impersonation ).AsBoolean() )
                 {
-                    targetPerson = CurrentPerson;
+                    var personService = new PersonService( rockContext );
+
+                    var validGivingIds = new List<string> { targetPerson.GivingId };
+                    validGivingIds.AddRange( personService.GetBusinesses( targetPerson.Id ).Select( b => b.GivingId ) );
+
+                    scheduledTransactionQuery = scheduledTransactionQuery
+                        .Where( t => t.AuthorizedPersonAlias != null
+                            && t.AuthorizedPersonAlias.Person != null
+                            && validGivingIds.Contains( t.AuthorizedPersonAlias.Person.GivingId ) );
                 }
 
-                // Verify that transaction id is valid for selected person
-                if ( targetPerson != null )
+                var scheduledTransaction = scheduledTransactionQuery.FirstOrDefault();
+
+                if ( scheduledTransaction != null )
                 {
-                    int txnId = int.MinValue;
-                    if ( int.TryParse( PageParameter( "ScheduledTransactionId" ), out txnId ) )
+                    if ( scheduledTransaction.AuthorizedPersonAlias != null )
                     {
-                        var personService = new PersonService( rockContext );
-
-                        var validGivingIds = new List<string> { targetPerson.GivingId };
-                        validGivingIds.AddRange( personService.GetBusinesses( targetPerson.Id ).Select( b => b.GivingId ) );
-
-                        var service = new FinancialScheduledTransactionService( rockContext );
-                        var scheduledTransaction = service
-                            .Queryable( "AuthorizedPersonAlias.Person,ScheduledTransactionDetails,FinancialGateway,FinancialPaymentDetail.CurrencyTypeValue,FinancialPaymentDetail.CreditCardTypeValue" )
-                            .Where( t =>
-                                t.Id == txnId &&
-                                t.AuthorizedPersonAlias != null &&
-                                t.AuthorizedPersonAlias.Person != null &&
-                                validGivingIds.Contains( t.AuthorizedPersonAlias.Person.GivingId ) )
-                            .FirstOrDefault();
-
-                        if ( scheduledTransaction != null )
-                        {
-                            if ( scheduledTransaction.AuthorizedPersonAlias != null )
-                            {
-                                TargetPersonId = scheduledTransaction.AuthorizedPersonAlias.PersonId;
-                            }
-                            ScheduledTransactionId = scheduledTransaction.Id;
-
-                            if ( scheduledTransaction.FinancialGateway != null )
-                            {
-                                scheduledTransaction.FinancialGateway.LoadAttributes( rockContext );
-                            }
-
-                            if ( refresh )
-                            {
-                                string errorMessages = string.Empty;
-                                service.GetStatus( scheduledTransaction, out errorMessages );
-                                rockContext.SaveChanges();
-                            }
-
-                            return scheduledTransaction;
-                        }
+                        TargetPersonId = scheduledTransaction.AuthorizedPersonAlias.PersonId;
                     }
+
+                    ScheduledTransactionId = scheduledTransaction.Id;
+
+                    if ( scheduledTransaction.FinancialGateway != null )
+                    {
+                        scheduledTransaction.FinancialGateway.LoadAttributes( rockContext );
+                    }
+
+                    if ( refresh )
+                    {
+                        string errorMessages = string.Empty;
+                        financialScheduledTransactionService.GetStatus( scheduledTransaction, out errorMessages );
+                        rockContext.SaveChanges();
+                    }
+
+                    return scheduledTransaction;
                 }
             }
 
@@ -832,14 +856,15 @@ achieve our mission.  We are so grateful for your commitment.
                     .Select( a => new SavedAccountViewModel
                     {
                         Id = a.Id,
-                        Name = "Use " + a.Name + " (" + a.FinancialPaymentDetail.AccountNumberMasked + ")",
+                        SavedAccountName = a.Name,
+                        FinancialPaymentDetail = a.FinancialPaymentDetail,
                         GatewayPersonIdentifier = a.GatewayPersonIdentifier,
                         ReferenceNumber = a.ReferenceNumber,
                         TransactionCode = a.TransactionCode,
                         IsCard = isCard
                     } )
                     .ToList()
-                    .OrderBy( a => a.Name )
+                    .OrderBy( a => a.SavedAccountName )
                     .ToList();
 
                 rblSavedAccounts.DataSource = savedAccountViewModels;
@@ -1208,9 +1233,10 @@ achieve our mission.  We are so grateful for your commitment.
                         detail.Amount = account.Amount;
                     }
 
-                    scheduledTransaction.Summary = tbSummary.Text;
+                    scheduledTransaction.Summary = tbComments.Text;
 
                     rockContext.SaveChanges();
+                    Task.Run( () => ScheduledGiftWasModifiedMessage.PublishScheduledTransactionEvent( scheduledTransaction.Id, ScheduledGiftEventTypes.ScheduledGiftUpdated ) );
 
                     ScheduleId = scheduledTransaction.GatewayScheduleId;
                     TransactionCode = scheduledTransaction.TransactionCode;
@@ -1428,17 +1454,6 @@ achieve our mission.  We are so grateful for your commitment.
         #region Helper Methods
 
         /// <summary>
-        /// Determines whether Impersonation is allowed.
-        /// </summary>
-        /// <returns>
-        ///   <c>true</c> if [is impersonation allowed]; otherwise, <c>false</c>.
-        /// </returns>
-        private bool IsImpersonationAllowed()
-        {
-            return GetAttributeValue( AttributeKey.Impersonation ).AsBoolean();
-        }
-
-        /// <summary>
         /// Determines whether the impersonator can see saved accounts.
         /// </summary>
         /// <returns>
@@ -1481,6 +1496,7 @@ achieve our mission.  We are so grateful for your commitment.
             btnPrev.Visible = page == 2;
             btnNext.Visible = page < 3;
             btnNext.Text = page > 1 ? "Finish" : "Next";
+            btnCancel.Text = page == 3 ? "Back" : "Cancel";
 
             hfCurrentPage.Value = page.ToString();
         }
@@ -1546,7 +1562,7 @@ achieve our mission.  We are so grateful for your commitment.
                     $(this).parents('div.input-group').removeClass('has-error');
                 }}
             }});
-            $('.total-amount').html(symbol + totalAmt.toFixed(decimalPlaces));
+            $('.total-amount').html(symbol + totalAmt.toLocaleString(undefined, {{ minimumFractionDigits: decimalPlaces, maximumFractionDigits: decimalPlaces }}));
             return false;
         }});
 
@@ -1652,7 +1668,7 @@ achieve our mission.  We are so grateful for your commitment.
 
                 foreach ( var workflowType in workflowTypes )
                 {
-                    schedule.LaunchWorkflow( workflowType.Guid );
+                    schedule.LaunchWorkflow( workflowType.Guid, string.Empty, null, null );
                 }
             }
         }
@@ -1702,9 +1718,30 @@ achieve our mission.  We are so grateful for your commitment.
             public int Id { get; set; }
 
             /// <summary>
-            /// Name
+            /// Gets the display name.
             /// </summary>
-            public string Name { get; set; }
+            /// <value>
+            /// The display name.
+            /// </value>
+            public string DisplayName
+            {
+                get
+                {
+                    if ( FinancialPaymentDetail == null )
+                    {
+                        return null;
+                    }
+
+                    if ( FinancialPaymentDetail.ExpirationDate.IsNotNullOrWhiteSpace() )
+                    {
+                        return $"Use {SavedAccountName} ( {FinancialPaymentDetail.AccountNumberMasked} Expires {FinancialPaymentDetail.ExpirationDate})";
+                    }
+                    else
+                    {
+                        return $"Use {SavedAccountName} ( {FinancialPaymentDetail.AccountNumberMasked} )";
+                    }
+                }
+            }
 
             /// <summary>
             /// Reference Number
@@ -1717,6 +1754,14 @@ achieve our mission.  We are so grateful for your commitment.
             public string TransactionCode { get; set; }
 
             /// <summary>
+            /// Gets or sets the name of the saved account.
+            /// </summary>
+            /// <value>
+            /// The name of the saved account.
+            /// </value>
+            public string SavedAccountName { get; internal set; }
+
+            /// <summary>
             /// Gateway Person Identifier
             /// </summary>
             public string GatewayPersonIdentifier { get; set; }
@@ -1725,6 +1770,14 @@ achieve our mission.  We are so grateful for your commitment.
             /// Is this a card?
             /// </summary>
             public bool IsCard { get; set; }
+
+            /// <summary>
+            /// Gets or sets the financial payment detail.
+            /// </summary>
+            /// <value>
+            /// The financial payment detail.
+            /// </value>
+            public FinancialPaymentDetail FinancialPaymentDetail { get; internal set; }
         }
 
         #endregion

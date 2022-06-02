@@ -35,7 +35,16 @@ namespace Rock.Client
         public int Id { get; set; }
 
         /// <summary />
+        public int? ActionFormSectionId { get; set; }
+
+        /// <summary />
         public int AttributeId { get; set; }
+
+        /// <summary />
+        public int? ColumnSize { get; set; }
+
+        /// <summary />
+        public string FieldVisibilityRulesJSON { get; set; }
 
         /// <summary />
         public Guid? ForeignGuid { get; set; }
@@ -105,7 +114,10 @@ namespace Rock.Client
         public void CopyPropertiesFrom( WorkflowActionFormAttribute source )
         {
             this.Id = source.Id;
+            this.ActionFormSectionId = source.ActionFormSectionId;
             this.AttributeId = source.AttributeId;
+            this.ColumnSize = source.ColumnSize;
+            this.FieldVisibilityRulesJSON = source.FieldVisibilityRulesJSON;
             this.ForeignGuid = source.ForeignGuid;
             this.ForeignKey = source.ForeignKey;
             this.HideLabel = source.HideLabel;

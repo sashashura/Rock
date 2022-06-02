@@ -42,6 +42,12 @@ namespace Rock.SystemGuid
         public const string FINANCE_PLEDGE_CONFIRMATION = "73E8D035-61BB-495A-A87F-39007B98834C";
 
         /// <summary>
+        /// The financial transaction alert notification summary.
+        /// <see cref="Rock.Model.FinancialTransactionAlertType.AlertSummaryNotificationGroupId"/>
+        /// </summary>
+        public const string FINANCIAL_TRANSACTION_ALERT_NOTIFICATION_SUMMARY = "FDF323F5-31FA-4F98-9B4C-A8C26A10840E";
+
+        /// <summary>
         /// Gets the template guid for group attendance reminder
         /// </summary>
         public const string GROUP_ATTENDANCE_REMINDER = "ED567FDE-A3B4-4827-899D-C2740DF3E5DA";
@@ -100,6 +106,11 @@ namespace Rock.SystemGuid
         /// Gets the template guid for digital signature invite
         /// </summary>
         public const string DIGITAL_SIGNATURE_INVITE = "791F2DE4-5A59-60AE-4F2F-FDC3EBC4FFA9";
+
+        /// <summary>
+        /// Gets the template guid for the system Electronic Signature Receipt
+        /// </summary>
+        public const string SYSTEM_ELECTRONIC_SIGNATURE_RECEIPT = "224A0E80-069B-463C-8187-E13682F8A550";
 
         /// <summary>
         /// Gets the template guid for a notewatch notification

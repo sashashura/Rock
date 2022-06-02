@@ -20,14 +20,18 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
 using System.Web.Http;
+using System.Web.Http.Controllers;
 using System.Web.Http.ExceptionHandling;
 using System.Web.Http.OData.Builder;
 using System.Web.Http.OData.Extensions;
 using System.Web.Http.OData.Routing;
 using System.Web.Http.OData.Routing.Conventions;
+using System.Web.Http.ValueProviders;
 using System.Web.Routing;
 
 using Rock;
+using Rock.Rest.Utility;
+using Rock.Rest.Utility.ValueProviders;
 using Rock.Tasks;
 
 namespace Rock.Rest
@@ -50,11 +54,13 @@ namespace Rock.Rest
             config.Services.Replace( typeof( IExceptionHandler ), new RockApiExceptionHandler() );
             config.Services.Replace( typeof( System.Web.Http.Dispatcher.IAssembliesResolver ), new RockAssembliesResolver() );
 
-            config.Formatters.Insert( 0, new Rock.Utility.RockJsonMediaTypeFormatter() );
+            // Configure the API to handle differences between v1 and v2 endpoints.
+            config.Services.Replace( typeof( IActionValueBinder ), new RockActionValueBinder() );
+            config.Services.Clear( typeof( ValueProviderFactory ) );
+            config.Services.Add( typeof( ValueProviderFactory ), new RockQueryStringValueProviderFactory() );
+            config.Services.Add( typeof( ValueProviderFactory ), new RockRouteDataValueProviderFactory() );
 
-            // Change DateTimeZoneHandling to Unspecified instead of the default of RoundTripKind since Rock doesn't store dates in a timezone aware format
-            // So, since Rock doesn't do TimeZones, we don't want Transmission of DateTimes to specify TimeZone either.
-            config.Formatters.JsonFormatter.SerializerSettings.DateTimeZoneHandling = Newtonsoft.Json.DateTimeZoneHandling.Unspecified;
+            config.Formatters.Insert( 0, new Utility.ApiPickerJsonMediaTypeFormatter() );
 
             // register Swagger and its routes first
             Rock.Rest.Swagger.SwaggerConfig.Register( config );
@@ -156,28 +162,6 @@ namespace Rock.Rest
 
             // finds all [Route] attributes on REST controllers and creates the routes
             config.MapHttpAttributeRoutes();
-
-            // Add any custom api routes
-            // OBSOLETE - this foreach block is targeted for removal for v9
-            // disable obsolete warning since we still have to support IHasCustomRoutes in plugins but don't want to see a compile warning
-#pragma warning disable 612, 618 
-            foreach ( var type in Rock.Reflection.FindTypes(
-                typeof( Rock.Rest.IHasCustomRoutes ) ) )
-            {
-                try
-                {
-                    var controller = ( Rock.Rest.IHasCustomRoutes ) Activator.CreateInstance( type.Value );
-                    if ( controller != null )
-                    {
-                        controller.AddRoutes( RouteTable.Routes );
-                    }
-                }
-                catch
-                {
-                    // ignore, and skip adding routes if the controller raises an exception
-                }
-            }
-#pragma warning restore 612, 618
 
             //// Add Default API Service routes
             //// Instead of being able to use one default route that gets action from http method, have to
@@ -350,7 +334,8 @@ namespace Rock.Rest
 
             config.Routes.MapODataServiceRoute( "api", "api", builder.GetEdmModel(), pathHandler: new DefaultODataPathHandler(), routingConventions: conventions );
 
-            new RegisterRestControllers.Message().Send();
+
+            new Rock.Transactions.RegisterControllersTransaction().Enqueue();
         }
     }
 }

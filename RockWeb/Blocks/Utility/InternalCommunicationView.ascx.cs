@@ -231,17 +231,34 @@ namespace RockWeb.Blocks.Utility
             }
             else
             {
+                var channel = ContentChannelCache.Get( contentChannelGuid.Value );
 
                 // Get latest content channel items, get two so we know if a previous one exists for paging
-                var contentChannelItems = new ContentChannelItemService( rockContext ).Queryable().AsNoTracking()
-                                            .Where( i => i.ContentChannel.Guid == contentChannelGuid
-                                                            && i.Status == ContentChannelItemStatus.Approved )
-                                            .OrderByDescending( i => i.StartDateTime )
-                                            .Take( 2 )
-                                            .Skip( _currentPage )
-                                            .ToList();
+                var contentChannelItemsQry = new ContentChannelItemService( rockContext )
+                    .Queryable()
+                    .AsNoTracking()
+                    .Where( i => i.ContentChannel.Guid == contentChannelGuid
+                        && i.Status == ContentChannelItemStatus.Approved
+                        && i.StartDateTime <= RockDateTime.Now );
 
-                if ( contentChannelItems.IsNull() || contentChannelItems.Count == 0 )
+                if ( channel.ContentChannelType.DateRangeType == ContentChannelDateType.DateRange )
+                {
+                    if ( channel.ContentChannelType.IncludeTime )
+                    {
+                        contentChannelItemsQry = contentChannelItemsQry.Where( c => !c.ExpireDateTime.HasValue || c.ExpireDateTime >= RockDateTime.Now );
+                    }
+                    else
+                    {
+                        contentChannelItemsQry = contentChannelItemsQry.Where( c => !c.ExpireDateTime.HasValue || c.ExpireDateTime > RockDateTime.Today );
+                    }
+                }
+
+                var contentChannelItems = contentChannelItemsQry.OrderByDescending( i => i.StartDateTime )
+                    .Take( 2 )
+                    .Skip( _currentPage )
+                    .ToList();
+
+                if ( contentChannelItems == null || contentChannelItems.Count == 0 )
                 {
                     nbMessages.Text = "It appears that there are no active communications to display for this content channel.";
                     nbMessages.NotificationBoxType = NotificationBoxType.Info;

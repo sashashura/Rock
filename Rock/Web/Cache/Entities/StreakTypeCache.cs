@@ -16,10 +16,11 @@
 //
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Data.Entity;
 using System.Linq;
 using System.Runtime.Serialization;
-
+using Newtonsoft.Json;
 using Rock.Data;
 using Rock.Model;
 
@@ -108,6 +109,49 @@ namespace Rock.Web.Cache
         public bool IsActive { get; private set; }
 
         /// <summary>
+        /// Gets or sets the structure settings JSON.
+        /// </summary>
+        /// <value>The structure settings JSON.</value>
+        [DataMember]
+        public string StructureSettingsJSON
+        {
+            get
+            {
+                return StructureSettings?.ToJson();
+            }
+
+            set
+            {
+                StructureSettings = value.FromJsonOrNull<Rock.Model.Engagement.StreakType.StreakTypeSettings>() ?? new Rock.Model.Engagement.StreakType.StreakTypeSettings();
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the structure settings.
+        /// </summary>
+        /// <value>The structure settings.</value>
+        [NotMapped]
+        public Rock.Model.Engagement.StreakType.StreakTypeSettings StructureSettings { get; set; } = new Rock.Model.Engagement.StreakType.StreakTypeSettings();
+
+        /// <summary>
+        /// Gets a value indicating whether this streak type is releated to interactions.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this instance related to interactions; otherwise, <c>false</c>.
+        /// </value>
+        public bool IsInteractionRelated
+        {
+            get
+            {
+                return (
+                        StructureType == StreakStructureType.InteractionChannel
+                        || StructureType == StreakStructureType.InteractionComponent
+                        || StructureType == StreakStructureType.InteractionMedium
+                       );
+            }
+        }
+
+        /// <summary>
         /// Gets the Streak Type Exclusions
         /// </summary>
         /// <value>
@@ -191,6 +235,7 @@ namespace Rock.Web.Cache
             StartDate = sourceModel.StartDate;
             OccurrenceMap = sourceModel.OccurrenceMap;
             FirstDayOfWeek = sourceModel.FirstDayOfWeek;
+            StructureSettingsJSON = sourceModel.StructureSettingsJSON;
 
             _streakTypeExclusionIds = null;
         }

@@ -21,6 +21,8 @@ using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Rock.Data;
 using Rock.Lava;
+using Rock.Lava.DotLiquid;
+using Rock.Lava.RockLiquid;
 using Rock.Model;
 using Rock.Tests.Shared;
 
@@ -44,7 +46,7 @@ namespace Rock.Tests.Integration.Lava
 
             TestHelper.ExecuteForActiveEngines( ( engine ) =>
             {
-                var testEngine = LavaEngine.NewEngineInstance( engine.EngineType, options );
+                var testEngine = LavaService.NewEngineInstance( engine.GetType(), options );
 
                 var context = testEngine.NewRenderContext();
 
@@ -62,6 +64,7 @@ namespace Rock.Tests.Integration.Lava
         /// Verify that templates with varying amounts of whitespace are correctly cached and return the expected output.
         /// </summary>
         [TestMethod]
+        [Ignore("This test fails intermittently, because Rock cache services rely on a non-deterministic command-queueing mechanism that does not always fire in a timely fashion.")]
         public void WebsiteLavaTemplateCacheService_WhitespaceTemplatesWithDifferentLengths_AreCachedIndependently()
         {
             var options = new LavaEngineConfigurationOptions();
@@ -72,16 +75,23 @@ namespace Rock.Tests.Integration.Lava
 
             TestHelper.ExecuteForActiveEngines( ( defaultEngineInstance ) =>
             {
+                if ( defaultEngineInstance.GetType() == typeof ( RockLiquidEngine ) )
+                {
+                    Debug.Write( "Template caching cannot be tested by this methodology for the RockLiquid implementation." );
+                    return;
+                }
+
                 // Remove all existing items from the cache.
                 cacheService.ClearCache();
 
-                var engine = LavaEngine.NewEngineInstance( defaultEngineInstance.EngineType, options );
+                var engine = LavaService.NewEngineInstance( defaultEngineInstance.GetType(), options );
 
                 // Process a zero-length whitespace template - this should be cached separately.
                 var input0 = string.Empty;
+                var key0 = cacheService.GetCacheKeyForTemplate( input0 );
 
                 // Verify that the template does not initially exist in the cache.
-                var exists = cacheService.ContainsTemplate( input0 );
+                var exists = cacheService.ContainsKey( key0 );
 
                 Assert.IsFalse( exists, "String-0 Template found in cache unexpectedly." );
 
@@ -89,23 +99,26 @@ namespace Rock.Tests.Integration.Lava
                 var output0 = engine.RenderTemplate( input0 );
 
                 // Verify that the template now exists in the cache.
-                exists = cacheService.ContainsTemplate( input0 );
+                exists = cacheService.ContainsKey( key0 );
 
                 Assert.IsTrue( exists, "String-0 Template not found in cache." );
 
                 // Render a whitespace template of a different length - this should be cached separately from the first template.
                 // If not, the caching mechanism would cause some whitespace to be rendered incorrectly.
                 var input1 = new string( ' ', 1 );
+                var key1 = engine.TemplateCacheService.GetCacheKeyForTemplate( input1 );
 
                 var output1 = engine.RenderTemplate( input1 );
 
                 // Verify that the 100-character whitespace template now exists in the cache.
-                exists = cacheService.ContainsTemplate( input1 );
+                exists = cacheService.ContainsKey( key1 );
 
                 Assert.IsTrue( exists, "String-1 Template not found in cache." );
 
                 // Verify that a whitespace template of some other length is not equated with the whitespace templates we have specifically added.
-                exists = cacheService.ContainsTemplate( new string( ' ', 9 ) );
+                var keyX = engine.TemplateCacheService.GetCacheKeyForTemplate( new string( ' ', 9 ) );
+
+                exists = cacheService.ContainsKey( keyX );
 
                 Assert.IsFalse( exists, "String-9 Template found in cache unexpectedly." );
             } );
@@ -125,13 +138,14 @@ namespace Rock.Tests.Integration.Lava
 
             TestHelper.ExecuteForActiveEngines( ( defaultEngineInstance ) =>
             {
-                if ( defaultEngineInstance.EngineType == LavaEngineTypeSpecifier.DotLiquid )
+                if ( defaultEngineInstance.GetType() == typeof( DotLiquidEngine )
+                     || defaultEngineInstance.GetType() == typeof( RockLiquidEngine ) )
                 {
-                    Debug.Write( "Shortcode caching is not currently implemented for DotLiquid." );
+                    Debug.Write( "Shortcode caching is not currently implemented for RockLiquid/DotLiquid." );
                     return;
                 }
 
-                var engine = LavaEngine.NewEngineInstance( defaultEngineInstance.EngineType, options );
+                var engine = LavaService.NewEngineInstance( defaultEngineInstance.GetType(), options );
 
                 var shortcodeProvider = new TestLavaDynamicShortcodeProvider();
 
@@ -168,9 +182,9 @@ namespace Rock.Tests.Integration.Lava
 
                 shortcodeProvider.ClearCache();
 
-                LavaEngine.CurrentEngine = engine;
+                LavaService.SetCurrentEngine( engine );
 
-                TestHelper.AssertTemplateOutput( engine, "Hello!", "{[ testshortcode1 ]}" );
+                TestHelper.AssertTemplateOutput( engine, "Hello!", "{[ TestShortcode1 ]}" );
 
                 lavaShortcode.Markup = "Goodbye!";
 
@@ -180,7 +194,7 @@ namespace Rock.Tests.Integration.Lava
 
                 engine.ClearTemplateCache();
 
-                TestHelper.AssertTemplateOutput( engine, "Goodbye!", "{[ testshortcode1 ]}" );
+                TestHelper.AssertTemplateOutput( engine, "Goodbye!", "{[ TestShortcode1 ]}" );
             } );
         }
 

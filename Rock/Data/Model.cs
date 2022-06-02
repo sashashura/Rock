@@ -586,7 +586,7 @@ namespace Rock.Data
         /// <param name="key">The key.</param>
         /// <returns></returns>
         [Obsolete("Use ContainsKey(string) instead.")]
-        [RockObsolete("13.0")]
+        [RockObsolete( "1.13.0" )]
         public override bool ContainsKey( object key )
         {
             return ContainsKey( key.ToStringSafe() );
@@ -788,10 +788,27 @@ namespace Rock.Data
         }
 
         /// <summary>
-        /// Get any alternate Ids that should be used when loading attribute value for this entity.
+        /// Get any alternate Ids that should be used when loading attribute values for this entity.
         /// </summary>
         /// <returns>A list of any alternate entity Ids that should be used when loading attribute values.</returns>
+        [Obsolete( "Use GetAlternateEntityIdsByType instead." )]
+        [RockObsolete( "1.13" )]
         public virtual List<int> GetAlternateEntityIds( Rock.Data.RockContext rockContext )
+        {
+            var entitiesByType = GetAlternateEntityIdsByType( rockContext );
+
+            if ( entitiesByType != null && entitiesByType.Any() )
+            {
+                return entitiesByType[0];
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Get any alternate Ids that should be used when loading attribute values for this entity.
+        /// </summary>
+        /// <returns>A list of any alternate entity Ids that should be used when loading attribute values, grouped by entity type Id.</returns>
+        public virtual Dictionary<int, List<int>> GetAlternateEntityIdsByType( RockContext rockContext )
         {
             return null;
         }

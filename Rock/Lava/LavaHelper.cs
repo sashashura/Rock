@@ -33,7 +33,7 @@ using UAParser;
 namespace Rock.Lava
 {
     /// <summary>
-    /// 
+    ///
     /// </summary>
     public static class LavaHelper
     {
@@ -45,6 +45,27 @@ namespace Rock.Lava
         }
 
         #endregion
+
+        /// <summary>
+        /// Gets the current data context from the specified lava context or returns a new data context if either context does not exist.
+        /// </summary>
+        /// <param name="context">The context.</param>
+        /// <returns></returns>
+        public static RockContext GetRockContextFromLavaContext( ILavaRenderContext context )
+        {
+            var rockContext = context?.GetInternalField( "rock_context", null ) as RockContext;
+
+            if ( rockContext == null )
+            {
+                rockContext = new RockContext();
+                if ( context != null )
+                {
+                    context.SetInternalField( "rock_context", rockContext );
+                }
+            }
+
+            return rockContext;
+        }
 
         /// <summary>
         /// Gets the common merge fields for Lava operations. By default it'll include CurrentPerson, Context, PageParameter, and Campuses
@@ -94,19 +115,7 @@ namespace Rock.Lava
 
             if ( options.GetPageContext && rockPage != null )
             {
-                var contextObjects = new Dictionary<string, object>();
-                foreach ( var contextEntityType in rockPage.GetContextEntityTypes() )
-                {
-                    var contextEntity = rockPage.GetCurrentContext( contextEntityType );
-                    if ( contextEntity != null && IsLavaDataObject( contextEntity ) )
-                    {
-                        var type = Type.GetType( contextEntityType.AssemblyName ?? contextEntityType.Name );
-                        if ( type != null )
-                        {
-                            contextObjects.Add( type.Name, contextEntity );
-                        }
-                    }
-                }
+                var contextObjects = rockPage.GetContextEntities();
 
                 if ( contextObjects.Any() )
                 {
@@ -180,7 +189,7 @@ namespace Rock.Lava
 
             try
             {
-                if ( LavaEngine.CurrentEngine.EngineType == LavaEngineTypeSpecifier.RockLiquid )
+                if ( LavaService.RockLiquidIsEnabled )
                 {
                     /*
                         7/6/2020 - JH
@@ -336,7 +345,7 @@ namespace Rock.Lava
         /// </param>
         public static void ParseCommandMarkup( string markup, ILavaRenderContext context, Dictionary<string, string> parms )
         {
-            if ( markup.IsNull() )
+            if ( markup == null )
             {
                 return;
             }
@@ -409,7 +418,7 @@ namespace Rock.Lava
                 return false;
             }
 
-            if ( LavaEngine.CurrentEngine.EngineType == LavaEngineTypeSpecifier.RockLiquid )
+            if ( LavaService.RockLiquidIsEnabled )
             {
                 return obj != null && obj is Rock.Lava.ILiquidizable;
             }
@@ -429,23 +438,24 @@ namespace Rock.Lava
         private static string LavaTokenLineComment = @"//-";
 
         private static Regex _lavaCommentMatchGroupsRegex = null;
+        private static Regex _lavaLineCommentRegex = null;
 
         /// <summary>
         /// Build the regular expression that will be used to remove Lava-style comments from the template.
         /// </summary>
         private static void InitializeLavaCommentsRegex()
         {
-            const string stringElement = @"(('|"")[^'""]*('|""))+";
+            const string doubleQuotedString = @"(""[^""]*"")+";
+            const string singleQuotedString = @"('[^']*')+";
 
-            string lineCommentElement = LavaTokenLineComment + @"(.*?)\r?\n";
-
-            var blockCommentElement = Regex.Escape( LavaTokenBlockCommentStart ) + @"(.*?)" + Regex.Escape( LavaTokenBlockCommentEnd );
-
+            var lineCommentElement = LavaTokenLineComment + @"(.*?)\r?\n";
+            var blockCommentElement = @"(?<!/)" + Regex.Escape( LavaTokenBlockCommentStart ) + @"(.*?)" + Regex.Escape( LavaTokenBlockCommentEnd ) + @"( *)([\r\n]*)";
             var rawBlock = @"\{%\sraw\s%\}(.*?)\{%\sendraw\s%\}";
 
-            var templateElementMatchGroups = rawBlock + "|" + blockCommentElement + "|" + lineCommentElement + "|" + stringElement;
+            var templateElementMatchGroups = rawBlock + "|" + singleQuotedString + "|" + doubleQuotedString + "|" + blockCommentElement + "|" + lineCommentElement;
 
             // Create and compile the Regex, because it will be used very frequently.
+            _lavaLineCommentRegex = new Regex( lineCommentElement, RegexOptions.Compiled | RegexOptions.Singleline );
             _lavaCommentMatchGroupsRegex = new Regex( templateElementMatchGroups, RegexOptions.Compiled | RegexOptions.Singleline );
         }
 
@@ -453,12 +463,12 @@ namespace Rock.Lava
         /// Remove Lava-style comments from a Lava template.
         /// Lava comments provide a shorthand alternative to the Liquid {% comment %}{% endcomment %} block,
         /// and can can be in one of the following forms:
-        /// 
+        ///
         /// /- This Lava block comment style...
         ///    ... can span multiple lines -/
         ///
         /// //- This Lava line comment style can be appended to any single line.
-        /// 
+        ///
         /// </summary>
         /// <param name="lavaTemplate"></param>
         /// <returns></returns>
@@ -466,23 +476,135 @@ namespace Rock.Lava
         {
             if ( string.IsNullOrEmpty( lavaTemplate ) )
             {
-               return string.Empty;
+                return string.Empty;
             }
 
-            // Remove comments from the content.
+            // Remove comments from the lava template text.
+            // This is achieved using a RegEx replace operation as follows:
+            // 1. Identify and ignore content enclosed in a "{% raw %}" tag.
+            // 2. Identify any text enclosed in quotes (single or double).
+            //    If the quoted text spans multiple lines and contains a single-line comment, remove the comment.
+            // 4. Identify and remove any short-form comments not enclosed in quotes.
+            // 5. Leave all other text unchanged.
             var lavaWithoutComments = _lavaCommentMatchGroupsRegex.Replace( lavaTemplate,
-                me => {
-                    // If the match group is a line comment, retain the end-of-line marker.
-                    if ( me.Value.StartsWith( LavaTokenBlockCommentStart ) || me.Value.StartsWith( LavaTokenLineComment ) )
+                me =>
+                {
+                    if ( me.Value.StartsWith( LavaTokenLineComment ) )
                     {
-                        return me.Value.StartsWith( LavaTokenLineComment ) ? Environment.NewLine : string.Empty;
+                        // If the match is a line comment, retain the end-of-line marker.
+                        return Environment.NewLine;
+                    }
+                    else if ( me.Value.StartsWith( LavaTokenBlockCommentStart ) )
+                    {
+                        return string.Empty;
+                    }
+                    else if ( me.Value.StartsWith( "'" ) || me.Value.StartsWith( "\"" ) )
+                    {
+                        // If the match is a quoted string, remove any single-line comments.
+                        // This may cause unexpected behavior in some literal text, but it ensures that
+                        // these comments are never unintentionally exposed as output.
+                        // (refer https://github.com/SparkDevNetwork/Rock/issues/4975)
+                        return _lavaLineCommentRegex.Replace( me.Value, Environment.NewLine );
                     }
 
-                    // Keep the literal strings
+                    // If the match group is not a comment, return a literal string.
                     return me.Value;
                 } );
 
             return lavaWithoutComments;
+        }
+
+        /// <summary>
+        /// Indicates if the target string contains any Lava-specific comment elements.
+        /// Liquid {% comment %} tags are not classified as Lava-specific comment syntax, and
+        /// comments contained in quoted strings and {% raw %} tags are ignored.
+        /// </summary>
+        /// <param name="content">The content.</param>
+        /// <returns></returns>
+        public static bool ContainsLavaComments( string content )
+        {
+            if ( string.IsNullOrEmpty( content ) )
+            {
+                return false;
+            }
+
+            int searchStartIndex = 0;
+            Match match = null;
+
+            while ( match == null || match.Success )
+            {
+                match = _lavaCommentMatchGroupsRegex.Match( content, searchStartIndex );
+
+                if ( match.Value.StartsWith( LavaTokenBlockCommentStart ) || match.Value.StartsWith( LavaTokenLineComment ) )
+                {
+                    return true;
+                }
+
+                searchStartIndex = match.Index + match.Length;
+            }
+
+            return false;
+        }
+
+        #endregion
+
+        #region Contains
+
+        /// <summary>
+        /// Indicates if the target string contains any elements of a Lava template.
+        /// NOTE: This function may return a false positive if the target string contains anything that resembles a Lava element, perhaps contained in a string literal.
+        /// </summary>
+        /// <param name="content">The content.</param>
+        /// <returns></returns>
+        public static bool IsLavaTemplate( this string content )
+        {
+            if ( content == null )
+            {
+                return false;
+            }
+
+            // If the input string contains any Lava tags, consider it as a template.
+            if ( ContainsLavaTags( content ) )
+            {
+                return true;
+            }
+
+            // If the input string contains any Lava-style comments, consider it as a template.
+            if ( ContainsLavaComments( content ) )
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Compiled RegEx for detecting if a string has Lava tags
+        /// regex from some ideas in
+        ///  http://stackoverflow.com/a/16538131/1755417
+        ///  http://stackoverflow.com/a/25776530/1755417
+        /// </summary>
+        private static Regex _hasLavaTags = new Regex( @"(?<=\{).+(?<=\})", RegexOptions.Compiled );
+
+        /// <summary>
+        /// Determines whether a string potentially contains Lava tags.
+        /// NOTE: Might return true even though it doesn't really have merge fields, but something like looks like it. For example '{56408602-5E41-4D66-98C7-BD361CD93AED}'
+        /// </summary>
+        /// <param name="content">The content.</param>
+        /// <returns></returns>
+        public static bool ContainsLavaTags( this string content )
+        {
+            if ( content == null )
+            {
+                return false;
+            }
+
+            if ( !_hasLavaTags.IsMatch( content ) )
+            {
+                return false;
+            }
+
+            return true;
         }
 
         #endregion
@@ -569,7 +691,7 @@ namespace Rock.Lava
         /// </param>
         public static void ParseCommandMarkup( string markup, Context context, Dictionary<string, string> parms )
         {
-            if ( markup.IsNull() )
+            if ( markup == null )
             {
                 return;
             }
@@ -632,6 +754,62 @@ namespace Rock.Lava
                         parms.AddOrReplace( key, value );
                     }
                 }
+            }
+        }
+
+        /// <summary>
+        /// Parse the provided Lava template using the current Lava engine, and write any errors to the exception log.
+        /// </summary>
+        /// <param name="content"></param>
+        public static void VerifyParseTemplateForCurrentEngine( string content )
+        {
+            // If RockLiquid mode is enabled, try to render uncached templates using the current Lava engine and record any errors that occur.
+            // Render the final output using the RockLiquid legacy code.
+            var engine = LavaService.GetCurrentEngine();
+
+            if ( engine == null )
+            {
+                return;
+            }
+
+            var cacheKey = engine.TemplateCacheService.GetCacheKeyForTemplate( content );
+            var isCached = engine.TemplateCacheService.ContainsKey( cacheKey );
+
+            if ( !isCached )
+            {
+                // Verify the Lava template using the current LavaEngine.
+                // Although it would improve performance, we can't execute this task on a background thread because some Lava filters require access to the current HttpRequest.
+                try
+                {
+                    var result = engine.ParseTemplate( content );
+
+                    if ( result.HasErrors )
+                    {
+                        throw result.GetLavaException();
+                    }
+                }
+                catch ( Exception ex )
+                {
+                    // Log the exception and continue, because the final render will be performed by RockLiquid.
+                    ExceptionLogService.LogException( ConvertToLavaException( ex ), System.Web.HttpContext.Current );
+                }
+            }
+        }
+
+        /// <summary>
+        /// Wrap an existing Exception if it is not a LavaException.
+        /// </summary>
+        /// <param name="ex"></param>
+        /// <returns></returns>
+        public static LavaException ConvertToLavaException( Exception ex )
+        {
+            if ( ex is LavaException lex )
+            {
+                return lex;
+            }
+            else
+            {
+                return new LavaException( "Lava Processing Error.", ex );
             }
         }
 

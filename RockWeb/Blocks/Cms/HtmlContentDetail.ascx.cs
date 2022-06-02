@@ -136,6 +136,13 @@ namespace RockWeb.Blocks.Cms
         Order = 11,
         Key = AttributeKey.IsSecondaryBlock )]
 
+    [BooleanField(
+        "Validate Markup",
+        Description = "If enabled the HTML markup will be validated to ensure there are no mis-matched tags.",
+        DefaultBooleanValue = true,
+        Order = 11,
+        Key = AttributeKey.ValidateMarkup )]
+
     [ContextAware]
     #endregion Block Attributes
     public partial class HtmlContentDetail : RockBlockCustomSettings, ISecondaryBlock
@@ -157,6 +164,7 @@ namespace RockWeb.Blocks.Cms
             public const string RequireApproval = "RequireApproval";
             public const string CacheTags = "CacheTags";
             public const string IsSecondaryBlock = "IsSecondaryBlock";
+            public const string ValidateMarkup = "ValidateMarkup";
         }
 
         #endregion Attribute Keys
@@ -320,22 +328,25 @@ namespace RockWeb.Blocks.Cms
             // NOTE: This is a limited check that will only warn of invalid HTML the first
             // time a user clicks the save button. Any errors encountered on the second runthrough
             // are assumed to be intentional.
-            HtmlDocument doc = new HtmlDocument();
-            doc.LoadHtml( newContent );
-
-            if ( doc.ParseErrors.Count() > 0 && !nbInvalidHtml.Visible )
+            if ( GetAttributeValue( AttributeKey.ValidateMarkup ).AsBoolean() )
             {
-                var reasons = doc.ParseErrors.Select( r => r.Reason ).ToList();
-                StringBuilder sb = new StringBuilder();
-                sb.AppendLine( "Warning: The HTML has the following errors:<ul>" );
-                foreach ( var reason in reasons )
+                HtmlDocument doc = new HtmlDocument();
+                doc.LoadHtml( newContent );
+
+                if ( doc.ParseErrors.Count() > 0 && !nbInvalidHtml.Visible )
                 {
-                    sb.AppendLine( String.Format( "<li>{0}</li>", reason.EncodeHtml() ) );
+                    var reasons = doc.ParseErrors.Select( r => r.Reason ).ToList();
+                    StringBuilder sb = new StringBuilder();
+                    sb.AppendLine( "Warning: The HTML has the following errors:<ul>" );
+                    foreach ( var reason in reasons )
+                    {
+                        sb.AppendLine( String.Format( "<li>{0}</li>", reason.EncodeHtml() ) );
+                    }
+                    sb.AppendLine( "</ul> <br/> If you wish to save anyway, click the save button again." );
+                    nbInvalidHtml.Text = sb.ToString();
+                    nbInvalidHtml.Visible = true;
+                    return;
                 }
-                sb.AppendLine( "</ul> <br/> If you wish to save anyway, click the save button again." );
-                nbInvalidHtml.Text = sb.ToString();
-                nbInvalidHtml.Visible = true;
-                return;
             }
 
             //// create a new record only in the following situations:
@@ -802,7 +813,7 @@ namespace RockWeb.Blocks.Cms
 
                     if ( contentHtml != null )
                     {
-                        if ( contentHtml.HasMergeFields() )
+                        if ( LavaHelper.IsLavaTemplate( contentHtml ) )
                         {
                             var mergeFields = Rock.Lava.LavaHelper.GetCommonMergeFields( this.RockPage, this.CurrentPerson );
                             mergeFields.Add( "CurrentPage", this.PageCache );
@@ -869,7 +880,7 @@ namespace RockWeb.Blocks.Cms
                     query string. Updated it to also consider the context variable if one exists and
                     the query string did not contain the configured context paramater. This was added
                     to allow having different content for each context object. The specific use case
-                    is when used in conjection with the campus context switcher. This change will allow
+                    is when used in conjunction with the campus context switcher. This change will allow
                     having separate content per campus (without any Lava case statements).  
                 */
                 var entityId = PageParameter( contextParameter );

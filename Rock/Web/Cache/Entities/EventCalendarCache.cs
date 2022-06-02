@@ -30,22 +30,6 @@ namespace Rock.Web.Cache
     [DataContract]
     public class EventCalendarCache : ModelCache<EventCalendarCache, EventCalendar>
     {
-        #region Static Methods
-
-        /// <summary>
-        /// Gets the cache key for the selected event calendar id.
-        /// </summary>
-        /// <param name="id">The event calendar id.</param>
-        /// <returns></returns>
-        [RockObsolete( "1.8" )]
-        [Obsolete("No longer needed", true )]
-        public static string CacheKey( int id )
-        {
-            return string.Format( "Rock:EventCalendar:{0}", id );
-        }
-
-        #endregion
-
         #region Properties
 
         /// <summary>
@@ -93,6 +77,15 @@ namespace Rock.Web.Cache
         [DataMember]
         public string IconCssClass { get; private set; }
 
+        /// <summary>
+        /// Gets a value indicating whether this instance is index enabled.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this instance is index enabled; otherwise, <c>false</c>.
+        /// </value>
+        [DataMember]
+        public bool IsIndexEnabled { get; private set; }
+
         #endregion
 
         #region Public Methods
@@ -112,6 +105,7 @@ namespace Rock.Web.Cache
             IconCssClass = eventCalendar.IconCssClass;
             IsActive = eventCalendar.IsActive;
             Name = eventCalendar.Name;
+            IsIndexEnabled = eventCalendar.IsIndexEnabled;
         }
 
         /// <summary>

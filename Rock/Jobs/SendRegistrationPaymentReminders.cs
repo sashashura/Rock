@@ -116,12 +116,14 @@ namespace Rock.Jobs
                             emailMessage.AdditionalMergeFields = mergeObjects;
                             emailMessage.AddRecipient( registration.GetConfirmationRecipient( mergeObjects ) );
                             emailMessage.FromEmail = registration.RegistrationInstance.RegistrationTemplate.PaymentReminderFromEmail;
-                            emailMessage.FromName = registration.RegistrationInstance.RegistrationTemplate.PaymentReminderSubject;
-                            emailMessage.Subject = registration.RegistrationInstance.RegistrationTemplate.PaymentReminderFromName;
+                            emailMessage.FromName = registration.RegistrationInstance.RegistrationTemplate.PaymentReminderFromName;
+                            emailMessage.Subject = registration.RegistrationInstance.RegistrationTemplate.PaymentReminderSubject;
                             emailMessage.Message = registration.RegistrationInstance.RegistrationTemplate.PaymentReminderEmailTemplate;
                             emailMessage.AppRoot = publicAppRoot;
+
                             var emailErrors = new List<string>();
-                            emailMessage.Send(out errors);
+                            emailMessage.Send(out emailErrors);
+                            errors.AddRange( emailErrors );
 
                             registration.LastPaymentReminderDateTime = RockDateTime.Now;
                             rockContext.SaveChanges();

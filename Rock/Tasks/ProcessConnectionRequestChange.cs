@@ -19,8 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Data.Entity;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+
 using Rock.Data;
 using Rock.Model;
 using Rock.Web.Cache;
@@ -89,7 +88,7 @@ namespace Rock.Tasks
                         {
                             case ConnectionWorkflowTriggerType.RequestStarted:
                                 {
-                                    if ( message.State == EntityState.Added )
+                                    if ( message.State == EntityContextState.Added )
                                     {
                                         LaunchWorkflow( rockContext, connectionWorkflow, "Request Started", message );
                                     }
@@ -110,7 +109,7 @@ namespace Rock.Tasks
 
                             case ConnectionWorkflowTriggerType.RequestConnected:
                                 {
-                                    if ( message.State == EntityState.Modified &&
+                                    if ( message.State == EntityContextState.Modified &&
                                         message.PreviousConnectionState != ConnectionState.Connected &&
                                         message.ConnectionState == ConnectionState.Connected )
                                     {
@@ -122,7 +121,7 @@ namespace Rock.Tasks
 
                             case ConnectionWorkflowTriggerType.RequestTransferred:
                                 {
-                                    if ( message.State == EntityState.Modified &&
+                                    if ( message.State == EntityContextState.Modified &&
                                         !message.PreviousConnectionOpportunityId.Equals( message.ConnectionOpportunityId ) )
                                     {
                                         LaunchWorkflow( rockContext, connectionWorkflow, "Request Transferred", message );
@@ -133,7 +132,7 @@ namespace Rock.Tasks
 
                             case ConnectionWorkflowTriggerType.PlacementGroupAssigned:
                                 {
-                                    if ( message.State == EntityState.Modified &&
+                                    if ( message.State == EntityContextState.Modified &&
                                         !message.PreviousAssignedGroupId.HasValue &&
                                         message.AssignedGroupId.HasValue )
                                     {
@@ -145,7 +144,7 @@ namespace Rock.Tasks
 
                             case ConnectionWorkflowTriggerType.StatusChanged:
                                 {
-                                    if ( message.State == EntityState.Modified && QualifiersMatch( rockContext, connectionWorkflow, message.PreviousConnectionStatusId, message.ConnectionStatusId ) )
+                                    if ( message.State == EntityContextState.Modified && QualifiersMatch( rockContext, connectionWorkflow, message.PreviousConnectionStatusId, message.ConnectionStatusId ) )
                                     {
                                         LaunchWorkflow( rockContext, connectionWorkflow, "Status Changed", message );
                                     }
@@ -155,7 +154,7 @@ namespace Rock.Tasks
 
                             case ConnectionWorkflowTriggerType.StateChanged:
                                 {
-                                    if ( message.State == EntityState.Modified && QualifiersMatch( rockContext, connectionWorkflow, message.PreviousConnectionState, message.ConnectionState ) )
+                                    if ( message.State == EntityContextState.Modified && QualifiersMatch( rockContext, connectionWorkflow, message.PreviousConnectionState, message.ConnectionState ) )
                                     {
                                         LaunchWorkflow( rockContext, connectionWorkflow, "State Changed", message );
                                     }
@@ -242,7 +241,21 @@ namespace Rock.Tasks
                 {
                     connectionRequest = new ConnectionRequestService( rockContext ).Get( message.ConnectionRequestGuid.Value );
 
+                    if ( connectionRequest == null )
+                    {
+                        // If the ConnectionRequest doesn't exist anymore, exit
+                        return;
+                    }
+
                     var workflow = Rock.Model.Workflow.Activate( workflowType, name );
+
+                    if ( workflow == null )
+                    {
+                        // if no workflow was created, exit
+                        return;
+                    }
+
+                    workflow.InitiatorPersonAliasId = message.InitiatorPersonAliasId;
 
                     List<string> workflowErrors;
                     new WorkflowService( rockContext ).Process( workflow, connectionRequest, out workflowErrors );
@@ -269,7 +282,7 @@ namespace Rock.Tasks
             /// <summary>
             /// Gets or sets the state.
             /// </summary>
-            public EntityState State { get; set; }
+            public EntityContextState State { get; set; }
 
             /// <summary>
             /// Gets or sets the connection request identifier.
@@ -335,6 +348,11 @@ namespace Rock.Tasks
             /// Gets or sets the previous assigned group identifier.
             /// </summary>
             public int? PreviousAssignedGroupId { get; set; }
+
+            /// <summary>
+            /// Gets or sets the initiator person alias identifier.
+            /// </summary>
+            public int? InitiatorPersonAliasId { get; set; }
         }
     }
 }

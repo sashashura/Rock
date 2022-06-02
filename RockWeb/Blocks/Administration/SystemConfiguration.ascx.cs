@@ -18,7 +18,6 @@ using System;
 using System.ComponentModel;
 using System.Configuration;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web.Configuration;
@@ -28,7 +27,6 @@ using Microsoft.Web.XmlTransform;
 
 using Rock;
 using Rock.Data;
-using Rock.Logging;
 using Rock.Model;
 using Rock.SystemKey;
 using Rock.Web.UI.Controls;
@@ -110,8 +108,6 @@ namespace RockWeb.Blocks.Administration
         {
             BindGeneralConfiguration();
 
-            BindLoggingSettings();
-
             BindTimeZones();
 
             BindOtherAppSettings();
@@ -154,6 +150,7 @@ namespace RockWeb.Blocks.Administration
             // Save General
             Rock.Web.SystemSettings.SetValue( SystemSetting.ENABLE_MULTI_TIME_ZONE_SUPPORT, cbEnableMultipleTimeZone.Checked.ToString() );
             Rock.Web.SystemSettings.SetValue( SystemSetting.ALWAYS_SHOW_BUSINESS_IN_PERSONPICKER, cbIncludeBusinessInPersonPicker.Checked.ToString() );
+            Rock.Web.SystemSettings.SetValue( SystemSetting.PDF_EXTERNAL_RENDER_ENDPOINT, tbPDFExternalRenderEndpoint.Text );
 
             nbGeneralMessage.NotificationBoxType = NotificationBoxType.Success;
             nbGeneralMessage.Title = string.Empty;
@@ -210,43 +207,6 @@ namespace RockWeb.Blocks.Administration
                 nbMessage.Text = "You will need to reload this page to continue.";
             }
         }
-
-        protected void btnLoggingSave_Click( object sender, EventArgs e )
-        {
-            if ( !Page.IsValid )
-            {
-                return;
-            }
-
-            nbLoggingMessage.Visible = true;
-
-            var logConfig = new RockLogSystemSettings
-            {
-                LogLevel = rblVerbosityLevel.SelectedValue.ConvertToEnum<RockLogLevel>( RockLogLevel.Off ),
-                DomainsToLog = cblDomainsToLog.SelectedValues,
-                MaxFileSize = txtMaxFileSize.Text.AsInteger(),
-                NumberOfLogFiles = txtFilesToRetain.Text.AsInteger()
-            };
-
-            Rock.Web.SystemSettings.SetValue( SystemSetting.ROCK_LOGGING_SETTINGS, logConfig.ToJson() );
-
-            Rock.Logging.RockLogger.Log.ReloadConfiguration();
-
-            nbLoggingMessage.NotificationBoxType = NotificationBoxType.Success;
-            nbLoggingMessage.Title = string.Empty;
-            nbLoggingMessage.Text = "Setting saved successfully.";
-        }
-
-        protected void btnDeleteLog_Click( object sender, EventArgs e )
-        {
-            nbLoggingMessage.Visible = true;
-
-            RockLogger.Log.Delete();
-
-            nbLoggingMessage.NotificationBoxType = NotificationBoxType.Success;
-            nbLoggingMessage.Title = string.Empty;
-            nbLoggingMessage.Text = "The log files were successfully deleted.";
-        }
         #endregion
 
         #region Methods
@@ -258,34 +218,9 @@ namespace RockWeb.Blocks.Administration
         {
             cbEnableMultipleTimeZone.Checked = Rock.Web.SystemSettings.GetValue( SystemSetting.ENABLE_MULTI_TIME_ZONE_SUPPORT ).AsBoolean();
             cbIncludeBusinessInPersonPicker.Checked = Rock.Web.SystemSettings.GetValue( SystemSetting.ALWAYS_SHOW_BUSINESS_IN_PERSONPICKER ).AsBoolean();
+            tbPDFExternalRenderEndpoint.Text = Rock.Web.SystemSettings.GetValue( SystemSetting.PDF_EXTERNAL_RENDER_ENDPOINT );
         }
 
-        private void BindLoggingSettings()
-        {
-            var logLevel = Enum.GetNames( typeof( RockLogLevel ) );
-            rblVerbosityLevel.DataSource = logLevel;
-            rblVerbosityLevel.DataBind();
-
-            var rockConfig = Rock.Web.SystemSettings.GetValue( SystemSetting.ROCK_LOGGING_SETTINGS ).FromJsonOrNull<RockLogSystemSettings>();
-
-            if ( rockConfig == null )
-            {
-                return;
-            }
-
-            rblVerbosityLevel.SelectedValue = rockConfig.LogLevel.ToString();
-            txtFilesToRetain.Text = rockConfig.NumberOfLogFiles.ToString();
-            txtMaxFileSize.Text = rockConfig.MaxFileSize.ToString();
-
-            var definedValues = new DefinedValueService( new Rock.Data.RockContext() ).GetByDefinedTypeGuid( Rock.SystemGuid.DefinedType.LOGGING_DOMAINS.AsGuid() );
-
-            cblDomainsToLog.DataSource = definedValues.ToList();
-            cblDomainsToLog.DataTextField = "Value";
-            cblDomainsToLog.DataValueField = "Value";
-            cblDomainsToLog.DataBind();
-
-            cblDomainsToLog.SetValues( rockConfig.DomainsToLog );
-        }
         /// <summary>
         /// Bind the available time zones and select the one that's configured in the
         /// web.config's OrgTimeZone setting.
@@ -472,7 +407,7 @@ namespace RockWeb.Blocks.Administration
                 {
                     try
                     {
-                        RockDateTime.UpdateSundayDateData();
+                        RockDateTimeHelper.UpdateSundayDateData();
                     }
                     catch ( Exception ex )
                     {
