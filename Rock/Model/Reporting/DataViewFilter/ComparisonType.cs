@@ -122,8 +122,16 @@ namespace Rock.Model
         RegularExpression = 0x2000,
     }
 
+    /// <summary>
+    /// Class ComparisonTypeExtensions.
+    /// </summary>
     public static class ComparisonTypeExtensions
     {
+        /// <summary>
+        /// Gets the friendly description.
+        /// </summary>
+        /// <param name="comparisonType">Type of the comparison.</param>
+        /// <returns>System.String.</returns>
         public static string GetFriendlyDescription( this ComparisonType comparisonType )
         {
             return comparisonType.GetDescription() ?? comparisonType.ConvertToString().ToLower();

@@ -216,22 +216,22 @@ namespace RockWeb.Blocks.Cms
         /// </summary>
         private void BindGrid()
         {
-            RockContext rockContext = new RockContext();
+            var rockContext = new RockContext();
             var segmentService = new SegmentService( rockContext );
 
             var personAliasPersonalizationsQry = rockContext.PersonAliasPersonalizations;
 
-            var qry = segmentService.Queryable();
+            var segmentQuery = segmentService.Queryable();
 
             var nameFilter = tbNameFilter.Text;
             if ( nameFilter.IsNotNullOrWhiteSpace() )
             {
-                qry = qry.Where( x => x.Name.Contains( nameFilter ) );
+                segmentQuery = segmentQuery.Where( x => x.Name.Contains( nameFilter ) );
             }
 
             var anonymousVisitorPersonGuid = Rock.SystemGuid.Person.ANONYMOUS_VISITOR.AsGuid();
 
-            var selectQry = qry.Select( a => new PersonalizationSegmentItem
+            var personalizationSegmentItemQuery = segmentQuery.Select( a => new PersonalizationSegmentItem
             {
                 Id = a.Id,
                 Name = a.Name,
@@ -257,14 +257,14 @@ namespace RockWeb.Blocks.Cms
             var sortProperty = gList.SortProperty;
             if ( gList.AllowSorting && sortProperty != null )
             {
-                qry = qry.Sort( sortProperty );
+                personalizationSegmentItemQuery = personalizationSegmentItemQuery.Sort( sortProperty );
             }
             else
             {
-                qry = qry.OrderBy( a => a.Name );
+                personalizationSegmentItemQuery = personalizationSegmentItemQuery.OrderBy( a => a.Name );
             }
 
-            gList.SetLinqDataSource( qry );
+            gList.SetLinqDataSource( personalizationSegmentItemQuery );
             gList.DataBind();
         }
 
