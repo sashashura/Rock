@@ -1,4 +1,4 @@
-// <copyright>
+﻿// <copyright>
 // Copyright by the Spark Development Network
 //
 // Licensed under the Rock Community License (the "License");
@@ -19,6 +19,7 @@ using Rock.Data;
 using Rock.Web.Cache;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Data.Entity.ModelConfiguration;
 using System.Runtime.Serialization;
 
 namespace Rock.Model
@@ -82,6 +83,36 @@ namespace Rock.Model
         [DataMember]
         public string FilterJson { get; set; }
 
-        #endregion
+        #endregion Entity Properties
+
+        #region Navigation Properties
+        /// <summary>
+        /// Gets or sets the site
+        /// </summary>
+        /// <value>
+        /// The site reference
+        /// </value>
+        [DataMember]
+        public virtual Site Site { get; set; }
+
+        #endregion Navigation Properties
+
+        #region Entity Configuration
+        /// <summary>
+        /// EntityCampusFilterConfiguration class
+        /// </summary>
+        /// <seealso cref="T:System.Data.Entity.ModelConfiguration.EntityTypeConfiguration{Rock.Model.RequestFilter}" />
+        public partial class RequestFilterConfiguration : EntityTypeConfiguration<RequestFilter>
+        {
+            /// <summary>
+            /// Initializes a new instance of the <see cref="RequestFilterConfiguration"/> class.
+            /// </summary>
+            public RequestFilterConfiguration()
+            {
+                HasOptional( e => e.Site ).WithMany().HasForeignKey( e => e.SiteId ).WillCascadeOnDelete( false );
+            }
+        }
+
+        #endregion Entity Configuration
     }
 }
