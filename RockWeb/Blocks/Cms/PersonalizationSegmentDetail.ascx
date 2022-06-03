@@ -43,7 +43,7 @@
                     <div class="panel-body">
                         <div class="row">
                             <div class="col-md-6">
-                                <Rock:DataViewItemPicker ID="dvpFilterDataView" runat="server" Label="Filter Data View" OnSelectItem="dvpFilterDataView_SelectItem"  />
+                                <Rock:DataViewItemPicker ID="dvpFilterDataView" runat="server" Label="Filter Data View" OnSelectItem="dvpFilterDataView_SelectItem" />
                                 <Rock:NotificationBox ID="nbFilterDataViewWarning" runat="server" NotificationBoxType="Danger"
                                     Text="Segments only support data views that have been configured to persist. Please update the configuration of the selected dataview." />
                             </div>
@@ -58,13 +58,19 @@
                 <span class="segment-and">##AND##</span>
 
                 <%-- Session Filters --%>
-                <asp:Panel ID="pnlSessionFilters" runat="server" CssClass="panel panel-section">
+                <asp:Panel ID="pnlSessionCountFilters" runat="server" CssClass="panel panel-section">
                     <div class="panel-heading">
                         <div class="panel-title">Session Filters</div>
-                        <Rock:Toggle ID="tglSessionFiltersAllAny" runat="server" OnText="All" OffText="Any" ActiveButtonCssClass="btn-info" ButtonSizeCssClass="btn-xs" />
+                        <Rock:Toggle ID="tglSessionCountFiltersAllAny" runat="server" OnText="All" OffText="Any" ActiveButtonCssClass="btn-info" ButtonSizeCssClass="btn-xs" />
                     </div>
-                    <div class="panel-body">
-                        <asp:LinkButton ID="mdTestShowConfiguration" runat="server" Text="mdTestShowConfiguration" CssClass="btn btn-default" CausesValidation="false" OnClick="mdTestShowConfiguration_Click" />
+                    <div class="panel-panel-body">
+                        <Rock:Grid ID="gSessionCountFilters" runat="server" DisplayType="Light" RowItemText="Session Filter">
+                            <Columns>
+                                <Rock:RockLiteralField ID="lSessionCountFilterDescription" HeaderText="Description" OnDataBound="lSessionCountFilterDescription_DataBound" />
+                                <Rock:EditField OnClick="gSessionCountFilters_EditClick" />
+                                <Rock:DeleteField OnClick="gSessionCountFilters_DeleteClick" />
+                            </Columns>
+                        </Rock:Grid>
                     </div>
                 </asp:Panel>
 
@@ -76,7 +82,7 @@
                         <div class="panel-title">Page View Filters</div>
                         <Rock:Toggle ID="tglPageViewFiltersAllAny" runat="server" OnText="All" OffText="Any" ActiveButtonCssClass="btn-info" ButtonSizeCssClass="btn-xs" />
                     </div>
-                    
+
                 </asp:Panel>
 
                 <span class="segment-and">##AND##</span>
@@ -97,19 +103,20 @@
                 </div>
             </div>
 
-            <%-- Modal for Session Filter --%>
-            <Rock:ModalDialog ID="mdSessionFilterConfiguration" runat="server" OnSaveClick="mdSessionFilterConfiguration_SaveClick" ValidationGroup="vgSessionFilterConfiguration">
+            <%-- Modal for Session Count Filter --%>
+            <Rock:ModalDialog ID="mdSessionCountFilterConfiguration" runat="server" OnSaveClick="mdSessionCountFilterConfiguration_SaveClick" ValidationGroup="vgSessionCountFilterConfiguration">
                 <Content>
-                <div class="panel-body">
-                        <Rock:RockDropDownList ID="ddlPageViewFilterComparisonType" runat="server" />
-                        <Rock:NumberBox ID="nbPageViewFilterCompareValue" runat="server" Required="true" />
-                        <Rock:NumberBox ID="nbPageViewFilterCompareValueUpper" runat="server" />
-                        <Rock:SlidingDateRangePicker ID="drpPageViewFilterSlidingDateRange" runat="server" EnabledSlidingDateRangeTypes="Previous, Last, Current, DateRange" />
+                    <div class="panel-body">
+                        <asp:HiddenField ID="hfSessionCountFilterGuid" runat="server" />
+                        <Rock:RockDropDownList ID="ddlSessionCountFilterComparisonType" runat="server" />
+                        <Rock:NumberBox ID="nbSessionCountFilterCompareValue" runat="server" Required="true" />
+                        <Rock:NumberBox ID="nbSessionCountFilterCompareValueUpper" runat="server" />
+                        <Rock:SlidingDateRangePicker ID="drpSessionCountFilterSlidingDateRange" runat="server" EnabledSlidingDateRangeTypes="Previous, Last, Current, DateRange" />
                     </div>
 
-                    <asp:LinkButton ID="btnTestPageViewFilter" runat="server" Text="btnTestPageViewFilter" CausesValidation="false" CssClass="btn btn-primary" OnClick="btnTestPageViewFilter_Click"/>
-                    </Content>
-            </Rock:ModalDialog>       
+                    <asp:LinkButton ID="btnTestSessionCountFilter" runat="server" Text="btnTestSessionCountFilter" CausesValidation="false" CssClass="btn btn-primary" OnClick="btnTestSessionCountFilter_Click" />
+                </Content>
+            </Rock:ModalDialog>
 
         </asp:Panel>
 

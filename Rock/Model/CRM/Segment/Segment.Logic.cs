@@ -15,7 +15,10 @@
 // </copyright>
 //
 
+using Rock.Personalization;
 using Rock.Web.Cache;
+
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Data.Entity;
 
 namespace Rock.Model
@@ -44,5 +47,28 @@ namespace Rock.Model
         }
 
         #endregion ICacheable
+
+        /// <summary>
+        /// Configuration for the Additional Segment Filters
+        /// </summary>
+        /// <value>The additional filter.</value>
+        [NotMapped]
+        public virtual SegmentAdditionalFilterConfiguration AdditionalFilterConfiguration
+        {
+            get
+            {
+                if ( AdditionalFilterJson.IsNullOrWhiteSpace() )
+                {
+                    return new SegmentAdditionalFilterConfiguration();
+                }
+
+                return AdditionalFilterJson.FromJsonOrNull<SegmentAdditionalFilterConfiguration>() ?? new SegmentAdditionalFilterConfiguration();
+            }
+
+            set
+            {
+                AdditionalFilterJson = value?.ToJson();
+            }
+        }
     }
 }

@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
-using System.Text;
-using System.Threading.Tasks;
 
 using Rock.Model;
 
@@ -12,7 +8,7 @@ namespace Rock.Personalization
     /// <summary>
     /// Class Filter.
     /// </summary>
-    public abstract class Filter
+    public abstract class SegmentFilter
     {
         /// <summary>
         /// Gets or sets the unique identifier.
@@ -21,7 +17,13 @@ namespace Rock.Personalization
         public Guid Guid { get; set; }
 
         /// <summary>
-        /// Gets the where person alias expression.
+        /// Gets the description based on how the filter is configured.
+        /// </summary>
+        /// <returns>System.String.</returns>
+        public abstract string GetDescription();
+
+        /// <summary>
+        /// Gets Expression that will be used as one of the WHERE clauses for the PersonAlias query.
         /// </summary>
         /// <param name="personAliasService">The person alias service.</param>
         /// <param name="parameterExpression">The parameter expression.</param>

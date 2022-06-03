@@ -15,6 +15,8 @@
 // </copyright>
 //
 using System;
+using System.ComponentModel;
+
 using Rock.Utility;
 
 namespace Rock.Model
@@ -74,24 +76,28 @@ namespace Rock.Model
         /// Greater than
         /// </summary>
         [EnumOrder( 7 )]
+        [Description( "more than" )]
         GreaterThan = 0x80,
 
         /// <summary>
         /// Greater than or equal
         /// </summary>
         [EnumOrder( 8 )]
+        [Description( "at least" )]
         GreaterThanOrEqualTo = 0x100,
 
         /// <summary>
         /// Less than
         /// </summary>
         [EnumOrder( 9 )]
+        [Description( "less than" )]
         LessThan = 0x200,
 
         /// <summary>
         /// Less than or equal
         /// </summary>
         [EnumOrder( 10 )]
+        [Description( "no more than" )]
         LessThanOrEqualTo = 0x400,
 
         /// <summary>
@@ -114,5 +120,13 @@ namespace Rock.Model
         /// </summary>
         [EnumOrder( 14 )]
         RegularExpression = 0x2000,
+    }
+
+    public static class ComparisonTypeExtensions
+    {
+        public static string GetFriendlyDescription( this ComparisonType comparisonType )
+        {
+            return comparisonType.GetDescription() ?? comparisonType.ConvertToString().ToLower();
+        }
     }
 }

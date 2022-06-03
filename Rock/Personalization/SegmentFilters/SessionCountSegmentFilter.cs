@@ -14,11 +14,11 @@ using Rock.Web.UI.Controls;
 namespace Rock.Personalization.SegmentFilters
 {
     /// <summary>
-    /// Class PageViewSegmentFilter.
+    /// Class SessionSegmentFilter.
     /// Implements the <see cref="Rock.Personalization.SegmentFilter" />
     /// </summary>
     /// <seealso cref="Rock.Personalization.SegmentFilter" />
-    public class PageViewSegmentFilter : Rock.Personalization.SegmentFilter
+    public class SessionCountSegmentFilter : Rock.Personalization.SegmentFilter
     {
         /// <summary>
         /// Gets or sets the type of the comparison.
@@ -45,11 +45,7 @@ namespace Rock.Personalization.SegmentFilters
         /// <value>The site guids.</value>
         public List<Guid> SiteGuids { get; set; } = new List<Guid>();
 
-        /// <summary>
-        /// List of <see cref="Rock.Model.Page">pages</see> that apply to this filter (Optional)
-        /// </summary>
-        /// <value>The site guids.</value>
-        public List<Guid> PageGuids { get; set; } = new List<Guid>();
+        private SiteCache[] GetSelectedSites() => SiteGuids?.Select( a => SiteCache.Get( a ) ).Where( a => a != null ).ToArray() ?? new SiteCache[0];
 
         /// <summary>
         /// Gets or sets the sliding date range <see cref="Rock.Web.UI.Controls.SlidingDateRangePicker.DelimitedValues"/>
@@ -57,13 +53,11 @@ namespace Rock.Personalization.SegmentFilters
         /// <value>The sliding date range delimited values.</value>
         public string SlidingDateRangeDelimitedValues { get; set; }
 
-        private SiteCache[] GetSelectedSites() => SiteGuids?.Select( a => SiteCache.Get( a ) ).Where( a => a != null ).ToArray() ?? new SiteCache[0];
-        private PageCache[] GetSelectedPages() => PageGuids?.Select( a => PageCache.Get( a ) ).Where( a => a != null ).ToArray() ?? new PageCache[0];
-
         /// <summary>
         /// Gets the description based on how the filter is configured.
         /// </summary>
         /// <returns>System.String.</returns>
+        /// <exception cref="System.NotImplementedException"></exception>
         public override string GetDescription()
         {
             ComparisonType comparisonType = this.ComparisonType;
@@ -72,38 +66,32 @@ namespace Rock.Personalization.SegmentFilters
 
             if ( comparisonType == ComparisonType.IsBlank )
             {
-                comparisonPhrase = "Has had no page views";
+                comparisonPhrase = "Has had no sessions";
             }
             else if ( comparisonType == ComparisonType.IsNotBlank )
             {
-                comparisonPhrase = "Has had page views";
+                comparisonPhrase = "Has had no sessions";
             }
             else if ( comparisonType == ComparisonType.Between )
             {
-                comparisonPhrase = $"Has had between {ComparisonValue} and {ComparisonValueBetweenUpper} page views";
+                comparisonPhrase = $"Has had between {ComparisonValue} and {ComparisonValueBetweenUpper} sessions";
             }
             else
             {
-                comparisonPhrase = $"Has had {comparisonType.GetFriendlyDescription()} {ComparisonValue} page views";
+                comparisonPhrase = $"Has had {comparisonType.GetFriendlyDescription()} {ComparisonValue} sessions";
             }
 
             var siteNames = GetSelectedSites().Select( a => a.Name ).ToList();
             string onTheSites = siteNames.AsDelimited( ", ", " or " ) + " website";
 
-            string inTheDateRange = SlidingDateRangePicker.FormatDelimitedValues( SlidingDateRangeDelimitedValues );
-            var pageNames = GetSelectedPages().Select( a => a.ToString() ).ToList();
-            string limitedToPages = null;
-            if ( pageNames.Any() )
-            {
-                limitedToPages = $"limited to the {pageNames.AsDelimited( ",", " and " )} pages.";
-            }
+            string inTheDateRange = SlidingDateRangePicker.FormatDelimitedValues( SlidingDateRangeDelimitedValues ).ToLower();
 
-            var description = $"{comparisonPhrase} {onTheSites} {inTheDateRange} {limitedToPages}";
-            return description.Trim() + ".";
+            var description = $"{comparisonPhrase} {onTheSites} {inTheDateRange}.";
+            return description;
         }
 
         /// <summary>
-        /// Gets the where person alias expression.
+        /// Gets Expression that will be used as one of the WHERE clauses for the PersonAlias query.
         /// </summary>
         /// <param name="personAliasService">The person alias service.</param>
         /// <param name="parameterExpression">The parameter expression.</param>
@@ -111,25 +99,14 @@ namespace Rock.Personalization.SegmentFilters
         public override Expression GetWherePersonAliasExpression( PersonAliasService personAliasService, ParameterExpression parameterExpression )
         {
             var siteIds = GetSelectedSites().Select( a => a.Id ).ToArray();
+
             if ( !siteIds.Any() )
             {
                 return null;
             }
 
-            var selectedPageIds = GetSelectedPages().Select( a => a.Id ).ToArray();
-
-            IQueryable<Interaction> pageViewsInteractionsQuery;
-
             var rockContext = personAliasService.Context as RockContext;
-
-            if ( selectedPageIds.Any() )
-            {
-                pageViewsInteractionsQuery = new InteractionService( rockContext ).GetPageViewsByPage( siteIds, selectedPageIds ).Where( a => a.PersonAliasId.HasValue );
-            }
-            else
-            {
-                pageViewsInteractionsQuery = new InteractionService( rockContext ).GetPageViewsBySite( siteIds ).Where( a => a.PersonAliasId.HasValue );
-            }
+            var pageViewsInteractionsQuery = new InteractionService( rockContext ).GetPageViewsBySite( siteIds ).Where( a => a.PersonAliasId.HasValue );
 
             var dateRange = SlidingDateRangePicker.CalculateDateRangeFromDelimitedValues( SlidingDateRangeDelimitedValues );
             if ( dateRange?.Start != null )
@@ -151,25 +128,30 @@ namespace Rock.Personalization.SegmentFilters
                 comparisonType = ComparisonType.GreaterThanOrEqualTo;
             }
 
-            // Filter by the PageView Count of the Page Views
+            // Filter by the SessionCount of the Page Views
             if ( comparisonType == ComparisonType.Between )
             {
                 var comparisonValueBetweenUpper = this.ComparisonValueBetweenUpper.Value;
                 var personAliasBetweenQuery = personAliasQuery.Where( p =>
-                    pageViewsInteractionsQuery.Where( i => i.PersonAliasId == p.Id ).Count() >= comparisonValue &&
-                    pageViewsInteractionsQuery.Where( i => i.PersonAliasId == p.Id ).Count() <= comparisonValueBetweenUpper );
+                    pageViewsInteractionsQuery.Where( i => i.PersonAliasId == p.Id )
+                        .GroupBy( a => a.InteractionSessionId.Value ).Count() >= comparisonValue
+                        &&
+                    pageViewsInteractionsQuery.Where( i => i.PersonAliasId == p.Id )
+                        .GroupBy( a => a.InteractionSessionId.Value ).Count() <= comparisonValueBetweenUpper
+                        );
 
                 return FilterExpressionExtractor.Extract<Rock.Model.PersonAlias>( personAliasBetweenQuery, parameterExpression, "p" );
             }
             else
             {
                 var personAliasCompareEqualQuery = personAliasQuery.Where( p =>
-                    pageViewsInteractionsQuery.Where( i => i.PersonAliasId == p.Id ).Count() == comparisonValue );
+                    pageViewsInteractionsQuery.Where( i => i.PersonAliasId == p.Id ).GroupBy( a => a.InteractionSessionId ).Count() == comparisonValue );
 
                 BinaryExpression compareEqualExpression = FilterExpressionExtractor.Extract<Rock.Model.PersonAlias>( personAliasCompareEqualQuery, parameterExpression, "p" ) as BinaryExpression;
                 BinaryExpression result = FilterExpressionExtractor.AlterComparisonType( comparisonType, compareEqualExpression, null );
                 return result;
             }
+
         }
     }
 }

@@ -186,7 +186,7 @@ namespace Rock.Model
         }
 
         /// <summary>
-        /// Queries the by pages.
+        /// Returns a Queryable of Interaction Components that relate to the specified Sites and Pages.
         /// </summary>
         /// <param name="siteIds">The site ids.</param>
         /// <param name="pageIds">The page ids.</param>
