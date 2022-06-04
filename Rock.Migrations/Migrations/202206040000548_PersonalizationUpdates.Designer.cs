@@ -7,13 +7,13 @@ namespace Rock.Migrations
     using System.Resources;
     
     [GeneratedCode("EntityFramework.Migrations", "6.4.4")]
-    public sealed partial class Site_Foreign_Key_To_Request_Filter : IMigrationMetadata
+    public sealed partial class PersonalizationUpdates : IMigrationMetadata
     {
-        private readonly ResourceManager Resources = new ResourceManager(typeof(Site_Foreign_Key_To_Request_Filter));
+        private readonly ResourceManager Resources = new ResourceManager(typeof(PersonalizationUpdates));
         
         string IMigrationMetadata.Id
         {
-            get { return "202206032140577_Site_Foreign_Key_To_Request_Filter"; }
+            get { return "202206040000548_PersonalizationUpdates"; }
         }
         
         string IMigrationMetadata.Source

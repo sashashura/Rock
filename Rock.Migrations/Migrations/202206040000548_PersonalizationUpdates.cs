@@ -22,14 +22,18 @@ namespace Rock.Migrations
     /// <summary>
     ///
     /// </summary>
-    public partial class Segment_FilterDataView : Rock.Migrations.RockMigration
+    public partial class PersonalizationUpdates : Rock.Migrations.RockMigration
     {
         /// <summary>
         /// Operations to be performed during the upgrade process.
         /// </summary>
         public override void Up()
         {
+            CreateIndex("dbo.PersonAliasPersonalization", "PersonAliasId");
+            CreateIndex("dbo.RequestFilter", "SiteId");
             CreateIndex("dbo.Segment", "FilterDataViewId");
+            AddForeignKey("dbo.PersonAliasPersonalization", "PersonAliasId", "dbo.PersonAlias", "Id");
+            AddForeignKey("dbo.RequestFilter", "SiteId", "dbo.Site", "Id");
             AddForeignKey("dbo.Segment", "FilterDataViewId", "dbo.DataView", "Id");
         }
         
@@ -39,7 +43,11 @@ namespace Rock.Migrations
         public override void Down()
         {
             DropForeignKey("dbo.Segment", "FilterDataViewId", "dbo.DataView");
+            DropForeignKey("dbo.RequestFilter", "SiteId", "dbo.Site");
+            DropForeignKey("dbo.PersonAliasPersonalization", "PersonAliasId", "dbo.PersonAlias");
             DropIndex("dbo.Segment", new[] { "FilterDataViewId" });
+            DropIndex("dbo.RequestFilter", new[] { "SiteId" });
+            DropIndex("dbo.PersonAliasPersonalization", new[] { "PersonAliasId" });
         }
     }
 }
