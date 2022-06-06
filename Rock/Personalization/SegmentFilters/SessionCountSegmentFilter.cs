@@ -34,12 +34,6 @@ namespace Rock.Personalization.SegmentFilters
         public int ComparisonValue { get; set; } = 4;
 
         /// <summary>
-        /// If this is a ComparisonType of Between, this is the upper value.
-        /// </summary>
-        /// <value>The comparison value between upper.</value>
-        public int? ComparisonValueBetweenUpper { get; set; }
-
-        /// <summary>
         /// List of <see cref="Rock.Model.Site">sites</see> that apply to this filter (Required)
         /// </summary>
         /// <value>The site guids.</value>
@@ -57,7 +51,6 @@ namespace Rock.Personalization.SegmentFilters
         /// Gets the description based on how the filter is configured.
         /// </summary>
         /// <returns>System.String.</returns>
-        /// <exception cref="System.NotImplementedException"></exception>
         public override string GetDescription()
         {
             ComparisonType comparisonType = this.ComparisonType;
@@ -70,21 +63,26 @@ namespace Rock.Personalization.SegmentFilters
             }
             else if ( comparisonType == ComparisonType.IsNotBlank )
             {
-                comparisonPhrase = "Has had no sessions";
-            }
-            else if ( comparisonType == ComparisonType.Between )
-            {
-                comparisonPhrase = $"Has had between {ComparisonValue} and {ComparisonValueBetweenUpper} sessions";
+                comparisonPhrase = "Has had sessions";
             }
             else
             {
-                comparisonPhrase = $"Has had {comparisonType.GetFriendlyDescription()} {ComparisonValue} sessions";
+                comparisonPhrase = $"Has had {comparisonType.GetFriendlyDescription().ToLower()} {ComparisonValue} sessions";
             }
 
             var siteNames = GetSelectedSites().Select( a => a.Name ).ToList();
-            string onTheSites = siteNames.AsDelimited( ", ", " or " ) + " website";
+            string onTheSites = "on the "+ siteNames.AsDelimited( ", ", " or " ) + " website(s)";
 
-            string inTheDateRange = SlidingDateRangePicker.FormatDelimitedValues( SlidingDateRangeDelimitedValues ).ToLower();
+            var dateRangeType = SlidingDateRangePicker.GetSlidingDateRangeTypeFromDelimitedValues(SlidingDateRangeDelimitedValues );
+            string inTheDateRange;
+            if ( dateRangeType == SlidingDateRangePicker.SlidingDateRangeType.DateRange )
+            {
+                inTheDateRange = "from " + SlidingDateRangePicker.FormatDelimitedValues( SlidingDateRangeDelimitedValues ).ToLower();
+            }
+            else
+            {
+                inTheDateRange = "in the " + SlidingDateRangePicker.FormatDelimitedValues( SlidingDateRangeDelimitedValues ).ToLower();
+            }
 
             var description = $"{comparisonPhrase} {onTheSites} {inTheDateRange}.";
             return description;
@@ -123,35 +121,14 @@ namespace Rock.Personalization.SegmentFilters
 
             var comparisonType = this.ComparisonType;
             var comparisonValue = this.ComparisonValue;
-            if ( comparisonType == ComparisonType.Between && !this.ComparisonValueBetweenUpper.HasValue )
-            {
-                comparisonType = ComparisonType.GreaterThanOrEqualTo;
-            }
 
             // Filter by the SessionCount of the Page Views
-            if ( comparisonType == ComparisonType.Between )
-            {
-                var comparisonValueBetweenUpper = this.ComparisonValueBetweenUpper.Value;
-                var personAliasBetweenQuery = personAliasQuery.Where( p =>
-                    pageViewsInteractionsQuery.Where( i => i.PersonAliasId == p.Id )
-                        .GroupBy( a => a.InteractionSessionId.Value ).Count() >= comparisonValue
-                        &&
-                    pageViewsInteractionsQuery.Where( i => i.PersonAliasId == p.Id )
-                        .GroupBy( a => a.InteractionSessionId.Value ).Count() <= comparisonValueBetweenUpper
-                        );
+            var personAliasCompareEqualQuery = personAliasQuery.Where( p =>
+                pageViewsInteractionsQuery.Where( i => i.PersonAliasId == p.Id ).GroupBy( a => a.InteractionSessionId ).Count() == comparisonValue );
 
-                return FilterExpressionExtractor.Extract<Rock.Model.PersonAlias>( personAliasBetweenQuery, parameterExpression, "p" );
-            }
-            else
-            {
-                var personAliasCompareEqualQuery = personAliasQuery.Where( p =>
-                    pageViewsInteractionsQuery.Where( i => i.PersonAliasId == p.Id ).GroupBy( a => a.InteractionSessionId ).Count() == comparisonValue );
-
-                BinaryExpression compareEqualExpression = FilterExpressionExtractor.Extract<Rock.Model.PersonAlias>( personAliasCompareEqualQuery, parameterExpression, "p" ) as BinaryExpression;
-                BinaryExpression result = FilterExpressionExtractor.AlterComparisonType( comparisonType, compareEqualExpression, null );
-                return result;
-            }
-
+            BinaryExpression compareEqualExpression = FilterExpressionExtractor.Extract<Rock.Model.PersonAlias>( personAliasCompareEqualQuery, parameterExpression, "p" ) as BinaryExpression;
+            BinaryExpression result = FilterExpressionExtractor.AlterComparisonType( comparisonType, compareEqualExpression, null );
+            return result;
         }
     }
 }

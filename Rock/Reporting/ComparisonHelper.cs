@@ -18,6 +18,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Web.UI.WebControls;
+
 using Rock.Data;
 using Rock.Model;
 using Rock.Web.UI.Controls;
@@ -204,7 +205,7 @@ namespace Rock.Reporting
         public static RockDropDownList ComparisonControl( ComparisonType supportedComparisonTypes, bool required = true )
         {
             var ddlComparisonControl = new RockDropDownList();
-            PopulateComparisonControl( ddlComparisonControl, supportedComparisonTypes, required );
+            PopulateComparisonControl( ddlComparisonControl, supportedComparisonTypes, false,  required );
 
             return ddlComparisonControl;
         }
@@ -215,7 +216,7 @@ namespace Rock.Reporting
         /// <param name="ddlComparisonControl">The DDL comparison control.</param>
         /// <param name="supportedComparisonTypes">The supported comparison types.</param>
         /// <param name="required">if set to <c>true</c> [required].</param>
-        public static void PopulateComparisonControl( RockDropDownList ddlComparisonControl, ComparisonType supportedComparisonTypes, bool required = true )
+        public static void PopulateComparisonControl( RockDropDownList ddlComparisonControl, ComparisonType supportedComparisonTypes, bool useFriendlyName, bool required )
         {
             ddlComparisonControl.Items.Clear();
             if ( !required )
@@ -226,7 +227,16 @@ namespace Rock.Reporting
             {
                 if ( ( supportedComparisonTypes & comparisonType ) == comparisonType )
                 {
-                    ddlComparisonControl.Items.Add( new ListItem( comparisonType.ConvertToString(), comparisonType.ConvertToInt().ToString() ) );
+                    string text;
+                    if ( useFriendlyName )
+                    {
+                        text = comparisonType.GetFriendlyDescription();
+                    }
+                    else
+                    {
+                        text = comparisonType.ConvertToString();
+                    }
+                    ddlComparisonControl.Items.Add( new ListItem( text, comparisonType.ConvertToInt().ToString() ) );
                 }
             }
         }

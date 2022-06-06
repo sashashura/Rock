@@ -76,28 +76,28 @@ namespace Rock.Model
         /// Greater than
         /// </summary>
         [EnumOrder( 7 )]
-        [Description( "more than" )]
+        [Description( "More Than" )]
         GreaterThan = 0x80,
 
         /// <summary>
         /// Greater than or equal
         /// </summary>
         [EnumOrder( 8 )]
-        [Description( "at least" )]
+        [Description( "At Least" )]
         GreaterThanOrEqualTo = 0x100,
 
         /// <summary>
         /// Less than
         /// </summary>
         [EnumOrder( 9 )]
-        [Description( "less than" )]
+        [Description( "Less Than" )]
         LessThan = 0x200,
 
         /// <summary>
         /// Less than or equal
         /// </summary>
         [EnumOrder( 10 )]
-        [Description( "no more than" )]
+        [Description( "No More Than" )]
         LessThanOrEqualTo = 0x400,
 
         /// <summary>
@@ -134,7 +134,7 @@ namespace Rock.Model
         /// <returns>System.String.</returns>
         public static string GetFriendlyDescription( this ComparisonType comparisonType )
         {
-            return comparisonType.GetDescription() ?? comparisonType.ConvertToString().ToLower();
+            return comparisonType.GetDescription() ?? comparisonType.ConvertToString();
         }
     }
 }

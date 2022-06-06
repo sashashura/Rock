@@ -639,6 +639,7 @@ namespace Rock.Web.Cache
             EnabledForShortening = site.EnabledForShortening;
             FavIconBinaryFileId = site.FavIconBinaryFileId;
             SiteLogoBinaryFileId = site.SiteLogoBinaryFileId;
+            IsActive = site.IsActive;
             DefaultDomainUri = site.DefaultDomainUri;
             SiteType = site.SiteType;
             AdditionalSettings = site.AdditionalSettings;

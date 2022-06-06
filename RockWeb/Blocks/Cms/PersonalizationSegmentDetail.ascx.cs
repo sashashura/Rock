@@ -18,6 +18,7 @@ using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 
@@ -136,6 +137,7 @@ namespace RockWeb.Blocks.Cms
         public void ShowDetail( int segmentId )
         {
             var rockContext = new RockContext();
+
             var segmentService = new SegmentService( rockContext );
             Segment segment = null;
 
@@ -154,11 +156,13 @@ namespace RockWeb.Blocks.Cms
             tbName.Text = segment.Name;
             tbSegmentKey.Text = segment.SegmentKey;
             cbIsActive.Checked = segment.IsActive;
+            hfExistingSegmentKeyNames.Value = segmentService.Queryable().Where( a => a.Id != segment.Id ).Select( a => a.SegmentKey ).ToList().ToJson();
 
             this.AdditionalFilterConfiguration = segment.AdditionalFilterConfiguration;
 
             /* Person Filters */
             dvpFilterDataView.SetValue( segment.FilterDataViewId );
+            ShowDataViewWarningIfInvalid( segment.FilterDataViewId );
 
             /* Session Filters */
             BindSessionCountFiltersGrid();
@@ -181,6 +185,11 @@ namespace RockWeb.Blocks.Cms
         protected void dvpFilterDataView_SelectItem( object sender, EventArgs e )
         {
             var selectedDataViewId = dvpFilterDataView.SelectedValueAsId();
+            ShowDataViewWarningIfInvalid( selectedDataViewId );
+        }
+
+        private void ShowDataViewWarningIfInvalid( int? selectedDataViewId )
+        {
             nbFilterDataViewWarning.Visible = false;
             DataView selectedDataView;
             var rockContext = new RockContext();
@@ -207,6 +216,14 @@ namespace RockWeb.Blocks.Cms
         protected void btnSave_Click( object sender, EventArgs e )
         {
             var rockContext = new RockContext();
+
+            var filterDataViewId = dvpFilterDataView.SelectedValueAsId();
+            ShowDataViewWarningIfInvalid( filterDataViewId );
+            if ( nbFilterDataViewWarning.Visible )
+            {
+                return;
+            }
+
             var segmentService = new SegmentService( rockContext );
             Segment segment;
 
@@ -232,7 +249,7 @@ namespace RockWeb.Blocks.Cms
             segment.IsActive = cbIsActive.Checked;
             segment.SegmentKey = tbSegmentKey.Text;
             segment.FilterDataViewId = dvpFilterDataView.SelectedValueAsId();
-            segment.AdditionalFilterJson = this.AdditionalFilterConfiguration?.ToJson();
+            segment.AdditionalFilterConfiguration = this.AdditionalFilterConfiguration;
 
             rockContext.SaveChanges();
             NavigateToParentPage();
@@ -255,8 +272,9 @@ namespace RockWeb.Blocks.Cms
             var sessionCountSegmentFilter = new SessionCountSegmentFilter();
             sessionCountSegmentFilter.ComparisonType = ddlSessionCountFilterComparisonType.SelectedValueAsEnumOrNull<ComparisonType>() ?? ComparisonType.GreaterThanOrEqualTo;
             sessionCountSegmentFilter.ComparisonValue = nbSessionCountFilterCompareValue.Text.AsInteger();
-            sessionCountSegmentFilter.ComparisonValueBetweenUpper = nbSessionCountFilterCompareValueUpper.Text.AsIntegerOrNull();
+
             sessionCountSegmentFilter.SlidingDateRangeDelimitedValues = drpSessionCountFilterSlidingDateRange.DelimitedValues;
+            sessionCountSegmentFilter.SiteGuids = lstSessionCountFilterWebSites.SelectedValuesAsGuid;
             //sessionCountSegmentFilter.SiteGuids.Add( Rock.SystemGuid.Site.EXTERNAL_SITE.AsGuid(), true );
             //sessionCountSegmentFilter.SiteGuids.Add( Rock.SystemGuid.Site.SITE_ROCK_INTERNAL.AsGuid(), true );
 
@@ -264,8 +282,29 @@ namespace RockWeb.Blocks.Cms
             rockContext.SqlLogging( true );
             var personAliasService = new PersonAliasService( rockContext );
             var parameterExpression = personAliasService.ParameterExpression;
-            var whereExpression = sessionCountSegmentFilter.GetWherePersonAliasExpression( personAliasService, parameterExpression );
-            var results = personAliasService.Get( parameterExpression, whereExpression ).ToList();
+            Expression allSegmentsWhereExpression = null;
+
+            var segmentWhereExpression = sessionCountSegmentFilter.GetWherePersonAliasExpression( personAliasService, parameterExpression );
+            if ( segmentWhereExpression != null )
+            {
+                if ( allSegmentsWhereExpression == null )
+                {
+                    allSegmentsWhereExpression = segmentWhereExpression;
+                }
+                else
+                {
+                    // todo OR/AND
+                    allSegmentsWhereExpression = Expression.AndAlso( allSegmentsWhereExpression, segmentWhereExpression );
+                }
+            }
+
+            if ( allSegmentsWhereExpression == null )
+            {
+                // if there aren't any where expressions, don't return any person aliases
+                allSegmentsWhereExpression = Expression.Constant( false );
+            }
+
+            var results = personAliasService.Get( parameterExpression, allSegmentsWhereExpression ).ToList();
             rockContext.SqlLogging( false );
 
             // 
@@ -293,9 +332,7 @@ namespace RockWeb.Blocks.Cms
 
             sessionSegmentFilter.ComparisonType = ddlSessionCountFilterComparisonType.SelectedValueAsEnumOrNull<ComparisonType>() ?? ComparisonType.GreaterThanOrEqualTo;
             sessionSegmentFilter.ComparisonValue = nbSessionCountFilterCompareValue.Text.AsInteger();
-            sessionSegmentFilter.ComparisonValueBetweenUpper = nbSessionCountFilterCompareValueUpper.Text.AsIntegerOrNull();
-
-            //sessionSegmentFilter.SiteGuids = TODO
+            sessionSegmentFilter.SiteGuids = lstSessionCountFilterWebSites.SelectedValuesAsGuid;
 
             sessionSegmentFilter.SlidingDateRangeDelimitedValues = drpSessionCountFilterSlidingDateRange.DelimitedValues;
             mdSessionCountFilterConfiguration.Hide();
@@ -338,12 +375,17 @@ namespace RockWeb.Blocks.Cms
 
             hfSessionCountFilterGuid.Value = sessionCountSegmentFilter.Guid.ToString();
 
-            ComparisonHelper.PopulateComparisonControl( ddlSessionCountFilterComparisonType, ComparisonHelper.NumericFilterComparisonTypes | ComparisonType.Between );
+            lstSessionCountFilterWebSites.Items.Clear();
+            foreach ( var site in SiteCache.All().Where( a => a.IsActive ) )
+            {
+                lstSessionCountFilterWebSites.Items.Add( new ListItem( site.Name, site.Guid.ToString() ) );
+            }
+
+            ComparisonHelper.PopulateComparisonControl( ddlSessionCountFilterComparisonType, ComparisonHelper.NumericFilterComparisonTypes, true, true );
             ddlSessionCountFilterComparisonType.SetValue( sessionCountSegmentFilter.ComparisonType.ConvertToInt() );
             nbSessionCountFilterCompareValue.Text = sessionCountSegmentFilter.ComparisonValue.ToString();
-            nbSessionCountFilterCompareValueUpper.Text = sessionCountSegmentFilter.ComparisonValueBetweenUpper.ToString();
             drpSessionCountFilterSlidingDateRange.DelimitedValues = sessionCountSegmentFilter.SlidingDateRangeDelimitedValues;
-            // TODO: sessionCountSegmentFilter.SiteGuids
+            lstSessionCountFilterWebSites.SetValues( sessionCountSegmentFilter.SiteGuids );
 
             mdSessionCountFilterConfiguration.Show();
         }
@@ -370,8 +412,8 @@ namespace RockWeb.Blocks.Cms
         /// </summary>
         private void BindSessionCountFiltersGrid()
         {
-            var SessionCountFilters = this.AdditionalFilterConfiguration.SessionSegmentFilters;
-            gSessionCountFilters.DataSource = SessionCountFilters.OrderBy( a => a.GetDescription() );
+            var sessionCountFilters = this.AdditionalFilterConfiguration.SessionSegmentFilters;
+            gSessionCountFilters.DataSource = sessionCountFilters.OrderBy( a => a.GetDescription() );
             gSessionCountFilters.DataBind();
         }
 
@@ -379,7 +421,7 @@ namespace RockWeb.Blocks.Cms
         {
             SessionCountSegmentFilter sessionCountSegmentFilter = e.Row.DataItem as SessionCountSegmentFilter;
             var lSessionCountFilter = sender as Literal;
-            if (sessionCountSegmentFilter == null || lSessionCountFilter == null )
+            if ( sessionCountSegmentFilter == null || lSessionCountFilter == null )
             {
                 return;
             }

@@ -26,7 +26,8 @@
                 <%-- Segment Name --%>
                 <div class="row">
                     <div class="col-md-6">
-                        <Rock:DataTextBox ID="tbName" runat="server" SourceTypeName="Rock.Model.Segment, Rock" PropertyName="Name" Required="true" />
+                        <Rock:HiddenFieldWithClass ID="hfExistingSegmentKeyNames" runat="server" CssClass="js-existing-key-names" />
+                        <Rock:DataTextBox ID="tbName" runat="server" SourceTypeName="Rock.Model.Segment, Rock" PropertyName="Name" Required="true" onblur="populateSegmentKey()" />
                         <Rock:DataTextBox ID="tbSegmentKey" runat="server" SourceTypeName="Rock.Model.Segment, Rock" PropertyName="SegmentKey" Label="Key" Required="true" />
                     </div>
 
@@ -108,17 +109,56 @@
                 <Content>
                     <div class="panel-body">
                         <asp:HiddenField ID="hfSessionCountFilterGuid" runat="server" />
-                        <Rock:RockDropDownList ID="ddlSessionCountFilterComparisonType" runat="server" />
-                        <Rock:NumberBox ID="nbSessionCountFilterCompareValue" runat="server" Required="true" />
-                        <Rock:NumberBox ID="nbSessionCountFilterCompareValueUpper" runat="server" />
-                        <Rock:SlidingDateRangePicker ID="drpSessionCountFilterSlidingDateRange" runat="server" EnabledSlidingDateRangeTypes="Previous, Last, Current, DateRange" />
+
+                        <asp:ValidationSummary ID="vsSessionCountFilterConfiguration" runat="server" HeaderText="Please correct the following:" CssClass="alert alert-validation" ValidationGroup="vgSessionCountFilterConfiguration" />
+
+                        <div class="field-criteria">
+                            <Rock:RockDropDownList ID="ddlSessionCountFilterComparisonType" CssClass="js-filter-compare" runat="server" ValidationGroup="vgSessionCountFilterConfiguration"/>
+                            <Rock:NumberBox ID="nbSessionCountFilterCompareValue" runat="server" Required="true" CssClass="js-filter-control" ValidationGroup="vgSessionCountFilterConfiguration"/>
+                        </div>
+
+                        <span>sessions on the</span>
+                            <Rock:RockListBox ID="lstSessionCountFilterWebSites" runat="server" Required="true" ValidationGroup="vgSessionCountFilterConfiguration" RequiredErrorMessage="Website is required." />
+                        <span>website(s).</span>
+
+                        <br />
+
+                        <span>In the following date range</span>
+                        <Rock:SlidingDateRangePicker ID="drpSessionCountFilterSlidingDateRange" runat="server" Label="" EnabledSlidingDateRangeTypes="Previous, Last, Current, DateRange" ValidationGroup="vgSessionCountFilterConfiguration"/>
                     </div>
 
-                    <asp:LinkButton ID="btnTestSessionCountFilter" runat="server" Text="btnTestSessionCountFilter" CausesValidation="false" CssClass="btn btn-primary" OnClick="btnTestSessionCountFilter_Click" />
+                    <asp:LinkButton ID="btnTestSessionCountFilter" runat="server" Text="btnTestSessionCountFilter" CausesValidation="false" CssClass="btn btn-primary" ValidationGroup="vgSessionCountFilterConfiguration" OnClick="btnTestSessionCountFilter_Click" />
                 </Content>
             </Rock:ModalDialog>
 
         </asp:Panel>
+
+        <script>
+            function populateSegmentKey() {
+                debugger
+                // if the segment key hasn't been filled in yet, populate it with the segment name minus whitespace
+                var $keyControl = $('#<%=tbSegmentKey.ClientID%>');
+                var keyValue = $keyControl.val();
+
+                var reservedKeyJson = $('#<%=hfExistingSegmentKeyNames.ClientID%>').val();
+                var reservedKeyNames = eval('(' + reservedKeyJson + ')');
+
+                if ($keyControl.length && (keyValue == '')) {
+
+                    keyValue = $('#<%=tbName.ClientID%>').val().replace(/[^a-zA-Z0-9_.\-]/g, '');
+                    var newKeyValue = keyValue;
+
+                    var i = 1;
+                    while ($.inArray(newKeyValue, reservedKeyNames) >= 0) {
+                        newKeyValue = keyValue + i++;
+                    }
+
+                    $keyControl.val(newKeyValue);
+                    $literalKeyControl.html(newKeyValue);
+                }
+            }
+
+        </script>
 
     </ContentTemplate>
 </asp:UpdatePanel>
