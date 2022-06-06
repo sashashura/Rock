@@ -85,6 +85,7 @@ namespace RockWeb.Blocks.Cms
         {
             base.OnInit( e );
             gList.GridRebind += gList_GridRebind;
+            gList.DataKeyNames = new string[] { "Id" };
 
             // this event gets fired after block settings are updated. it's nice to repaint the screen if these settings would alter it
             this.BlockUpdated += Block_BlockUpdated;
@@ -137,18 +138,18 @@ namespace RockWeb.Blocks.Cms
         protected void gList_DeleteClick( object sender, RowEventArgs e )
         {
             var rockContext = new RockContext();
-            var segmentService = new SegmentService( rockContext );
-            var segment = segmentService.Get( e.RowKeyId );
-            if ( segment != null )
+            var requestFilterService = new RequestFilterService( rockContext );
+            var requestFilter = requestFilterService.Get( e.RowKeyId );
+            if ( requestFilter != null )
             {
                 string errorMessage;
-                if ( !segmentService.CanDelete( segment, out errorMessage ) )
+                if ( !requestFilterService.CanDelete( requestFilter, out errorMessage ) )
                 {
                     mdGridWarning.Show( errorMessage, ModalAlertType.Information );
                     return;
                 }
 
-                segmentService.Delete( segment );
+                requestFilterService.Delete( requestFilter );
                 rockContext.SaveChanges();
             }
         }
@@ -224,6 +225,7 @@ namespace RockWeb.Blocks.Cms
 
             var personalizationRequestFilterItemQuery = requestFilterQuery.Select( a => new PersonalizationRequestFilterItem
             {
+                Id = a.Id,
                 Name = a.Name,
                 SiteName = a.Site.Name,
                 IsActive = a.IsActive,
@@ -260,6 +262,7 @@ namespace RockWeb.Blocks.Cms
 
         private class PersonalizationRequestFilterItem
         {
+            public int Id { get; set; }
             public string Name { get; set; }
             public string SiteName { get; set; }
             public bool IsActive { get; set; }

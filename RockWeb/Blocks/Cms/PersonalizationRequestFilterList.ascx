@@ -26,7 +26,8 @@
                             <Rock:RockBoundField DataField="SiteName" HeaderText="Site" SortExpression="SiteName" />
                             <Rock:RockBoundField DataField="KnownIndividualsCount" HeaderText="Known Individuals" SortExpression="KnownIndividualsCount" />
                             <Rock:RockBoundField DataField="AnonymousIndividualsCount" HeaderText="Anonymous Individuals" SortExpression="AnonymousIndividualsCount" />
-                            <Rock:RockBoundField DataField="IsActive" HeaderText="Active" SortExpression="IsActive" />
+                            <Rock:BoolField DataField="IsActive" HeaderText="Active" SortExpression="IsActive" />
+                            <Rock:DeleteField onClick="gList_DeleteClick"/>
                         </Columns>
                     </Rock:Grid>
                 </div>
