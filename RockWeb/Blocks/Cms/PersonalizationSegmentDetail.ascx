@@ -56,7 +56,7 @@
                     </div>
                 </asp:Panel>
 
-                <span class="segment-and">##AND##</span>
+                <span class="segment-and">--[AND]--</span>
 
                 <%-- Session Filters --%>
                 <asp:Panel ID="pnlSessionCountFilters" runat="server" CssClass="panel panel-section">
@@ -75,7 +75,7 @@
                     </div>
                 </asp:Panel>
 
-                <span class="segment-and">##AND##</span>
+                <span class="segment-and">--[AND]--</span>
 
                 <%-- Page View Filters --%>
                 <asp:Panel ID="pnlPageViewFilters" runat="server" CssClass="panel panel-section">
@@ -83,10 +83,19 @@
                         <div class="panel-title">Page View Filters</div>
                         <Rock:Toggle ID="tglPageViewFiltersAllAny" runat="server" OnText="All" OffText="Any" ActiveButtonCssClass="btn-info" ButtonSizeCssClass="btn-xs" />
                     </div>
+                    <div class="panel-panel-body">
+                        <Rock:Grid ID="gPageViewFilters" runat="server" DisplayType="Light" RowItemText="Page View Filter">
+                            <Columns>
+                                <Rock:RockLiteralField ID="lPageViewFilterDescription" HeaderText="Description" OnDataBound="lPageViewFilterDescription_DataBound" />
+                                <Rock:EditField OnClick="gPageViewFilters_EditClick" />
+                                <Rock:DeleteField OnClick="gPageViewFilters_DeleteClick" />
+                            </Columns>
+                        </Rock:Grid>
+                    </div>
 
                 </asp:Panel>
 
-                <span class="segment-and">##AND##</span>
+                <span class="segment-and">--[AND]--</span>
 
                 <%-- Interaction Filters --%>
                 <asp:Panel ID="pnlInteractionFilters" runat="server" CssClass="panel panel-section">
@@ -99,6 +108,8 @@
                 </asp:Panel>
 
                 <div class="actions">
+                    <asp:LinkButton ID="btnTestSessionCountFilter" runat="server" Text="## Test Filter ##" CausesValidation="false" CssClass="btn btn-primary" OnClick="btnTestSessionCountFilter_Click" />
+
                     <asp:LinkButton ID="btnSave" runat="server" AccessKey="s" ToolTip="Alt+s" Text="Save" CssClass="btn btn-primary" OnClick="btnSave_Click" />
                     <asp:LinkButton ID="btnCancel" runat="server" AccessKey="c" ToolTip="Alt+c" Text="Cancel" CssClass="btn btn-link" CausesValidation="false" OnClick="btnCancel_Click" />
                 </div>
@@ -113,21 +124,55 @@
                         <asp:ValidationSummary ID="vsSessionCountFilterConfiguration" runat="server" HeaderText="Please correct the following:" CssClass="alert alert-validation" ValidationGroup="vgSessionCountFilterConfiguration" />
 
                         <div class="field-criteria">
-                            <Rock:RockDropDownList ID="ddlSessionCountFilterComparisonType" CssClass="js-filter-compare" runat="server" ValidationGroup="vgSessionCountFilterConfiguration"/>
-                            <Rock:NumberBox ID="nbSessionCountFilterCompareValue" runat="server" Required="true" CssClass="js-filter-control" ValidationGroup="vgSessionCountFilterConfiguration"/>
+                            <Rock:RockDropDownList ID="ddlSessionCountFilterComparisonType" CssClass="js-filter-compare" runat="server" ValidationGroup="vgSessionCountFilterConfiguration" />
+                            <Rock:NumberBox ID="nbSessionCountFilterCompareValue" runat="server" Required="true" CssClass="js-filter-control" ValidationGroup="vgSessionCountFilterConfiguration" />
                         </div>
 
                         <span>sessions on the</span>
-                            <Rock:RockListBox ID="lstSessionCountFilterWebSites" runat="server" Required="true" ValidationGroup="vgSessionCountFilterConfiguration" RequiredErrorMessage="Website is required." />
-                        <span>website(s).</span>
+                        <Rock:RockListBox ID="lstSessionCountFilterWebSites" runat="server" Required="true" ValidationGroup="vgSessionCountFilterConfiguration" RequiredErrorMessage="Website is required." />
+                        <span>website(s)</span>
 
                         <br />
 
                         <span>In the following date range</span>
-                        <Rock:SlidingDateRangePicker ID="drpSessionCountFilterSlidingDateRange" runat="server" Label="" EnabledSlidingDateRangeTypes="Previous, Last, Current, DateRange" ValidationGroup="vgSessionCountFilterConfiguration"/>
+                        <Rock:SlidingDateRangePicker ID="drpSessionCountFilterSlidingDateRange" runat="server" Label="" PreviewLocation="Right" EnabledSlidingDateRangeTypes="Previous, Last, Current, DateRange" ValidationGroup="vgSessionCountFilterConfiguration" />
                     </div>
 
-                    <asp:LinkButton ID="btnTestSessionCountFilter" runat="server" Text="btnTestSessionCountFilter" CausesValidation="false" CssClass="btn btn-primary" ValidationGroup="vgSessionCountFilterConfiguration" OnClick="btnTestSessionCountFilter_Click" />
+
+                </Content>
+            </Rock:ModalDialog>
+
+            <%-- Modal for Page Views Filter --%>
+            <Rock:ModalDialog ID="mdPageViewFilterConfiguration" runat="server" OnSaveClick="mdPageViewFilterConfiguration_SaveClick" ValidationGroup="vgPageViewFilterConfiguration">
+                <Content>
+                    <div class="panel-body">
+                        <asp:HiddenField ID="hfPageViewFilterGuid" runat="server" />
+
+                        <asp:ValidationSummary ID="vsPageViewFilterConfiguration" runat="server" HeaderText="Please correct the following:" CssClass="alert alert-validation" ValidationGroup="vgPageViewFilterConfiguration" />
+
+                        <div class="field-criteria">
+                            <Rock:RockDropDownList ID="ddlPageViewFilterComparisonType" CssClass="js-filter-compare" runat="server" ValidationGroup="vgPageViewFilterConfiguration" />
+                            <Rock:NumberBox ID="nbPageViewFilterCompareValue" runat="server" Required="true" CssClass="js-filter-control" ValidationGroup="vgPageViewFilterConfiguration" />
+                        </div>
+
+                        <span>page views on the</span>
+                        <Rock:RockListBox ID="lstPageViewFilterWebSites" runat="server" Required="true" ValidationGroup="vgPageViewFilterConfiguration" RequiredErrorMessage="Web Site is required." />
+                        <span>website(s)</span>
+
+                        <br />
+
+                        <span>In the following date range</span>
+                        <Rock:SlidingDateRangePicker ID="drpPageViewFilterSlidingDateRange" runat="server" Label="" PreviewLocation="Right" EnabledSlidingDateRangeTypes="Previous, Last, Current, DateRange" ValidationGroup="vgPageViewFilterConfiguration" ToolTip="<div class='js-slidingdaterange-info'></>" />
+
+                        <br />
+
+                        <span>optionally limited to the following pages</span>
+
+                        <Rock:PagePicker ID="ppPageViewFilterPages" runat="server" AllowMultiSelect="true" ValidationGroup="vgPageViewFilterConfiguration"  Label="Page Picker Instead?"/>
+                        <Rock:RockListBox ID="lstPageViewFilterPages" runat="server" Required="false" ValidationGroup="vgPageViewFilterConfiguration" Label="##TODO## Select Page Views using this?" />
+                    </div>
+
+
                 </Content>
             </Rock:ModalDialog>
 
@@ -135,8 +180,7 @@
 
         <script>
             function populateSegmentKey() {
-                debugger
-                // if the segment key hasn't been filled in yet, populate it with the segment name minus whitespace
+                // if the segment key hasn't been filled in yet, populate it with the segment name minus whitespace and special chars
                 var $keyControl = $('#<%=tbSegmentKey.ClientID%>');
                 var keyValue = $keyControl.val();
 
@@ -154,7 +198,6 @@
                     }
 
                     $keyControl.val(newKeyValue);
-                    $literalKeyControl.html(newKeyValue);
                 }
             }
 

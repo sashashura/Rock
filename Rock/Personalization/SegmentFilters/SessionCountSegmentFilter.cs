@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Text;
-using System.Threading.Tasks;
 
 using Rock.Data;
 using Rock.Model;
@@ -39,13 +37,13 @@ namespace Rock.Personalization.SegmentFilters
         /// <value>The site guids.</value>
         public List<Guid> SiteGuids { get; set; } = new List<Guid>();
 
-        private SiteCache[] GetSelectedSites() => SiteGuids?.Select( a => SiteCache.Get( a ) ).Where( a => a != null ).ToArray() ?? new SiteCache[0];
-
         /// <summary>
         /// Gets or sets the sliding date range <see cref="Rock.Web.UI.Controls.SlidingDateRangePicker.DelimitedValues"/>
         /// </summary>
         /// <value>The sliding date range delimited values.</value>
         public string SlidingDateRangeDelimitedValues { get; set; }
+
+        private SiteCache[] GetSelectedSites() => SiteGuids?.Select( a => SiteCache.Get( a ) ).Where( a => a != null ).ToArray() ?? new SiteCache[0];
 
         /// <summary>
         /// Gets the description based on how the filter is configured.
@@ -127,7 +125,7 @@ namespace Rock.Personalization.SegmentFilters
                 pageViewsInteractionsQuery.Where( i => i.PersonAliasId == p.Id ).GroupBy( a => a.InteractionSessionId ).Count() == comparisonValue );
 
             BinaryExpression compareEqualExpression = FilterExpressionExtractor.Extract<Rock.Model.PersonAlias>( personAliasCompareEqualQuery, parameterExpression, "p" ) as BinaryExpression;
-            BinaryExpression result = FilterExpressionExtractor.AlterComparisonType( comparisonType, compareEqualExpression, null );
+            BinaryExpression result = FilterExpressionExtractor.AlterComparisonType( comparisonType, compareEqualExpression, 0 );
             return result;
         }
     }

@@ -91,6 +91,10 @@ namespace RockWeb.Blocks.Cms
             gSessionCountFilters.DataKeyNames = new string[] { "Guid" };
             gSessionCountFilters.Actions.ShowAdd = true;
             gSessionCountFilters.Actions.AddClick += gSessionCountFilters_AddClick;
+
+            gPageViewFilters.DataKeyNames = new string[] { "Guid" };
+            gPageViewFilters.Actions.ShowAdd = true;
+            gPageViewFilters.Actions.AddClick += gPageViewFilters_AddClick;
         }
 
         /// <summary>
@@ -103,11 +107,14 @@ namespace RockWeb.Blocks.Cms
 
             if ( !Page.IsPostBack )
             {
-                LoadDropDowns();
                 ShowDetail( PageParameter( PageParameterKey.SegmentId ).AsInteger() );
             }
         }
 
+        /// <summary>
+        /// Restores the view-state information from a previous user control request that was saved by the <see cref="M:System.Web.UI.UserControl.SaveViewState" /> method.
+        /// </summary>
+        /// <param name="savedState">An <see cref="T:System.Object" /> that represents the user control state to be restored.</param>
         protected override void LoadViewState( object savedState )
         {
             base.LoadViewState( savedState );
@@ -117,23 +124,24 @@ namespace RockWeb.Blocks.Cms
             this.AdditionalFilterConfiguration = additionalFilterConfigurationJson.FromJsonOrNull<Rock.Personalization.SegmentAdditionalFilterConfiguration>() ?? new Rock.Personalization.SegmentAdditionalFilterConfiguration();
         }
 
+        /// <summary>
+        /// Saves any user control view-state changes that have occurred since the last page postback.
+        /// </summary>
+        /// <returns>Returns the user control's current view state. If there is no view state associated with the control, it returns <see langword="null" />.</returns>
         protected override object SaveViewState()
         {
             this.ViewState[ViewStateKey.AdditionalFilterConfigurationJson] = this.AdditionalFilterConfiguration?.ToJson();
             return base.SaveViewState();
         }
 
-        private void LoadDropDowns()
-        {
-
-            //ComparisonHelper.PopulateComparisonControl( ddl, ComparisonHelper.NumericFilterComparisonTypes | ComparisonType.Between );
-            //ComparisonHelper.PopulateComparisonControl( ddlPageViewFilterComparisonType, ComparisonHelper.NumericFilterComparisonTypes | ComparisonType.Between );
-        }
-
         #endregion Base Control Methods
 
         #region Methods
 
+        /// <summary>
+        /// Shows the detail.
+        /// </summary>
+        /// <param name="segmentId">The segment identifier.</param>
         public void ShowDetail( int segmentId )
         {
             var rockContext = new RockContext();
@@ -158,14 +166,23 @@ namespace RockWeb.Blocks.Cms
             cbIsActive.Checked = segment.IsActive;
             hfExistingSegmentKeyNames.Value = segmentService.Queryable().Where( a => a.Id != segment.Id ).Select( a => a.SegmentKey ).ToList().ToJson();
 
-            this.AdditionalFilterConfiguration = segment.AdditionalFilterConfiguration;
+            this.AdditionalFilterConfiguration = segment.AdditionalFilterConfiguration ?? new Rock.Personalization.SegmentAdditionalFilterConfiguration();
 
-            /* Person Filters */
+            // Person Filters
             dvpFilterDataView.SetValue( segment.FilterDataViewId );
             ShowDataViewWarningIfInvalid( segment.FilterDataViewId );
 
-            /* Session Filters */
+            // Session Filters
+            tglSessionCountFiltersAllAny.Checked = AdditionalFilterConfiguration.SessionFilterExpressionType == FilterExpressionType.GroupAll;
             BindSessionCountFiltersGrid();
+
+            // Page View Filters
+            tglPageViewFiltersAllAny.Checked = AdditionalFilterConfiguration.PageViewFilterExpressionType == FilterExpressionType.GroupAll;
+            BindPageViewFiltersGrid();
+
+            // Interaction Filters
+            tglInteractionFiltersAllAny.Checked = AdditionalFilterConfiguration.InteractionFilterExpressionType == FilterExpressionType.GroupAll;
+            //BindInteractionFiltersGrid();
         }
 
         #endregion Methods
@@ -249,6 +266,34 @@ namespace RockWeb.Blocks.Cms
             segment.IsActive = cbIsActive.Checked;
             segment.SegmentKey = tbSegmentKey.Text;
             segment.FilterDataViewId = dvpFilterDataView.SelectedValueAsId();
+
+            if ( tglSessionCountFiltersAllAny.Checked )
+            {
+                AdditionalFilterConfiguration.SessionFilterExpressionType = FilterExpressionType.GroupAll;
+            }
+            else
+            {
+                AdditionalFilterConfiguration.SessionFilterExpressionType = FilterExpressionType.GroupAny;
+            }
+
+            if ( tglPageViewFiltersAllAny.Checked )
+            {
+                AdditionalFilterConfiguration.PageViewFilterExpressionType = FilterExpressionType.GroupAll;
+            }
+            else
+            {
+                AdditionalFilterConfiguration.PageViewFilterExpressionType = FilterExpressionType.GroupAny;
+            }
+
+            if ( tglInteractionFiltersAllAny.Checked )
+            {
+                AdditionalFilterConfiguration.InteractionFilterExpressionType = FilterExpressionType.GroupAll;
+            }
+            else
+            {
+                AdditionalFilterConfiguration.InteractionFilterExpressionType = FilterExpressionType.GroupAny;
+            }
+
             segment.AdditionalFilterConfiguration = this.AdditionalFilterConfiguration;
 
             rockContext.SaveChanges();
@@ -269,38 +314,40 @@ namespace RockWeb.Blocks.Cms
 
         protected void btnTestSessionCountFilter_Click( object sender, EventArgs e )
         {
-            var sessionCountSegmentFilter = new SessionCountSegmentFilter();
-            sessionCountSegmentFilter.ComparisonType = ddlSessionCountFilterComparisonType.SelectedValueAsEnumOrNull<ComparisonType>() ?? ComparisonType.GreaterThanOrEqualTo;
-            sessionCountSegmentFilter.ComparisonValue = nbSessionCountFilterCompareValue.Text.AsInteger();
-
-            sessionCountSegmentFilter.SlidingDateRangeDelimitedValues = drpSessionCountFilterSlidingDateRange.DelimitedValues;
-            sessionCountSegmentFilter.SiteGuids = lstSessionCountFilterWebSites.SelectedValuesAsGuid;
-            //sessionCountSegmentFilter.SiteGuids.Add( Rock.SystemGuid.Site.EXTERNAL_SITE.AsGuid(), true );
-            //sessionCountSegmentFilter.SiteGuids.Add( Rock.SystemGuid.Site.SITE_ROCK_INTERNAL.AsGuid(), true );
-
             var rockContext = new RockContext();
             rockContext.SqlLogging( true );
             var personAliasService = new PersonAliasService( rockContext );
             var parameterExpression = personAliasService.ParameterExpression;
             Expression allSegmentsWhereExpression = null;
 
-            var segmentWhereExpression = sessionCountSegmentFilter.GetWherePersonAliasExpression( personAliasService, parameterExpression );
-            if ( segmentWhereExpression != null )
+            foreach ( var segmentFilter in AdditionalFilterConfiguration.SessionSegmentFilters )
             {
+                var segmentWhereExpression = segmentFilter.GetWherePersonAliasExpression( personAliasService, parameterExpression );
+                if ( segmentWhereExpression == null )
+                {
+                    continue;
+                }
+
                 if ( allSegmentsWhereExpression == null )
                 {
                     allSegmentsWhereExpression = segmentWhereExpression;
                 }
                 else
                 {
-                    // todo OR/AND
-                    allSegmentsWhereExpression = Expression.AndAlso( allSegmentsWhereExpression, segmentWhereExpression );
+                    if ( AdditionalFilterConfiguration.SessionFilterExpressionType == FilterExpressionType.GroupAll )
+                    {
+                        allSegmentsWhereExpression = Expression.AndAlso( allSegmentsWhereExpression, segmentWhereExpression );
+                    }
+                    else if ( AdditionalFilterConfiguration.SessionFilterExpressionType == FilterExpressionType.GroupAny )
+                    {
+                        allSegmentsWhereExpression = Expression.Or( allSegmentsWhereExpression, segmentWhereExpression );
+                    }
                 }
             }
 
             if ( allSegmentsWhereExpression == null )
             {
-                // if there aren't any where expressions, don't return any person aliases
+                // if there aren't any 'where' expressions, don't return any person aliases
                 allSegmentsWhereExpression = Expression.Constant( false );
             }
 
@@ -309,34 +356,18 @@ namespace RockWeb.Blocks.Cms
 
             // 
             Debug.WriteLine( $"\n\nPerson Alias Count: {results.Count}" );
-            //pageViewSegmentFilter.PageGuids = 
         }
 
         #region Session Filters Related
 
         /// <summary>
-        /// Handles the SaveClick event of the mdSessionCountFilterConfiguration control.
+        /// Binds the session count filters grid.
         /// </summary>
-        /// <param name="sender">The source of the event.</param>
-        /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
-        protected void mdSessionCountFilterConfiguration_SaveClick( object sender, EventArgs e )
+        private void BindSessionCountFiltersGrid()
         {
-            var sessionSegmentFilterGuid = hfSessionCountFilterGuid.Value.AsGuid();
-            var sessionSegmentFilter = this.AdditionalFilterConfiguration.SessionSegmentFilters.Where( a => a.Guid == sessionSegmentFilterGuid ).FirstOrDefault();
-            if ( sessionSegmentFilter == null )
-            {
-                sessionSegmentFilter = new SessionCountSegmentFilter();
-                sessionSegmentFilter.Guid = hfSessionCountFilterGuid.Value.AsGuid();
-                this.AdditionalFilterConfiguration.SessionSegmentFilters.Add( sessionSegmentFilter );
-            }
-
-            sessionSegmentFilter.ComparisonType = ddlSessionCountFilterComparisonType.SelectedValueAsEnumOrNull<ComparisonType>() ?? ComparisonType.GreaterThanOrEqualTo;
-            sessionSegmentFilter.ComparisonValue = nbSessionCountFilterCompareValue.Text.AsInteger();
-            sessionSegmentFilter.SiteGuids = lstSessionCountFilterWebSites.SelectedValuesAsGuid;
-
-            sessionSegmentFilter.SlidingDateRangeDelimitedValues = drpSessionCountFilterSlidingDateRange.DelimitedValues;
-            mdSessionCountFilterConfiguration.Hide();
-            BindSessionCountFiltersGrid();
+            var sessionCountFilters = this.AdditionalFilterConfiguration.SessionSegmentFilters;
+            gSessionCountFilters.DataSource = sessionCountFilters.OrderBy( a => a.GetDescription() );
+            gSessionCountFilters.DataBind();
         }
 
         /// <summary>
@@ -391,6 +422,31 @@ namespace RockWeb.Blocks.Cms
         }
 
         /// <summary>
+        /// Handles the SaveClick event of the mdSessionCountFilterConfiguration control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
+        protected void mdSessionCountFilterConfiguration_SaveClick( object sender, EventArgs e )
+        {
+            var sessionSegmentFilterGuid = hfSessionCountFilterGuid.Value.AsGuid();
+            var sessionSegmentFilter = this.AdditionalFilterConfiguration.SessionSegmentFilters.Where( a => a.Guid == sessionSegmentFilterGuid ).FirstOrDefault();
+            if ( sessionSegmentFilter == null )
+            {
+                sessionSegmentFilter = new SessionCountSegmentFilter();
+                sessionSegmentFilter.Guid = hfSessionCountFilterGuid.Value.AsGuid();
+                this.AdditionalFilterConfiguration.SessionSegmentFilters.Add( sessionSegmentFilter );
+            }
+
+            sessionSegmentFilter.ComparisonType = ddlSessionCountFilterComparisonType.SelectedValueAsEnumOrNull<ComparisonType>() ?? ComparisonType.GreaterThanOrEqualTo;
+            sessionSegmentFilter.ComparisonValue = nbSessionCountFilterCompareValue.Text.AsInteger();
+            sessionSegmentFilter.SiteGuids = lstSessionCountFilterWebSites.SelectedValuesAsGuid;
+
+            sessionSegmentFilter.SlidingDateRangeDelimitedValues = drpSessionCountFilterSlidingDateRange.DelimitedValues;
+            mdSessionCountFilterConfiguration.Hide();
+            BindSessionCountFiltersGrid();
+        }
+
+        /// <summary>
         /// Handles the DeleteClick event of the gSessionCountFilters control.
         /// </summary>
         /// <param name="sender">The source of the event.</param>
@@ -408,15 +464,10 @@ namespace RockWeb.Blocks.Cms
         }
 
         /// <summary>
-        /// Binds the session count filters grid.
+        /// Handles the DataBound event of the lSessionCountFilterDescription control.
         /// </summary>
-        private void BindSessionCountFiltersGrid()
-        {
-            var sessionCountFilters = this.AdditionalFilterConfiguration.SessionSegmentFilters;
-            gSessionCountFilters.DataSource = sessionCountFilters.OrderBy( a => a.GetDescription() );
-            gSessionCountFilters.DataBind();
-        }
-
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="Rock.Web.UI.Controls.RowEventArgs"/> instance containing the event data.</param>
         protected void lSessionCountFilterDescription_DataBound( object sender, Rock.Web.UI.Controls.RowEventArgs e )
         {
             SessionCountSegmentFilter sessionCountSegmentFilter = e.Row.DataItem as SessionCountSegmentFilter;
@@ -431,6 +482,131 @@ namespace RockWeb.Blocks.Cms
 
         #endregion Session Filters Related
 
+        #region Page View Filters Related
 
+        /// <summary>
+        /// Binds the page views filters grid.
+        /// </summary>
+        private void BindPageViewFiltersGrid()
+        {
+            var pageViewFilters = this.AdditionalFilterConfiguration.PageViewSegmentFilters;
+            gPageViewFilters.DataSource = pageViewFilters.OrderBy( a => a.GetDescription() );
+            gPageViewFilters.DataBind();
+        }
+
+        /// <summary>
+        /// Handles the AddClick event of the gPageViewFilters control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
+        private void gPageViewFilters_AddClick( object sender, EventArgs e )
+        {
+            ShowPageViewFilterDialog( null );
+        }
+
+        /// <summary>
+        /// Handles the EditClick event of the gPageViewFilters control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="Rock.Web.UI.Controls.RowEventArgs"/> instance containing the event data.</param>
+        protected void gPageViewFilters_EditClick( object sender, Rock.Web.UI.Controls.RowEventArgs e )
+        {
+            var pageViewFilterGuid = ( Guid ) e.RowKeyValue;
+            var pageViewFilter = this.AdditionalFilterConfiguration.PageViewSegmentFilters.Where( a => a.Guid == pageViewFilterGuid ).FirstOrDefault();
+            ShowPageViewFilterDialog( pageViewFilter );
+        }
+
+        /// <summary>
+        /// Shows the page view filter dialog.
+        /// </summary>
+        /// <param name="pageViewFilterSegmentFilter">The page view filter segment filter.</param>
+        private void ShowPageViewFilterDialog( Rock.Personalization.SegmentFilters.PageViewSegmentFilter pageViewFilterSegmentFilter )
+        {
+            if ( pageViewFilterSegmentFilter == null )
+            {
+                pageViewFilterSegmentFilter = new PageViewSegmentFilter();
+                pageViewFilterSegmentFilter.Guid = Guid.NewGuid();
+            }
+
+            hfPageViewFilterGuid.Value = pageViewFilterSegmentFilter.Guid.ToString();
+
+            lstPageViewFilterWebSites.Items.Clear();
+            foreach ( var site in SiteCache.All().Where( a => a.IsActive ) )
+            {
+                lstPageViewFilterWebSites.Items.Add( new ListItem( site.Name, site.Guid.ToString() ) );
+            }
+
+            ComparisonHelper.PopulateComparisonControl( ddlPageViewFilterComparisonType, ComparisonHelper.NumericFilterComparisonTypes, true, true );
+            ddlPageViewFilterComparisonType.SetValue( pageViewFilterSegmentFilter.ComparisonType.ConvertToInt() );
+            nbPageViewFilterCompareValue.Text = pageViewFilterSegmentFilter.ComparisonValue.ToString();
+            drpPageViewFilterSlidingDateRange.DelimitedValues = pageViewFilterSegmentFilter.SlidingDateRangeDelimitedValues;
+            lstPageViewFilterWebSites.SetValues( pageViewFilterSegmentFilter.SiteGuids );
+
+            ppPageViewFilterPages.SetValues( pageViewFilterSegmentFilter.GetSelectedPages().Select( a => a.Id ) );
+
+            mdPageViewFilterConfiguration.Show();
+        }
+
+        /// <summary>
+        /// Handles the SaveClick event of the mdPageViewFilterConfiguration control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
+        protected void mdPageViewFilterConfiguration_SaveClick( object sender, EventArgs e )
+        {
+            var pageViewFilterGuid = hfPageViewFilterGuid.Value.AsGuid();
+            var pageViewFilter = this.AdditionalFilterConfiguration.PageViewSegmentFilters.Where( a => a.Guid == pageViewFilterGuid ).FirstOrDefault();
+            if ( pageViewFilter == null )
+            {
+                pageViewFilter = new PageViewSegmentFilter();
+                pageViewFilter.Guid = hfPageViewFilterGuid.Value.AsGuid();
+                this.AdditionalFilterConfiguration.PageViewSegmentFilters.Add( pageViewFilter );
+            }
+
+            pageViewFilter.ComparisonType = ddlPageViewFilterComparisonType.SelectedValueAsEnumOrNull<ComparisonType>() ?? ComparisonType.GreaterThanOrEqualTo;
+            pageViewFilter.ComparisonValue = nbPageViewFilterCompareValue.Text.AsInteger();
+            pageViewFilter.SiteGuids = lstPageViewFilterWebSites.SelectedValuesAsGuid;
+            pageViewFilter.PageGuids = ppPageViewFilterPages.SelectedIds.Select( a => PageCache.Get( a )?.Guid ).Where( a => a.HasValue ).Select( a => a.Value ).ToList();
+
+            pageViewFilter.SlidingDateRangeDelimitedValues = drpPageViewFilterSlidingDateRange.DelimitedValues;
+            mdPageViewFilterConfiguration.Hide();
+            BindPageViewFiltersGrid();
+        }
+
+        /// <summary>
+        /// Handles the DeleteClick event of the gPageViewFilters control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="Rock.Web.UI.Controls.RowEventArgs"/> instance containing the event data.</param>
+        protected void gPageViewFilters_DeleteClick( object sender, Rock.Web.UI.Controls.RowEventArgs e )
+        {
+            var pageViewFilterGuid = ( Guid ) e.RowKeyValue;
+            var pageViewFilter = this.AdditionalFilterConfiguration.PageViewSegmentFilters.Where( a => a.Guid == pageViewFilterGuid ).FirstOrDefault();
+            if ( pageViewFilter != null )
+            {
+                this.AdditionalFilterConfiguration.PageViewSegmentFilters.Remove( pageViewFilter );
+            }
+
+            BindPageViewFiltersGrid();
+        }
+
+        /// <summary>
+        /// Handles the DataBound event of the lPageViewFilterDescription control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="Rock.Web.UI.Controls.RowEventArgs"/> instance containing the event data.</param>
+        protected void lPageViewFilterDescription_DataBound( object sender, Rock.Web.UI.Controls.RowEventArgs e )
+        {
+            var pageViewFilterSegmentFilter = e.Row.DataItem as PageViewSegmentFilter;
+            var lPageViewFilter = sender as Literal;
+            if ( pageViewFilterSegmentFilter == null || lPageViewFilter == null )
+            {
+                return;
+            }
+
+            lPageViewFilter.Text = pageViewFilterSegmentFilter.GetDescription();
+        }
+
+        #endregion Page View Filters Related
     }
 }

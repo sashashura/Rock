@@ -49,8 +49,17 @@ namespace Rock.Personalization.SegmentFilters
         /// <value>The sliding date range delimited values.</value>
         public string SlidingDateRangeDelimitedValues { get; set; }
 
-        private SiteCache[] GetSelectedSites() => SiteGuids?.Select( a => SiteCache.Get( a ) ).Where( a => a != null ).ToArray() ?? new SiteCache[0];
-        private PageCache[] GetSelectedPages() => PageGuids?.Select( a => PageCache.Get( a ) ).Where( a => a != null ).ToArray() ?? new PageCache[0];
+        /// <summary>
+        /// Gets the selected sites.
+        /// </summary>
+        /// <returns>SiteCache[].</returns>
+        public SiteCache[] GetSelectedSites() => SiteGuids?.Select( a => SiteCache.Get( a ) ).Where( a => a != null ).ToArray() ?? new SiteCache[0];
+
+        /// <summary>
+        /// Gets the selected pages.
+        /// </summary>
+        /// <returns>PageCache[].</returns>
+        public PageCache[] GetSelectedPages() => PageGuids?.Select( a => PageCache.Get( a ) ).Where( a => a != null ).ToArray() ?? new PageCache[0];
 
         /// <summary>
         /// Gets the description based on how the filter is configured.
@@ -72,18 +81,28 @@ namespace Rock.Personalization.SegmentFilters
             }
             else
             {
-                comparisonPhrase = $"Has had {comparisonType.GetFriendlyDescription()} {ComparisonValue} page views";
+                comparisonPhrase = $"Has had {comparisonType.GetFriendlyDescription().ToLower()} {ComparisonValue} page views";
             }
 
             var siteNames = GetSelectedSites().Select( a => a.Name ).ToList();
-            string onTheSites = siteNames.AsDelimited( ", ", " or " ) + " website";
+            string onTheSites = siteNames.AsDelimited( ", ", " or " ) + " website(s)";
 
-            string inTheDateRange = SlidingDateRangePicker.FormatDelimitedValues( SlidingDateRangeDelimitedValues );
+            var dateRangeType = SlidingDateRangePicker.GetSlidingDateRangeTypeFromDelimitedValues( SlidingDateRangeDelimitedValues );
+            string inTheDateRange;
+            if ( dateRangeType == SlidingDateRangePicker.SlidingDateRangeType.DateRange )
+            {
+                inTheDateRange = "from " + SlidingDateRangePicker.FormatDelimitedValues( SlidingDateRangeDelimitedValues ).ToLower();
+            }
+            else
+            {
+                inTheDateRange = "in the " + SlidingDateRangePicker.FormatDelimitedValues( SlidingDateRangeDelimitedValues ).ToLower();
+            }
+
             var pageNames = GetSelectedPages().Select( a => a.ToString() ).ToList();
             string limitedToPages = null;
             if ( pageNames.Any() )
             {
-                limitedToPages = $"limited to the {pageNames.AsDelimited( ",", " and " )} pages.";
+                limitedToPages = $"limited to the {pageNames.AsDelimited( ",", " and " )} pages";
             }
 
             var description = $"{comparisonPhrase} {onTheSites} {inTheDateRange} {limitedToPages}";
@@ -91,7 +110,7 @@ namespace Rock.Personalization.SegmentFilters
         }
 
         /// <summary>
-        /// Gets the where person alias expression.
+        /// Gets Expression that will be used as one of the WHERE clauses for the PersonAlias query.
         /// </summary>
         /// <param name="personAliasService">The person alias service.</param>
         /// <param name="parameterExpression">The parameter expression.</param>
@@ -138,7 +157,7 @@ namespace Rock.Personalization.SegmentFilters
                 pageViewsInteractionsQuery.Where( i => i.PersonAliasId == p.Id ).Count() == comparisonValue );
 
             BinaryExpression compareEqualExpression = FilterExpressionExtractor.Extract<Rock.Model.PersonAlias>( personAliasCompareEqualQuery, parameterExpression, "p" ) as BinaryExpression;
-            BinaryExpression result = FilterExpressionExtractor.AlterComparisonType( comparisonType, compareEqualExpression, null );
+            BinaryExpression result = FilterExpressionExtractor.AlterComparisonType( comparisonType, compareEqualExpression, 0 );
             return result;
         }
     }
