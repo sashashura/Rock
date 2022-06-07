@@ -746,8 +746,9 @@ namespace RockWeb.Blocks.Cms
             if ( dataViewFilterId.HasValue )
             {
                 var args = new DataViewGetQueryArgs { DbContext = rockContext };
+                var dataView = new DataViewService( rockContext ).Get( dataViewFilterId.Value );
 
-                var personDataViewQuery = new DataViewService( rockContext ).Get( dataViewFilterId.Value ).GetQuery( args ).OfType<Person>();
+                var personDataViewQuery = new PersonService( rockContext ).GetQueryUsingDataView( dataView );
                 personAliasQuery = personAliasQuery.Where( pa => personDataViewQuery.Any( person => person.Aliases.Any( alias => alias.Id == pa.Id ) ) );
             }
 
