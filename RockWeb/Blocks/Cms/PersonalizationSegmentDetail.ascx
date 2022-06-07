@@ -104,11 +104,22 @@
                         <Rock:Toggle ID="tglInteractionFiltersAllAny" runat="server" OnText="All" OffText="Any" ActiveButtonCssClass="btn-info" ButtonSizeCssClass="btn-xs" />
                     </div>
                     <div class="panel-body">
+                        <Rock:Grid ID="gInteractionFilters" runat="server" DisplayType="Light" RowItemText="Interaction Filter">
+                            <Columns>
+                                <Rock:RockBoundField DataField="InteractionChannelName" HeaderText="Channel" />
+                                <Rock:RockBoundField DataField="InteractionComponentName" HeaderText="Component" />
+                                <Rock:RockBoundField DataField="Operation" HeaderText="Operation"  />
+                                <Rock:RockBoundField DataField="ComparisonText" HeaderText="Quantity"  />
+                                <Rock:RockBoundField DataField="DateRangeText" HeaderText="Date Range" />
+                                <Rock:EditField OnClick="gInteractionFilters_EditClick" />
+                                <Rock:DeleteField OnClick="gInteractionFilters_DeleteClick" />
+                            </Columns>
+                        </Rock:Grid>
                     </div>
                 </asp:Panel>
 
                 <div class="actions">
-                    <asp:LinkButton ID="btnTestSessionCountFilter" runat="server" Text="## Test Filter ##" CausesValidation="false" CssClass="btn btn-primary" OnClick="btnTestSessionCountFilter_Click" />
+                    <asp:LinkButton ID="btnTestSegmentFilters" runat="server" Text="## Test Segment Filters ##" CausesValidation="false" CssClass="btn btn-primary" OnClick="btnTestSegmentFilters_Click" />
 
                     <asp:LinkButton ID="btnSave" runat="server" AccessKey="s" ToolTip="Alt+s" Text="Save" CssClass="btn btn-primary" OnClick="btnSave_Click" />
                     <asp:LinkButton ID="btnCancel" runat="server" AccessKey="c" ToolTip="Alt+c" Text="Cancel" CssClass="btn btn-link" CausesValidation="false" OnClick="btnCancel_Click" />
@@ -170,6 +181,38 @@
 
                         <Rock:PagePicker ID="ppPageViewFilterPages" runat="server" AllowMultiSelect="true" ValidationGroup="vgPageViewFilterConfiguration"  Label="Page Picker Instead?"/>
                         <Rock:RockListBox ID="lstPageViewFilterPages" runat="server" Required="false" ValidationGroup="vgPageViewFilterConfiguration" Label="##TODO## Select Page Views using this?" />
+                    </div>
+
+
+                </Content>
+            </Rock:ModalDialog>
+
+            <%-- Modal for Interactions Filter --%>
+            <Rock:ModalDialog ID="mdInteractionFilterConfiguration" runat="server" OnSaveClick="mdInteractionFilterConfiguration_SaveClick" ValidationGroup="vgInteractionFilterConfiguration">
+                <Content>
+                    <div class="panel-body">
+                        <asp:HiddenField ID="hfInteractionFilterGuid" runat="server" />
+
+                        <asp:ValidationSummary ID="vsInteractionFilterConfiguration" runat="server" HeaderText="Please correct the following:" CssClass="alert alert-validation" ValidationGroup="vgInteractionFilterConfiguration" />
+
+                        <div class="field-criteria">
+                            <Rock:RockDropDownList ID="ddlInteractionFilterComparisonType" CssClass="js-filter-compare" runat="server" ValidationGroup="vgInteractionFilterConfiguration" />
+                            <Rock:NumberBox ID="nbInteractionFilterCompareValue" runat="server" Required="true" CssClass="js-filter-control" ValidationGroup="vgInteractionFilterConfiguration" />
+                        </div>
+
+                        <span>interactions in the channel/component</span>
+
+                        <Rock:InteractionChannelPicker ID="pInteractionFilterInteractionChannel" runat="server" Label="Channel" ValidationGroup="vgInteractionFilterConfiguration" Required="true" AutoPostBack="true" OnSelectedIndexChanged="pInteractionFilterInteractionChannel_SelectedIndexChanged" />
+                        <Rock:InteractionComponentPicker ID="pInteractionFilterInteractionComponent" runat="server" Label="Component" ValidationGroup="vgInteractionFilterConfiguration" Required="false" />
+
+                        <Rock:RockTextBox ID="tbInteractionFilterOperation" runat="server" Label="Operation" />
+
+                        <span>In the following date range</span>
+                        <Rock:SlidingDateRangePicker ID="drpInteractionFilterSlidingDateRange" runat="server" Label="" PreviewLocation="Right" EnabledSlidingDateRangeTypes="Previous, Last, Current, DateRange" ValidationGroup="vgInteractionFilterConfiguration" ToolTip="<div class='js-slidingdaterange-info'></>" />
+
+                        <br />
+
+                        
                     </div>
 
 

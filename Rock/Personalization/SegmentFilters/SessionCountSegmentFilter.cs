@@ -18,6 +18,8 @@ namespace Rock.Personalization.SegmentFilters
     /// <seealso cref="Rock.Personalization.SegmentFilter" />
     public class SessionCountSegmentFilter : Rock.Personalization.SegmentFilter
     {
+        #region Configuration
+
         /// <summary>
         /// Gets or sets the type of the comparison.
         /// </summary>
@@ -42,6 +44,8 @@ namespace Rock.Personalization.SegmentFilters
         /// </summary>
         /// <value>The sliding date range delimited values.</value>
         public string SlidingDateRangeDelimitedValues { get; set; }
+
+        #endregion Configuration
 
         private SiteCache[] GetSelectedSites() => SiteGuids?.Select( a => SiteCache.Get( a ) ).Where( a => a != null ).ToArray() ?? new SiteCache[0];
 

@@ -29,6 +29,7 @@ using Rock.Model;
 using Rock.Personalization.SegmentFilters;
 using Rock.Reporting;
 using Rock.Web.Cache;
+using Rock.Web.UI.Controls;
 
 namespace RockWeb.Blocks.Cms
 {
@@ -95,6 +96,10 @@ namespace RockWeb.Blocks.Cms
             gPageViewFilters.DataKeyNames = new string[] { "Guid" };
             gPageViewFilters.Actions.ShowAdd = true;
             gPageViewFilters.Actions.AddClick += gPageViewFilters_AddClick;
+
+            gInteractionFilters.DataKeyNames = new string[] { "Guid" };
+            gInteractionFilters.Actions.ShowAdd = true;
+            gInteractionFilters.Actions.AddClick += gInteractionFilters_AddClick;
         }
 
         /// <summary>
@@ -182,7 +187,7 @@ namespace RockWeb.Blocks.Cms
 
             // Interaction Filters
             tglInteractionFiltersAllAny.Checked = AdditionalFilterConfiguration.InteractionFilterExpressionType == FilterExpressionType.GroupAll;
-            //BindInteractionFiltersGrid();
+            BindInteractionFiltersGrid();
         }
 
         #endregion Methods
@@ -199,12 +204,21 @@ namespace RockWeb.Blocks.Cms
             NavigateToCurrentPageReference();
         }
 
+        /// <summary>
+        /// Handles the SelectItem event of the dvpFilterDataView control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
         protected void dvpFilterDataView_SelectItem( object sender, EventArgs e )
         {
             var selectedDataViewId = dvpFilterDataView.SelectedValueAsId();
             ShowDataViewWarningIfInvalid( selectedDataViewId );
         }
 
+        /// <summary>
+        /// Shows the data view warning if invalid.
+        /// </summary>
+        /// <param name="selectedDataViewId">The selected data view identifier.</param>
         private void ShowDataViewWarningIfInvalid( int? selectedDataViewId )
         {
             nbFilterDataViewWarning.Visible = false;
@@ -312,51 +326,7 @@ namespace RockWeb.Blocks.Cms
 
         #endregion
 
-        protected void btnTestSessionCountFilter_Click( object sender, EventArgs e )
-        {
-            var rockContext = new RockContext();
-            rockContext.SqlLogging( true );
-            var personAliasService = new PersonAliasService( rockContext );
-            var parameterExpression = personAliasService.ParameterExpression;
-            Expression allSegmentsWhereExpression = null;
 
-            foreach ( var segmentFilter in AdditionalFilterConfiguration.SessionSegmentFilters )
-            {
-                var segmentWhereExpression = segmentFilter.GetWherePersonAliasExpression( personAliasService, parameterExpression );
-                if ( segmentWhereExpression == null )
-                {
-                    continue;
-                }
-
-                if ( allSegmentsWhereExpression == null )
-                {
-                    allSegmentsWhereExpression = segmentWhereExpression;
-                }
-                else
-                {
-                    if ( AdditionalFilterConfiguration.SessionFilterExpressionType == FilterExpressionType.GroupAll )
-                    {
-                        allSegmentsWhereExpression = Expression.AndAlso( allSegmentsWhereExpression, segmentWhereExpression );
-                    }
-                    else if ( AdditionalFilterConfiguration.SessionFilterExpressionType == FilterExpressionType.GroupAny )
-                    {
-                        allSegmentsWhereExpression = Expression.Or( allSegmentsWhereExpression, segmentWhereExpression );
-                    }
-                }
-            }
-
-            if ( allSegmentsWhereExpression == null )
-            {
-                // if there aren't any 'where' expressions, don't return any person aliases
-                allSegmentsWhereExpression = Expression.Constant( false );
-            }
-
-            var results = personAliasService.Get( parameterExpression, allSegmentsWhereExpression ).ToList();
-            rockContext.SqlLogging( false );
-
-            // 
-            Debug.WriteLine( $"\n\nPerson Alias Count: {results.Count}" );
-        }
 
         #region Session Filters Related
 
@@ -608,5 +578,185 @@ namespace RockWeb.Blocks.Cms
         }
 
         #endregion Page View Filters Related
+
+        #region Interaction Filter Related
+
+        /// <summary>
+        /// Binds the interactions views filters grid.
+        /// </summary>
+        private void BindInteractionFiltersGrid()
+        {
+            var interactionSegmentFilters = this.AdditionalFilterConfiguration.InteractionSegmentFilters;
+            var interactionSegmentDataSource = interactionSegmentFilters.Select( a => new
+            {
+                a.Guid,
+                InteractionChannelName = InteractionChannelCache.Get( a.InteractionChannelGuid )?.Name,
+                InteractionComponentName = a.InteractionComponentGuid.HasValue ? InteractionComponentCache.Get( a.InteractionComponentGuid.Value )?.Name : "*",
+                Operation = a.Operation.IfEmpty( "*" ),
+                ComparisonText = $"{a.ComparisonType.GetFriendlyDescription()} {a.ComparisonValue}",
+                DateRangeText = SlidingDateRangePicker.FormatDelimitedValues( a.SlidingDateRangeDelimitedValues )
+            } );
+
+            gInteractionFilters.DataSource = interactionSegmentDataSource.OrderBy( a => a.InteractionChannelName ).ThenBy( a => a.InteractionComponentName ).ToList();
+            gInteractionFilters.DataBind();
+        }
+
+        /// <summary>
+        /// Handles the AddClick event of the gInteractionFilters control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
+        private void gInteractionFilters_AddClick( object sender, EventArgs e )
+        {
+            ShowInteractionFilterDialog( null );
+        }
+
+        /// <summary>
+        /// Handles the EditClick event of the gInteractionFilters control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="Rock.Web.UI.Controls.RowEventArgs"/> instance containing the event data.</param>
+        protected void gInteractionFilters_EditClick( object sender, Rock.Web.UI.Controls.RowEventArgs e )
+        {
+            var interactionSegmentFilterGuid = ( Guid ) e.RowKeyValue;
+            var interactionSegmentFilter = this.AdditionalFilterConfiguration.InteractionSegmentFilters.Where( a => a.Guid == interactionSegmentFilterGuid ).FirstOrDefault();
+            ShowInteractionFilterDialog( interactionSegmentFilter );
+        }
+
+        /// <summary>
+        /// Shows the interactionfilter dialog.
+        /// </summary>
+        /// <param name="pageViewFilterSegmentFilter">The interaction filter segment filter.</param>
+        private void ShowInteractionFilterDialog( Rock.Personalization.SegmentFilters.InteractionSegmentFilter interactionSegmentFilter )
+        {
+            if ( interactionSegmentFilter == null )
+            {
+                interactionSegmentFilter = new InteractionSegmentFilter();
+                interactionSegmentFilter.Guid = Guid.NewGuid();
+            }
+
+            hfInteractionFilterGuid.Value = interactionSegmentFilter.Guid.ToString();
+
+            ComparisonHelper.PopulateComparisonControl( ddlInteractionFilterComparisonType, ComparisonHelper.NumericFilterComparisonTypes, true, true );
+            ddlInteractionFilterComparisonType.SetValue( interactionSegmentFilter.ComparisonType.ConvertToInt() );
+            nbInteractionFilterCompareValue.Text = interactionSegmentFilter.ComparisonValue.ToString();
+
+            var interactionChannelId = InteractionChannelCache.GetId( interactionSegmentFilter.InteractionChannelGuid );
+
+            pInteractionFilterInteractionChannel.SetValue( interactionChannelId );
+            pInteractionFilterInteractionComponent.InteractionChannelId = interactionChannelId;
+
+            var interactionComponentId = interactionSegmentFilter.InteractionComponentGuid.HasValue ? InteractionComponentCache.GetId( interactionSegmentFilter.InteractionComponentGuid.Value ) : null;
+            pInteractionFilterInteractionComponent.SetValue( interactionComponentId );
+            tbInteractionFilterOperation.Text = interactionSegmentFilter.Operation;
+
+            drpInteractionFilterSlidingDateRange.DelimitedValues = interactionSegmentFilter.SlidingDateRangeDelimitedValues;
+
+            mdInteractionFilterConfiguration.Show();
+        }
+
+        /// <summary>
+        /// Handles the SaveClick event of the mdInteractionFilterConfiguration control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
+        protected void mdInteractionFilterConfiguration_SaveClick( object sender, EventArgs e )
+        {
+            var interactionFilterGuid = hfInteractionFilterGuid.Value.AsGuid();
+            var interactionFilter = this.AdditionalFilterConfiguration.InteractionSegmentFilters.Where( a => a.Guid == interactionFilterGuid ).FirstOrDefault();
+            if ( interactionFilter == null )
+            {
+                interactionFilter = new InteractionSegmentFilter();
+                interactionFilter.Guid = hfInteractionFilterGuid.Value.AsGuid();
+                this.AdditionalFilterConfiguration.InteractionSegmentFilters.Add( interactionFilter );
+            }
+
+            var interactionChannelId = pInteractionFilterInteractionChannel.SelectedValueAsId();
+            if ( interactionChannelId == null )
+            {
+                return;
+            }
+
+            interactionFilter.ComparisonType = ddlInteractionFilterComparisonType.SelectedValueAsEnumOrNull<ComparisonType>() ?? ComparisonType.GreaterThanOrEqualTo;
+            interactionFilter.ComparisonValue = nbInteractionFilterCompareValue.Text.AsInteger();
+            interactionFilter.InteractionChannelGuid = InteractionChannelCache.Get( interactionChannelId.Value ).Guid;
+
+            var interactionComponentId = pInteractionFilterInteractionComponent.SelectedValueAsId();
+            if ( interactionComponentId.HasValue )
+            {
+                interactionFilter.InteractionComponentGuid = InteractionComponentCache.Get( interactionComponentId.Value )?.Guid;
+            }
+            else
+            {
+                interactionFilter.InteractionComponentGuid = null;
+            }
+
+            interactionFilter.SlidingDateRangeDelimitedValues = drpInteractionFilterSlidingDateRange.DelimitedValues;
+            interactionFilter.Operation = tbInteractionFilterOperation.Text;
+            mdInteractionFilterConfiguration.Hide();
+            BindInteractionFiltersGrid();
+        }
+
+        /// <summary>
+        /// Handles the DeleteClick event of the gInteractionFilters control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="Rock.Web.UI.Controls.RowEventArgs"/> instance containing the event data.</param>
+        protected void gInteractionFilters_DeleteClick( object sender, Rock.Web.UI.Controls.RowEventArgs e )
+        {
+            var interactionFilterGuid = ( Guid ) e.RowKeyValue;
+            var interactionFilter = this.AdditionalFilterConfiguration.InteractionSegmentFilters.Where( a => a.Guid == interactionFilterGuid ).FirstOrDefault();
+            if ( interactionFilter != null )
+            {
+                this.AdditionalFilterConfiguration.InteractionSegmentFilters.Remove( interactionFilter );
+            }
+
+            BindInteractionFiltersGrid();
+        }
+
+        /// <summary>
+        /// Handles the SelectedIndexChanged event of the pInteractionFilterInteractionChannel control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
+        protected void pInteractionFilterInteractionChannel_SelectedIndexChanged( object sender, EventArgs e )
+        {
+            pInteractionFilterInteractionComponent.InteractionChannelId = pInteractionFilterInteractionChannel.SelectedValueAsId();
+        }
+
+        #endregion Interaction Filter Related
+
+        /// <summary>
+        /// Handles the Click event of the btnTestSegmentFilters control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
+        protected void btnTestSegmentFilters_Click( object sender, EventArgs e )
+        {
+            var rockContext = new RockContext();
+
+            rockContext.SqlLogging( true );
+            var personAliasService = new PersonAliasService( rockContext );
+            var parameterExpression = personAliasService.ParameterExpression;
+            Expression segmentFiltersWhereExpression = AdditionalFilterConfiguration.GetPersonAliasFiltersWhereExpression( personAliasService, parameterExpression );
+
+            var personAliasQuery = personAliasService.Get( parameterExpression, segmentFiltersWhereExpression );
+
+            var dataViewFilterId = dvpFilterDataView.SelectedValueAsId();
+            if ( dataViewFilterId.HasValue )
+            {
+                var args = new DataViewGetQueryArgs { DbContext = rockContext };
+
+                var personDataViewQuery = new DataViewService( rockContext ).Get( dataViewFilterId.Value ).GetQuery( args ).OfType<Person>();
+                personAliasQuery = personAliasQuery.Where( pa => personDataViewQuery.Any( person => person.Aliases.Any( alias => alias.Id == pa.Id ) ) );
+            }
+
+            var results = personAliasQuery.ToList();
+
+            rockContext.SqlLogging( false );
+
+            // 
+            Debug.WriteLine( $"\n\nPerson Alias Count: {results.Count}" );
+        }
     }
 }

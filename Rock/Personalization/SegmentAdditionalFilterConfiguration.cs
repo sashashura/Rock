@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq.Expressions;
 
 using Rock.Model;
 using Rock.Personalization.SegmentFilters;
@@ -45,5 +47,85 @@ namespace Rock.Personalization
         /// </summary>
         /// <value>The interaction segment filters.</value>
         public List<InteractionSegmentFilter> InteractionSegmentFilters { get; set; } = new List<InteractionSegmentFilter>();
+
+        /// <summary>
+        /// Gets the page view segment filters where expression.
+        /// </summary>
+        /// <param name="segmentFilters">The segment filters.</param>
+        /// <param name="filterExpressionType">Type of the filter expression.</param>
+        /// <param name="personAliasService">The person alias service.</param>
+        /// <param name="parameterExpression">The parameter expression.</param>
+        /// <returns>Expression.</returns>
+        private static Expression CombineSegmentFilters( IEnumerable<SegmentFilter> segmentFilters, FilterExpressionType filterExpressionType, PersonAliasService personAliasService, ParameterExpression parameterExpression )
+        {
+            Expression allPageViewSegmentFiltersExpression = null;
+
+            foreach ( var pageViewSegment in segmentFilters )
+            {
+                var segmentWhereExpression = pageViewSegment.GetWherePersonAliasExpression( personAliasService, parameterExpression );
+                allPageViewSegmentFiltersExpression = AppendExpression( allPageViewSegmentFiltersExpression, segmentWhereExpression, filterExpressionType );
+            }
+
+            if ( allPageViewSegmentFiltersExpression == null )
+            {
+                // if there aren't any 'where' expressions, don't filter
+                allPageViewSegmentFiltersExpression = Expression.Constant( true );
+            }
+
+            return allPageViewSegmentFiltersExpression;
+        }
+
+        /// <summary>
+        /// Appends the expression.
+        /// </summary>
+        /// <param name="allSegmentFiltersExpression">All segment filters expression.</param>
+        /// <param name="segmentWhereExpression">The segment where expression.</param>
+        /// <param name="filterExpressionType">Type of the filter expression.</param>
+        /// <returns>Expression.</returns>
+        private static Expression AppendExpression( Expression allSegmentFiltersExpression, Expression segmentWhereExpression, FilterExpressionType filterExpressionType )
+        {
+            if ( segmentWhereExpression == null )
+            {
+                return allSegmentFiltersExpression;
+            }
+
+            if ( allSegmentFiltersExpression == null )
+            {
+                allSegmentFiltersExpression = segmentWhereExpression;
+            }
+            else
+            {
+                if ( filterExpressionType == FilterExpressionType.GroupAll )
+                {
+                    allSegmentFiltersExpression = Expression.AndAlso( allSegmentFiltersExpression, segmentWhereExpression );
+                }
+                else if ( filterExpressionType == FilterExpressionType.GroupAny )
+                {
+                    allSegmentFiltersExpression = Expression.Or( allSegmentFiltersExpression, segmentWhereExpression );
+                }
+            }
+
+            return allSegmentFiltersExpression;
+        }
+
+        /// <summary>
+        /// Gets the final person alias filters where expression.
+        /// </summary>
+        /// <param name="personAliasService">The person alias service.</param>
+        /// <param name="parameterExpression">The parameter expression.</param>
+        /// <returns>System.Linq.Expressions.Expression.</returns>
+        public Expression GetPersonAliasFiltersWhereExpression( PersonAliasService personAliasService, ParameterExpression parameterExpression )
+        {
+            Expression finalExpression = null;
+            var sessionSegmentFiltersWhereExpression = CombineSegmentFilters( SessionSegmentFilters, SessionFilterExpressionType, personAliasService, parameterExpression );
+            var pageViewSegmentFiltersWhereExpression = CombineSegmentFilters( PageViewSegmentFilters, PageViewFilterExpressionType, personAliasService, parameterExpression );
+            var interactionSegmentFiltersWhereExpression = CombineSegmentFilters( InteractionSegmentFilters, InteractionFilterExpressionType, personAliasService, parameterExpression );
+
+            finalExpression = AppendExpression( finalExpression, sessionSegmentFiltersWhereExpression, FilterExpressionType.GroupAll );
+            finalExpression = AppendExpression( finalExpression, pageViewSegmentFiltersWhereExpression, FilterExpressionType.GroupAll );
+            finalExpression = AppendExpression( finalExpression, interactionSegmentFiltersWhereExpression, FilterExpressionType.GroupAll );
+
+            return finalExpression;
+        }
     }
 }

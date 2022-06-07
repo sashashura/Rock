@@ -18,6 +18,8 @@ namespace Rock.Personalization.SegmentFilters
     /// <seealso cref="Rock.Personalization.SegmentFilter" />
     public class PageViewSegmentFilter : Rock.Personalization.SegmentFilter
     {
+        #region Configuration
+
         /// <summary>
         /// Gets or sets the type of the comparison.
         /// </summary>
@@ -48,6 +50,8 @@ namespace Rock.Personalization.SegmentFilters
         /// </summary>
         /// <value>The sliding date range delimited values.</value>
         public string SlidingDateRangeDelimitedValues { get; set; }
+
+        #endregion Configuration
 
         /// <summary>
         /// Gets the selected sites.
@@ -153,6 +157,8 @@ namespace Rock.Personalization.SegmentFilters
 
             var comparisonType = this.ComparisonType;
             var comparisonValue = this.ComparisonValue;
+
+            // filter by the Page View count
             var personAliasCompareEqualQuery = personAliasQuery.Where( p =>
                 pageViewsInteractionsQuery.Where( i => i.PersonAliasId == p.Id ).Count() == comparisonValue );
 
