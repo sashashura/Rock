@@ -14,11 +14,12 @@
 // limitations under the License.
 // </copyright>
 //
+using System;
+using System.Runtime.Serialization;
+
 using Rock.Data;
 using Rock.Model;
-using System;
-using System.ComponentModel.DataAnnotations;
-using System.Runtime.Serialization;
+using Rock.Personalization;
 
 namespace Rock.Web.Cache
 {
@@ -27,54 +28,36 @@ namespace Rock.Web.Cache
     /// </summary>
     [Serializable]
     [DataContract]
-    public class SegmentCache : ModelCache<SegmentCache, PersonalizationSegment>
+    public class PersonalizationSegmentCache : ModelCache<PersonalizationSegmentCache, PersonalizationSegment>
     {
         #region Properties
 
-        /// <summary>
-        /// Gets or sets the name.
-        /// </summary>
-        /// <value>
-        /// The name.
-        /// </value>
+        /// <inheritdoc cref="PersonalizationSegment.Name"/>
         [DataMember]
         public string Name { get; private set; }
 
-        /// <summary>
-        /// Gets or sets the segment key.
-        /// </summary>
-        /// <value>
-        /// The segment key.
-        /// </value>
+        /// <inheritdoc cref="PersonalizationSegment.SegmentKey"/>
         [DataMember]
         public string SegmentKey { get; private set; }
 
-        /// <summary>
-        /// Gets or sets a value indicating whether this instance is active.
-        /// </summary>
-        /// <value>
-        ///   <c>true</c> if this instance is active; otherwise, <c>false</c>.
-        /// </value>
+        /// <inheritdoc cref="PersonalizationSegment.IsActive"/>
         [DataMember]
         public bool IsActive { get; private set; }
 
-        /// <summary>
-        /// Gets or sets the filter data view identifier.
-        /// </summary>
-        /// <value>
-        /// The filter data view identifier.
-        /// </value>
+        /// <inheritdoc cref="PersonalizationSegment.FilterDataViewId"/>
         [DataMember]
         public int? FilterDataViewId { get; private set; }
-
-        /// <summary>
-        /// Gets or sets the additional filter json.
-        /// </summary>
-        /// <value>
-        /// The additional filter json.
-        /// </value>
+        
+        /// <inheritdoc cref="PersonalizationSegment.AdditionalFilterJson"/>
         [DataMember]
-        public string AdditionalFilterJson { get; private set; }
+        public string AdditionalFilterJson
+        {
+            get => AdditionalFilterConfiguration?.ToJson();
+            private set => AdditionalFilterConfiguration = value?.FromJsonOrNull<PersonalizationSegmentAdditionalFilterConfiguration>();
+        }
+
+        /// <inheritdoc cref="PersonalizationSegment.AdditionalFilterConfiguration"/>
+        public PersonalizationSegmentAdditionalFilterConfiguration AdditionalFilterConfiguration { get; private set; }
 
         #endregion
 
@@ -108,7 +91,7 @@ namespace Rock.Web.Cache
         {
             return Name;
         }
-
+        
         #endregion Public Methods
     }
 }

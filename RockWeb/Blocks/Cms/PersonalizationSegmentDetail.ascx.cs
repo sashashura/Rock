@@ -71,7 +71,7 @@ namespace RockWeb.Blocks.Cms
 
         #endregion PageParameter Keys
 
-        private Rock.Personalization.SegmentAdditionalFilterConfiguration AdditionalFilterConfiguration { get; set; }
+        private Rock.Personalization.PersonalizationSegmentAdditionalFilterConfiguration AdditionalFilterConfiguration { get; set; }
 
         #region Base Control Methods
 
@@ -126,7 +126,7 @@ namespace RockWeb.Blocks.Cms
 
             var additionalFilterConfigurationJson = this.ViewState[ViewStateKey.AdditionalFilterConfigurationJson] as string;
 
-            this.AdditionalFilterConfiguration = additionalFilterConfigurationJson.FromJsonOrNull<Rock.Personalization.SegmentAdditionalFilterConfiguration>() ?? new Rock.Personalization.SegmentAdditionalFilterConfiguration();
+            this.AdditionalFilterConfiguration = additionalFilterConfigurationJson.FromJsonOrNull<Rock.Personalization.PersonalizationSegmentAdditionalFilterConfiguration>() ?? new Rock.Personalization.PersonalizationSegmentAdditionalFilterConfiguration();
         }
 
         /// <summary>
@@ -172,7 +172,7 @@ namespace RockWeb.Blocks.Cms
             cbIsActive.Checked = personalizationSegment.IsActive;
             hfExistingSegmentKeyNames.Value = personalizationSegmentService.Queryable().Where( a => a.Id != personalizationSegment.Id ).Select( a => a.SegmentKey ).ToList().ToJson();
 
-            this.AdditionalFilterConfiguration = personalizationSegment.AdditionalFilterConfiguration ?? new Rock.Personalization.SegmentAdditionalFilterConfiguration();
+            this.AdditionalFilterConfiguration = personalizationSegment.AdditionalFilterConfiguration ?? new Rock.Personalization.PersonalizationSegmentAdditionalFilterConfiguration();
 
             // Person Filters
             dvpFilterDataView.SetValue( personalizationSegment.FilterDataViewId );
@@ -326,8 +326,6 @@ namespace RockWeb.Blocks.Cms
         }
 
         #endregion
-
-
 
         #region Session Filters Related
 

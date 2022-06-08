@@ -29,10 +29,10 @@ namespace Rock.Personalization.SegmentFilters
 {
     /// <summary>
     /// Class SessionSegmentFilter.
-    /// Implements the <see cref="Rock.Personalization.SegmentFilter" />
+    /// Implements the <see cref="Rock.Personalization.PersonalizationSegmentFilter" />
     /// </summary>
-    /// <seealso cref="Rock.Personalization.SegmentFilter" />
-    public class SessionCountSegmentFilter : Rock.Personalization.SegmentFilter
+    /// <seealso cref="Rock.Personalization.PersonalizationSegmentFilter" />
+    public class SessionCountSegmentFilter : PersonalizationSegmentFilter
     {
         #region Configuration
 

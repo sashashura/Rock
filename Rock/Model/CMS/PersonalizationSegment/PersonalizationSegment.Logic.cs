@@ -33,7 +33,7 @@ namespace Rock.Model
         /// <returns></returns>
         public IEntityCache GetCacheObject()
         {
-            return SegmentCache.Get( this.Id );
+            return PersonalizationSegmentCache.Get( this.Id );
         }
 
         /// <summary>
@@ -43,7 +43,7 @@ namespace Rock.Model
         /// <param name="dbContext">The database context.</param>
         public void UpdateCache( EntityState entityState, Data.DbContext dbContext )
         {
-            SegmentCache.UpdateCachedEntity( this.Id, entityState );
+            PersonalizationSegmentCache.UpdateCachedEntity( this.Id, entityState );
         }
 
         #endregion ICacheable
@@ -53,16 +53,16 @@ namespace Rock.Model
         /// </summary>
         /// <value>The additional filter.</value>
         [NotMapped]
-        public virtual SegmentAdditionalFilterConfiguration AdditionalFilterConfiguration
+        public virtual PersonalizationSegmentAdditionalFilterConfiguration AdditionalFilterConfiguration
         {
             get
             {
                 if ( AdditionalFilterJson.IsNullOrWhiteSpace() )
                 {
-                    return new SegmentAdditionalFilterConfiguration();
+                    return new PersonalizationSegmentAdditionalFilterConfiguration();
                 }
 
-                return AdditionalFilterJson.FromJsonOrNull<SegmentAdditionalFilterConfiguration>() ?? new SegmentAdditionalFilterConfiguration();
+                return AdditionalFilterJson.FromJsonOrNull<PersonalizationSegmentAdditionalFilterConfiguration>() ?? new PersonalizationSegmentAdditionalFilterConfiguration();
             }
 
             set

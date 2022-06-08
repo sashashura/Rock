@@ -26,7 +26,7 @@ namespace Rock.Personalization
     /// <summary>
     /// Configuration class for Additional Filters for Personalization Segments.
     /// </summary>
-    public class SegmentAdditionalFilterConfiguration
+    public class PersonalizationSegmentAdditionalFilterConfiguration
     {
         /// <summary>
         /// Gets or sets <see cref="FilterExpressionType"/>
@@ -72,7 +72,7 @@ namespace Rock.Personalization
         /// <param name="personAliasService">The person alias service.</param>
         /// <param name="parameterExpression">The parameter expression.</param>
         /// <returns>Expression.</returns>
-        private static Expression CombineSegmentFilters( IEnumerable<SegmentFilter> segmentFilters, FilterExpressionType filterExpressionType, PersonAliasService personAliasService, ParameterExpression parameterExpression )
+        private static Expression CombineSegmentFilters( IEnumerable<PersonalizationSegmentFilter> segmentFilters, FilterExpressionType filterExpressionType, PersonAliasService personAliasService, ParameterExpression parameterExpression )
         {
             Expression allPageViewSegmentFiltersExpression = null;
 

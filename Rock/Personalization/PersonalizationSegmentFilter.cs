@@ -24,7 +24,7 @@ namespace Rock.Personalization
     /// <summary>
     /// Class Filter.
     /// </summary>
-    public abstract class SegmentFilter
+    public abstract class PersonalizationSegmentFilter
     {
         /// <summary>
         /// Gets or sets the unique identifier.
