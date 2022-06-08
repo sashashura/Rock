@@ -242,6 +242,7 @@
     <Compile Include="Entities\PageRouteBag.cs" />
     <Compile Include="Entities\PageShortLinkBag.cs" />
     <Compile Include="Entities\PersonalDeviceBag.cs" />
+    <Compile Include="Entities\PersonalizationSegmentBag.cs" />
     <Compile Include="Entities\PersonalLinkBag.cs" />
     <Compile Include="Entities\PersonalLinkSectionBag.cs" />
     <Compile Include="Entities\PersonalLinkSectionOrderBag.cs" />

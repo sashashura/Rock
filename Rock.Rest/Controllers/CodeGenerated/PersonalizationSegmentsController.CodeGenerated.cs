@@ -27,14 +27,14 @@ using Rock.SystemGuid;
 namespace Rock.Rest.Controllers
 {
     /// <summary>
-    /// Segments REST API
+    /// PersonalizationSegments REST API
     /// </summary>
-    [RestControllerGuid( "" )]
-    public partial class SegmentsController : Rock.Rest.ApiController<Rock.Model.Segment>
+    [RestControllerGuid( "6D6BF315-E0A5-431B-8B9D-CB22AB9EDC52" )]
+    public partial class PersonalizationSegmentsController : Rock.Rest.ApiController<Rock.Model.PersonalizationSegment>
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="SegmentsController"/> class.
+        /// Initializes a new instance of the <see cref="PersonalizationSegmentsController"/> class.
         /// </summary>
-        public SegmentsController() : base( new Rock.Model.SegmentService( new Rock.Data.RockContext() ) ) { } 
+        public PersonalizationSegmentsController() : base( new Rock.Model.PersonalizationSegmentService( new Rock.Data.RockContext() ) ) { } 
     }
 }

@@ -47,6 +47,9 @@ namespace Rock.Client
     public partial class PersonAliasPersonalization : PersonAliasPersonalizationEntity
     {
         /// <summary />
+        public PersonAlias PersonAlias { get; set; }
+
+        /// <summary />
         public int PersonAliasId { get; set; }
 
         /// <summary />

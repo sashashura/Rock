@@ -27,9 +27,9 @@ using System.Collections.Generic;
 namespace Rock.Client
 {
     /// <summary>
-    /// Base client model for Segment that only includes the non-virtual fields. Use this for PUT/POSTs
+    /// Base client model for PersonalizationSegment that only includes the non-virtual fields. Use this for PUT/POSTs
     /// </summary>
-    public partial class SegmentEntity
+    public partial class PersonalizationSegmentEntity
     {
         /// <summary />
         public int Id { get; set; }
@@ -47,7 +47,7 @@ namespace Rock.Client
         public string ForeignKey { get; set; }
 
         /// <summary />
-        public bool IsActive { get; set; }
+        public bool IsActive { get; set; } = true;
 
         /// <summary>
         /// If the ModifiedByPersonAliasId is being set manually and should not be overwritten with current user when saved, set this value to true
@@ -87,10 +87,10 @@ namespace Rock.Client
         public int? ForeignId { get; set; }
 
         /// <summary>
-        /// Copies the base properties from a source Segment object
+        /// Copies the base properties from a source PersonalizationSegment object
         /// </summary>
         /// <param name="source">The source.</param>
-        public void CopyPropertiesFrom( Segment source )
+        public void CopyPropertiesFrom( PersonalizationSegment source )
         {
             this.Id = source.Id;
             this.AdditionalFilterJson = source.AdditionalFilterJson;
@@ -112,10 +112,13 @@ namespace Rock.Client
     }
 
     /// <summary>
-    /// Client model for Segment that includes all the fields that are available for GETs. Use this for GETs (use SegmentEntity for POST/PUTs)
+    /// Client model for PersonalizationSegment that includes all the fields that are available for GETs. Use this for GETs (use PersonalizationSegmentEntity for POST/PUTs)
     /// </summary>
-    public partial class Segment : SegmentEntity
+    public partial class PersonalizationSegment : PersonalizationSegmentEntity
     {
+        /// <summary />
+        public DataView FilterDataView { get; set; }
+
         /// <summary>
         /// NOTE: Attributes are only populated when ?loadAttributes is specified. Options for loadAttributes are true, false, 'simple', 'expanded' 
         /// </summary>

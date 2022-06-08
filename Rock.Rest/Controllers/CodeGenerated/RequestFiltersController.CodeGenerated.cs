@@ -29,7 +29,7 @@ namespace Rock.Rest.Controllers
     /// <summary>
     /// RequestFilters REST API
     /// </summary>
-    [RestControllerGuid( "" )]
+    [RestControllerGuid( "109F0366-42BD-4485-A7AF-4A7A147A5C50" )]
     public partial class RequestFiltersController : Rock.Rest.ApiController<Rock.Model.RequestFilter>
     {
         /// <summary>

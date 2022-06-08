@@ -66,7 +66,7 @@ namespace RockWeb.Blocks.Cms
 
         private static class PageParameterKey
         {
-            public const string SegmentId = "SegmentId";
+            public const string PersonalizationSegmentId = "PersonalizationSegmentId";
         }
 
         #endregion PageParameter Keys
@@ -112,7 +112,7 @@ namespace RockWeb.Blocks.Cms
 
             if ( !Page.IsPostBack )
             {
-                ShowDetail( PageParameter( PageParameterKey.SegmentId ).AsInteger() );
+                ShowDetail( PageParameter( PageParameterKey.PersonalizationSegmentId ).AsInteger() );
             }
         }
 
@@ -146,37 +146,37 @@ namespace RockWeb.Blocks.Cms
         /// <summary>
         /// Shows the detail.
         /// </summary>
-        /// <param name="segmentId">The segment identifier.</param>
-        public void ShowDetail( int segmentId )
+        /// <param name="personalizationSegmentId">The segment identifier.</param>
+        public void ShowDetail( int personalizationSegmentId )
         {
             var rockContext = new RockContext();
 
-            var segmentService = new PersonalizationSegmentService( rockContext );
-            PersonalizationSegment segment = null;
+            var personalizationSegmentService = new PersonalizationSegmentService( rockContext );
+            PersonalizationSegment personalizationSegment = null;
 
-            if ( segmentId > 0 )
+            if ( personalizationSegmentId > 0 )
             {
-                segment = segmentService.Get( segmentId );
+                personalizationSegment = personalizationSegmentService.Get( personalizationSegmentId );
             }
 
-            if ( segment == null )
+            if ( personalizationSegment == null )
             {
-                segment = new PersonalizationSegment();
+                personalizationSegment = new PersonalizationSegment();
             }
 
             /* Name, etc */
-            hfSegmentId.Value = segment.Id.ToString();
-            tbName.Text = segment.Name;
-            tbSegmentKey.Text = segment.SegmentKey;
-            hlInactive.Visible = !segment.IsActive;
-            cbIsActive.Checked = segment.IsActive;
-            hfExistingSegmentKeyNames.Value = segmentService.Queryable().Where( a => a.Id != segment.Id ).Select( a => a.SegmentKey ).ToList().ToJson();
+            hfPersonalizationSegmentId.Value = personalizationSegment.Id.ToString();
+            tbName.Text = personalizationSegment.Name;
+            tbSegmentKey.Text = personalizationSegment.SegmentKey;
+            hlInactive.Visible = !personalizationSegment.IsActive;
+            cbIsActive.Checked = personalizationSegment.IsActive;
+            hfExistingSegmentKeyNames.Value = personalizationSegmentService.Queryable().Where( a => a.Id != personalizationSegment.Id ).Select( a => a.SegmentKey ).ToList().ToJson();
 
-            this.AdditionalFilterConfiguration = segment.AdditionalFilterConfiguration ?? new Rock.Personalization.SegmentAdditionalFilterConfiguration();
+            this.AdditionalFilterConfiguration = personalizationSegment.AdditionalFilterConfiguration ?? new Rock.Personalization.SegmentAdditionalFilterConfiguration();
 
             // Person Filters
-            dvpFilterDataView.SetValue( segment.FilterDataViewId );
-            ShowDataViewWarningIfInvalid( segment.FilterDataViewId );
+            dvpFilterDataView.SetValue( personalizationSegment.FilterDataViewId );
+            ShowDataViewWarningIfInvalid( personalizationSegment.FilterDataViewId );
 
             // Session Filters
             tglSessionCountFiltersAllAny.Checked = AdditionalFilterConfiguration.SessionFilterExpressionType == FilterExpressionType.GroupAll;
@@ -256,31 +256,31 @@ namespace RockWeb.Blocks.Cms
                 return;
             }
 
-            var segmentService = new PersonalizationSegmentService( rockContext );
-            PersonalizationSegment segment;
+            var personalizationSegmentService = new PersonalizationSegmentService( rockContext );
+            PersonalizationSegment personalizationSegment;
 
-            var segmentId = hfSegmentId.Value.AsInteger();
+            var personalizationSegmentId = hfPersonalizationSegmentId.Value.AsInteger();
 
-            if ( segmentId == 0 )
+            if ( personalizationSegmentId == 0 )
             {
-                segment = new PersonalizationSegment();
-                segment.Id = segmentId;
-                segmentService.Add( segment );
+                personalizationSegment = new PersonalizationSegment();
+                personalizationSegment.Id = personalizationSegmentId;
+                personalizationSegmentService.Add( personalizationSegment );
             }
             else
             {
-                segment = segmentService.Get( segmentId );
+                personalizationSegment = personalizationSegmentService.Get( personalizationSegmentId );
             }
 
-            if ( segment == null )
+            if ( personalizationSegment == null )
             {
                 return;
             }
 
-            segment.Name = tbName.Text;
-            segment.IsActive = cbIsActive.Checked;
-            segment.SegmentKey = tbSegmentKey.Text;
-            segment.FilterDataViewId = dvpFilterDataView.SelectedValueAsId();
+            personalizationSegment.Name = tbName.Text;
+            personalizationSegment.IsActive = cbIsActive.Checked;
+            personalizationSegment.SegmentKey = tbSegmentKey.Text;
+            personalizationSegment.FilterDataViewId = dvpFilterDataView.SelectedValueAsId();
 
             if ( tglSessionCountFiltersAllAny.Checked )
             {
@@ -309,7 +309,7 @@ namespace RockWeb.Blocks.Cms
                 AdditionalFilterConfiguration.InteractionFilterExpressionType = FilterExpressionType.GroupAny;
             }
 
-            segment.AdditionalFilterConfiguration = this.AdditionalFilterConfiguration;
+            personalizationSegment.AdditionalFilterConfiguration = this.AdditionalFilterConfiguration;
 
             rockContext.SaveChanges();
             NavigateToParentPage();

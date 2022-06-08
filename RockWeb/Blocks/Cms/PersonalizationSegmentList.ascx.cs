@@ -66,7 +66,7 @@ namespace RockWeb.Blocks.Cms
 
         private static class PageParameterKey
         {
-            public const string SegmentId = "SegmentId";
+            public const string PersonalizationSegmentId = "PersonalizationSegmentId";
         }
 
         #endregion PageParameter Keys
@@ -141,7 +141,7 @@ namespace RockWeb.Blocks.Cms
         protected void gList_DeleteClick( object sender, RowEventArgs e )
         {
             var rockContext = new RockContext();
-            var segmentService = new SegmentService( rockContext );
+            var segmentService = new PersonalizationSegmentService( rockContext );
             var segment = segmentService.Get( e.RowKeyId );
             if ( segment != null )
             {
@@ -186,7 +186,7 @@ namespace RockWeb.Blocks.Cms
         /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
         private void gList_AddClick( object sender, EventArgs e )
         {
-            NavigateToLinkedPage( AttributeKey.DetailPage, PageParameterKey.SegmentId, 0 );
+            NavigateToLinkedPage( AttributeKey.DetailPage, PageParameterKey.PersonalizationSegmentId, 0 );
         }
 
         /// <summary>
@@ -196,7 +196,7 @@ namespace RockWeb.Blocks.Cms
         /// <param name="e">The <see cref="RowEventArgs"/> instance containing the event data.</param>
         protected void gList_RowSelected( object sender, RowEventArgs e )
         {
-            NavigateToLinkedPage( AttributeKey.DetailPage, PageParameterKey.SegmentId, e.RowKeyId );
+            NavigateToLinkedPage( AttributeKey.DetailPage, PageParameterKey.PersonalizationSegmentId, e.RowKeyId );
         }
 
         #endregion
@@ -217,11 +217,11 @@ namespace RockWeb.Blocks.Cms
         private void BindGrid()
         {
             var rockContext = new RockContext();
-            var segmentService = new SegmentService( rockContext );
+            var personalizationSegmentService = new PersonalizationSegmentService( rockContext );
 
             var personAliasPersonalizationsQry = rockContext.PersonAliasPersonalizations;
 
-            var segmentQuery = segmentService.Queryable();
+            var segmentQuery = personalizationSegmentService.Queryable();
 
             var nameFilter = tbNameFilter.Text;
             if ( nameFilter.IsNotNullOrWhiteSpace() )

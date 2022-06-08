@@ -116,6 +116,9 @@ namespace Rock.Client
     /// </summary>
     public partial class RequestFilter : RequestFilterEntity
     {
+        /// <summary />
+        public Site Site { get; set; }
+
         /// <summary>
         /// NOTE: Attributes are only populated when ?loadAttributes is specified. Options for loadAttributes are true, false, 'simple', 'expanded' 
         /// </summary>

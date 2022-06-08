@@ -4,12 +4,12 @@
     <ContentTemplate>
 
         <asp:Panel ID="pnlView" runat="server" CssClass="panel panel-block">
-            <asp:HiddenField ID="hfSegmentId" runat="server" />
+            <asp:HiddenField ID="hfPersonalizationSegmentId" runat="server" />
             <div class="panel-heading">
                 <h1 class="panel-title">
 
                     <i class="fa fa-star"></i>
-                    <asp:Literal ID="lActionTitle" runat="server" Text="something" />
+                    <asp:Literal ID="lActionTitle" runat="server" Text="#TODO#" />
 
 
                 </h1>
