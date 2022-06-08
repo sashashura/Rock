@@ -31,7 +31,7 @@ namespace RockWeb.Blocks.Cms
 {
     [DisplayName( "Personalization Segment List" )]
     [Category( "Cms" )]
-    [Description( "Block that lists existing Audience Segments." )]
+    [Description( "Block that lists existing Personalization Segments." )]
 
     #region Block Attributes
 

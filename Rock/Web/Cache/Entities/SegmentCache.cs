@@ -27,7 +27,7 @@ namespace Rock.Web.Cache
     /// </summary>
     [Serializable]
     [DataContract]
-    public class SegmentCache : ModelCache<SegmentCache, Segment>
+    public class SegmentCache : ModelCache<SegmentCache, PersonalizationSegment>
     {
         #region Properties
 
@@ -88,7 +88,7 @@ namespace Rock.Web.Cache
         {
             base.SetFromEntity( entity );
 
-            if ( entity is Segment segment )
+            if ( entity is PersonalizationSegment segment )
             {
                 Name = segment.Name;
                 SegmentKey = segment.SegmentKey;

@@ -35,7 +35,7 @@ namespace RockWeb.Blocks.Cms
 {
     [DisplayName( "Personalization Segment Detail" )]
     [Category( "Cms" )]
-    [Description( "Displays the details of an audience segment." )]
+    [Description( "Displays the details of an personalization segment." )]
 
     #region Block Attributes
 
@@ -151,8 +151,8 @@ namespace RockWeb.Blocks.Cms
         {
             var rockContext = new RockContext();
 
-            var segmentService = new SegmentService( rockContext );
-            Segment segment = null;
+            var segmentService = new PersonalizationSegmentService( rockContext );
+            PersonalizationSegment segment = null;
 
             if ( segmentId > 0 )
             {
@@ -161,13 +161,14 @@ namespace RockWeb.Blocks.Cms
 
             if ( segment == null )
             {
-                segment = new Segment();
+                segment = new PersonalizationSegment();
             }
 
             /* Name, etc */
             hfSegmentId.Value = segment.Id.ToString();
             tbName.Text = segment.Name;
             tbSegmentKey.Text = segment.SegmentKey;
+            hlInactive.Visible = !segment.IsActive;
             cbIsActive.Checked = segment.IsActive;
             hfExistingSegmentKeyNames.Value = segmentService.Queryable().Where( a => a.Id != segment.Id ).Select( a => a.SegmentKey ).ToList().ToJson();
 
@@ -255,14 +256,14 @@ namespace RockWeb.Blocks.Cms
                 return;
             }
 
-            var segmentService = new SegmentService( rockContext );
-            Segment segment;
+            var segmentService = new PersonalizationSegmentService( rockContext );
+            PersonalizationSegment segment;
 
             var segmentId = hfSegmentId.Value.AsInteger();
 
             if ( segmentId == 0 )
             {
-                segment = new Segment();
+                segment = new PersonalizationSegment();
                 segment.Id = segmentId;
                 segmentService.Add( segment );
             }
@@ -372,6 +373,11 @@ namespace RockWeb.Blocks.Cms
             {
                 sessionCountSegmentFilter = new SessionCountSegmentFilter();
                 sessionCountSegmentFilter.Guid = Guid.NewGuid();
+                mdSessionCountFilterConfiguration.Title = "Add Session Filter";
+            }
+            else
+            {
+                mdSessionCountFilterConfiguration.Title = "Edit Session Filter";
             }
 
             hfSessionCountFilterGuid.Value = sessionCountSegmentFilter.Guid.ToString();
@@ -382,7 +388,7 @@ namespace RockWeb.Blocks.Cms
                 lstSessionCountFilterWebSites.Items.Add( new ListItem( site.Name, site.Guid.ToString() ) );
             }
 
-            ComparisonHelper.PopulateComparisonControl( ddlSessionCountFilterComparisonType, ComparisonHelper.NumericFilterComparisonTypes, true, true );
+            ComparisonHelper.PopulateComparisonControl( ddlSessionCountFilterComparisonType, ComparisonHelper.NumericFilterComparisonTypes, true );
             ddlSessionCountFilterComparisonType.SetValue( sessionCountSegmentFilter.ComparisonType.ConvertToInt() );
             nbSessionCountFilterCompareValue.Text = sessionCountSegmentFilter.ComparisonValue.ToString();
             drpSessionCountFilterSlidingDateRange.DelimitedValues = sessionCountSegmentFilter.SlidingDateRangeDelimitedValues;
@@ -496,6 +502,11 @@ namespace RockWeb.Blocks.Cms
             {
                 pageViewFilterSegmentFilter = new PageViewSegmentFilter();
                 pageViewFilterSegmentFilter.Guid = Guid.NewGuid();
+                mdPageViewFilterConfiguration.Title = "Add Page View Filter";
+            }
+            else
+            {
+                mdPageViewFilterConfiguration.Title = "Edit Page View Filter";
             }
 
             hfPageViewFilterGuid.Value = pageViewFilterSegmentFilter.Guid.ToString();
@@ -506,7 +517,7 @@ namespace RockWeb.Blocks.Cms
                 lstPageViewFilterWebSites.Items.Add( new ListItem( site.Name, site.Guid.ToString() ) );
             }
 
-            ComparisonHelper.PopulateComparisonControl( ddlPageViewFilterComparisonType, ComparisonHelper.NumericFilterComparisonTypes, true, true );
+            ComparisonHelper.PopulateComparisonControl( ddlPageViewFilterComparisonType, ComparisonHelper.NumericFilterComparisonTypes, true );
             ddlPageViewFilterComparisonType.SetValue( pageViewFilterSegmentFilter.ComparisonType.ConvertToInt() );
             nbPageViewFilterCompareValue.Text = pageViewFilterSegmentFilter.ComparisonValue.ToString();
             drpPageViewFilterSlidingDateRange.DelimitedValues = pageViewFilterSegmentFilter.SlidingDateRangeDelimitedValues;
@@ -593,7 +604,7 @@ namespace RockWeb.Blocks.Cms
                 InteractionChannelName = InteractionChannelCache.Get( a.InteractionChannelGuid )?.Name,
                 InteractionComponentName = a.InteractionComponentGuid.HasValue ? InteractionComponentCache.Get( a.InteractionComponentGuid.Value )?.Name : "*",
                 Operation = a.Operation.IfEmpty( "*" ),
-                ComparisonText = $"{a.ComparisonType.GetFriendlyDescription()} {a.ComparisonValue}",
+                ComparisonText = $"{a.ComparisonType.ConvertToString()} {a.ComparisonValue}",
                 DateRangeText = SlidingDateRangePicker.FormatDelimitedValues( a.SlidingDateRangeDelimitedValues )
             } );
 
@@ -633,11 +644,16 @@ namespace RockWeb.Blocks.Cms
             {
                 interactionSegmentFilter = new InteractionSegmentFilter();
                 interactionSegmentFilter.Guid = Guid.NewGuid();
+                mdInteractionFilterConfiguration.Title = "Add Interaction Filter";
+            }
+            else
+            {
+                mdInteractionFilterConfiguration.Title = "Edit Interaction Filter";
             }
 
             hfInteractionFilterGuid.Value = interactionSegmentFilter.Guid.ToString();
 
-            ComparisonHelper.PopulateComparisonControl( ddlInteractionFilterComparisonType, ComparisonHelper.NumericFilterComparisonTypes, true, true );
+            ComparisonHelper.PopulateComparisonControl( ddlInteractionFilterComparisonType, ComparisonHelper.NumericFilterComparisonTypes, true );
             ddlInteractionFilterComparisonType.SetValue( interactionSegmentFilter.ComparisonType.ConvertToInt() );
             nbInteractionFilterCompareValue.Text = interactionSegmentFilter.ComparisonValue.ToString();
 

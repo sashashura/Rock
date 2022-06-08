@@ -14,9 +14,9 @@
 // limitations under the License.
 // </copyright>
 //
+
 using Rock.Data;
 using Rock.Web.Cache;
-
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Data.Entity.ModelConfiguration;
@@ -29,11 +29,11 @@ namespace Rock.Model
     /// </summary>
     /// <seealso cref="Data.Model{TEntity}" />
     /// <seealso cref="ICacheable" />
-    [RockDomain( "CRM" )]
-    [Table( "Segment" )]
+    [RockDomain( "CMS" )]
+    [Table( "RequestFilter" )]
     [DataContract]
-    [Rock.SystemGuid.EntityTypeGuid( "368A3581-C8C4-4960-901A-9587864226F3" )]
-    public partial class Segment : Model<Segment>, ICacheable
+    [Rock.SystemGuid.EntityTypeGuid( "97FAC672-37A4-4185-B1D4-C68426C625B1")]
+    public partial class RequestFilter : Model<RequestFilter>, ICacheable
     {
         #region Entity Properties
 
@@ -48,13 +48,22 @@ namespace Rock.Model
         public string Name { get; set; }
 
         /// <summary>
-        /// Gets or sets the segment key.
+        /// Gets or sets the request filter key.
         /// </summary>
         /// <value>
-        /// The segment key.
+        /// The request filter key.
         /// </value>
         [DataMember]
-        public string SegmentKey { get; set; }
+        public string RequestFilterKey { get; set; }
+
+        /// <summary>
+        /// Gets or sets the site identifier.
+        /// </summary>
+        /// <value>
+        /// The site identifier.
+        /// </value>
+        [DataMember]
+        public int? SiteId { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether this instance is active.
@@ -63,56 +72,47 @@ namespace Rock.Model
         ///   <c>true</c> if this instance is active; otherwise, <c>false</c>.
         /// </value>
         [DataMember]
-        public bool IsActive { get; set; } = true;
+        public bool IsActive { get; set; }
 
         /// <summary>
-        /// Gets or sets the filter data view identifier.
+        /// Gets or sets the filter json.
         /// </summary>
         /// <value>
-        /// The filter data view identifier.
+        /// The filter json.
         /// </value>
         [DataMember]
-        public int? FilterDataViewId { get; set; }
-
-        /// <summary>
-        /// Gets or sets the additional filter json.
-        /// </summary>
-        /// <value>
-        /// The additional filter json.
-        /// </value>
-        [DataMember]
-        public string AdditionalFilterJson { get; set; }
+        public string FilterJson { get; set; }
 
         #endregion Entity Properties
 
-
         #region Navigation Properties
-
         /// <summary>
-        /// Gets or sets the filter data view.
+        /// Gets or sets the site
         /// </summary>
-        /// <value>The filter data view.</value>
+        /// <value>
+        /// The site reference
+        /// </value>
         [DataMember]
-        public virtual DataView FilterDataView { get; set; }
+        public virtual Site Site { get; set; }
 
         #endregion Navigation Properties
-    }
 
-    #region Entity Configuration
-
-    /// <summary>
-    /// Segment Configuration Class
-    /// </summary>
-    public partial class SegmentConfiguration : EntityTypeConfiguration<Segment>
-    {
+        #region Entity Configuration
         /// <summary>
-        /// Initializes a new instance of the <see cref="PersonAliasConfiguration"/> class.
+        /// EntityCampusFilterConfiguration class
         /// </summary>
-        public SegmentConfiguration()
+        /// <seealso cref="T:System.Data.Entity.ModelConfiguration.EntityTypeConfiguration{Rock.Model.RequestFilter}" />
+        public partial class RequestFilterConfiguration : EntityTypeConfiguration<RequestFilter>
         {
-            HasOptional( a => a.FilterDataView ).WithMany().HasForeignKey( a => a.FilterDataViewId ).WillCascadeOnDelete( false );
+            /// <summary>
+            /// Initializes a new instance of the <see cref="RequestFilterConfiguration"/> class.
+            /// </summary>
+            public RequestFilterConfiguration()
+            {
+                HasOptional( e => e.Site ).WithMany().HasForeignKey( e => e.SiteId ).WillCascadeOnDelete( false );
+            }
         }
-    }
 
-    #endregion
+        #endregion Entity Configuration
+    }
 }

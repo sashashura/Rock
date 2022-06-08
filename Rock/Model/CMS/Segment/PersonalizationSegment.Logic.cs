@@ -23,7 +23,7 @@ using System.Data.Entity;
 
 namespace Rock.Model
 {
-    public partial class Segment
+    public partial class PersonalizationSegment
     {
         #region ICacheable
 

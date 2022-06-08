@@ -101,7 +101,7 @@ namespace Rock.Personalization.SegmentFilters
             }
             else
             {
-                comparisonPhrase = $"Has had {comparisonType.GetFriendlyDescription().ToLower()} {ComparisonValue} page views";
+                comparisonPhrase = $"Has had {comparisonType.ConvertToString().ToLower()} {ComparisonValue} page views";
             }
 
             var siteNames = GetSelectedSites().Select( a => a.Name ).ToList();

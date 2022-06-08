@@ -10,7 +10,7 @@
             <div class="panel-heading">
                 <h1 class="panel-title">
                     <i class="fa fa-star"></i> 
-                    Audience Segments
+                    Personalization Segments
                 </h1>
             </div>
             <div class="panel-body">
@@ -19,7 +19,7 @@
                     <Rock:GridFilter ID="gFilter" runat="server" OnApplyFilterClick="gfList_ApplyFilterClick" OnClearFilterClick="gfList_ClearFilterClick" >
                         <Rock:RockTextBox ID="tbNameFilter" runat="server" Label="Name" />
                     </Rock:GridFilter>
-                    <Rock:Grid ID="gList" runat="server" AllowSorting="true" RowItemText="Audience Segments" OnRowSelected="gList_RowSelected">
+                    <Rock:Grid ID="gList" runat="server" AllowSorting="true" RowItemText="Personalization Segments" OnRowSelected="gList_RowSelected">
                         <Columns>
                             <Rock:RockBoundField DataField="Name" HeaderText="Name" SortExpression="Name" />
                             <Rock:RockBoundField DataField="FilterDataViewName" HeaderText="Data View" SortExpression="FilterDataViewName" />

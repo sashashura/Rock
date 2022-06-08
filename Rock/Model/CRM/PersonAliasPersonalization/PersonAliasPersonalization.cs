@@ -54,7 +54,7 @@ namespace Rock.Model
 
         /// <summary>
         /// Gets or sets the personalization type identifier. Based on the <see cref="PersonalizationType"/> the <see cref="PersonalizationTypeId"/>
-        /// can be an identifier for <see cref="Segment"/> or a <see cref="RequestFilter"/>
+        /// can be an identifier for <see cref="PersonalizationSegment"/> or a <see cref="RequestFilter"/>
         /// </summary>
         /// <value>
         /// The personalization type identifier.

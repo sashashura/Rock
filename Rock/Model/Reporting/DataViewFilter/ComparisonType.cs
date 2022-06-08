@@ -15,8 +15,6 @@
 // </copyright>
 //
 using System;
-using System.ComponentModel;
-
 using Rock.Utility;
 
 namespace Rock.Model
@@ -76,28 +74,24 @@ namespace Rock.Model
         /// Greater than
         /// </summary>
         [EnumOrder( 7 )]
-        [Description( "More Than" )]
         GreaterThan = 0x80,
 
         /// <summary>
         /// Greater than or equal
         /// </summary>
         [EnumOrder( 8 )]
-        [Description( "At Least" )]
         GreaterThanOrEqualTo = 0x100,
 
         /// <summary>
         /// Less than
         /// </summary>
         [EnumOrder( 9 )]
-        [Description( "Less Than" )]
         LessThan = 0x200,
 
         /// <summary>
         /// Less than or equal
         /// </summary>
         [EnumOrder( 10 )]
-        [Description( "No More Than" )]
         LessThanOrEqualTo = 0x400,
 
         /// <summary>
@@ -120,21 +114,5 @@ namespace Rock.Model
         /// </summary>
         [EnumOrder( 14 )]
         RegularExpression = 0x2000,
-    }
-
-    /// <summary>
-    /// Class ComparisonTypeExtensions.
-    /// </summary>
-    public static class ComparisonTypeExtensions
-    {
-        /// <summary>
-        /// Gets the friendly description.
-        /// </summary>
-        /// <param name="comparisonType">Type of the comparison.</param>
-        /// <returns>System.String.</returns>
-        public static string GetFriendlyDescription( this ComparisonType comparisonType )
-        {
-            return comparisonType.GetDescription() ?? comparisonType.ConvertToString();
-        }
     }
 }

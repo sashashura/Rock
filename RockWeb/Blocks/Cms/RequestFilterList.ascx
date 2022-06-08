@@ -1,4 +1,4 @@
-﻿<%@ Control Language="C#" AutoEventWireup="true" CodeFile="PersonalizationRequestFilterList.ascx.cs" Inherits="RockWeb.Blocks.Cms.PersonalizationRequestFilterList" %>
+﻿<%@ Control Language="C#" AutoEventWireup="true" CodeFile="RequestFilterList.ascx.cs" Inherits="RockWeb.Blocks.Cms.RequestFilterList" %>
 
 
 <asp:UpdatePanel ID="upnlContent" runat="server">

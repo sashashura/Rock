@@ -46,7 +46,7 @@ namespace RockWeb.Blocks.Cms
     #endregion Block Attributes
 
     [Rock.SystemGuid.BlockTypeGuid( "650E16B0-8B97-4336-9CE0-EAF8AAC20BDF" )]
-    public partial class PersonalizationRequestFilterList : RockBlock, ICustomGridColumns
+    public partial class RequestFilterList : RockBlock, ICustomGridColumns
     {
         #region Attribute Keys
 

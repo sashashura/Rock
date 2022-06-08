@@ -2230,7 +2230,7 @@ namespace Rock.Data
         /// <value>
         /// The segments.
         /// </value>
-        public DbSet<Segment> Segments { get; set; }
+        public DbSet<PersonalizationSegment> Segments { get; set; }
 
         #endregion
 

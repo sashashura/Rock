@@ -85,7 +85,7 @@ namespace Rock.Personalization.SegmentFilters
             }
             else
             {
-                comparisonPhrase = $"Has had {comparisonType.GetFriendlyDescription().ToLower()} {ComparisonValue} sessions";
+                comparisonPhrase = $"Has had {comparisonType.ConvertToString().ToLower()} {ComparisonValue} sessions";
             }
 
             var siteNames = GetSelectedSites().Select( a => a.Name ).ToList();

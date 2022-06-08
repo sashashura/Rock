@@ -1006,9 +1006,9 @@
     <Compile Include="Model\CRM\PersonAliasPersonalization\PersonAliasPersonalization.cs" />
     <Compile Include="Model\CRM\PersonAliasPersonalization\PersonalizationType.cs" />
     <Compile Include="Model\CRM\PersonalizedEntity\PersonalizedEntity.cs" />
-    <Compile Include="Model\CRM\RequestFilter\RequestFilter.cs" />
-    <Compile Include="Model\CRM\Segment\Segment.cs" />
-    <Compile Include="Model\CRM\Segment\Segment.Logic.cs" />
+    <Compile Include="Model\CMS\RequestFilter\RequestFilter.cs" />
+    <Compile Include="Model\CMS\Segment\PersonalizationSegment.cs" />
+    <Compile Include="Model\CMS\Segment\PersonalizationSegment.Logic.cs" />
     <Compile Include="Model\Finance\FinancialAccount\FinancialAccount.Logic.cs" />
     <Compile Include="Model\Core\FollowingEventType\FollowingEventType.Logic.cs" />
     <Compile Include="Model\Core\FollowingSuggested\FollowingSuggestedStatus.cs" />
@@ -3956,7 +3956,7 @@
     <Compile Include="Model\CRM\PersonPreviousName\PersonPreviousName.SaveHook.cs" />
     <Compile Include="Model\CMS\PersonalLinkSection\PersonalLinkSection.SaveHook.cs" />
     <Compile Include="Model\CRM\PersonAlias\PersonAlias.SaveHook.cs" />
-    <Compile Include="Model\CRM\RequestFilter\RequestFilter.Logic.cs" />
+    <Compile Include="Model\CMS\RequestFilter\RequestFilter.Logic.cs" />
     <None Include="packages.config">
       <SubType>Designer</SubType>
     </None>

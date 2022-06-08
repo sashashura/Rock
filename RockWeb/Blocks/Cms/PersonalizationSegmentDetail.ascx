@@ -14,7 +14,7 @@
 
                 </h1>
                 <div class="panel-labels">
-                    <Rock:HighlightLabel ID="hlStatus" runat="server" LabelType="Success" Text="Active/Inactive" />
+                    <Rock:HighlightLabel ID="hlInactive" runat="server" LabelType="Danger" Text="Inactive" />
                 </div>
             </div>
 
@@ -27,8 +27,8 @@
                 <div class="row">
                     <div class="col-md-6">
                         <Rock:HiddenFieldWithClass ID="hfExistingSegmentKeyNames" runat="server" CssClass="js-existing-key-names" />
-                        <Rock:DataTextBox ID="tbName" runat="server" SourceTypeName="Rock.Model.Segment, Rock" PropertyName="Name" Required="true" onblur="populateSegmentKey()" />
-                        <Rock:DataTextBox ID="tbSegmentKey" runat="server" SourceTypeName="Rock.Model.Segment, Rock" PropertyName="SegmentKey" Label="Key" Required="true" />
+                        <Rock:DataTextBox ID="tbName" runat="server" SourceTypeName="Rock.Model.PersonalizationSegment, Rock" PropertyName="Name" Required="true" onblur="populateSegmentKey()" />
+                        <Rock:DataTextBox ID="tbSegmentKey" runat="server" SourceTypeName="Rock.Model.PersonalizationSegment, Rock" PropertyName="SegmentKey" Label="Key" Required="true" />
                     </div>
 
                     <div class="col-md-6">
