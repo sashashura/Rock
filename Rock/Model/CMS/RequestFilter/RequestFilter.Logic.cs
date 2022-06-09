@@ -15,7 +15,10 @@
 // </copyright>
 //
 
+using Rock.Personalization;
 using Rock.Web.Cache;
+
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Data.Entity;
 
 namespace Rock.Model
@@ -44,5 +47,28 @@ namespace Rock.Model
         }
 
         #endregion ICacheable
+
+        /// <summary>
+        /// Gets or sets the configuration of the filters
+        /// </summary>
+        /// <value>The configuration.</value>
+        [NotMapped]
+        public PersonalizationRequestFilterConfiguration FilterConfiguration
+        {
+            get
+            {
+                if ( FilterJson.IsNullOrWhiteSpace() )
+                {
+                    return new PersonalizationRequestFilterConfiguration();
+                }
+
+                return FilterJson.FromJsonOrNull<PersonalizationRequestFilterConfiguration>() ?? new PersonalizationRequestFilterConfiguration();
+            }
+
+            set
+            {
+                FilterJson = value?.ToJson();
+            }
+        }
     }
 }

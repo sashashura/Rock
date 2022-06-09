@@ -15,7 +15,6 @@
 // </copyright>
 //
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 
@@ -44,7 +43,7 @@ namespace Rock.Personalization.SegmentFilters
 
         /// <summary>
         /// Gets or sets the comparison value.
-        /// The Number of Sessions. 
+        /// The Number of Sessions.
         /// </summary>
         /// <value>The comparison value.</value>
         public int ComparisonValue { get; set; } = 4;
@@ -102,7 +101,7 @@ namespace Rock.Personalization.SegmentFilters
 
             var rockContext = personAliasService.Context as RockContext;
             var interactionsQuery = new InteractionService( rockContext ).Queryable().Where( a => a.PersonAliasId.HasValue && a.InteractionComponent.InteractionChannelId == interactionChannelId );
-            
+
             int? interactionComponentId;
             if ( this.InteractionComponentGuid.HasValue )
             {
@@ -145,8 +144,7 @@ namespace Rock.Personalization.SegmentFilters
                 interactionsQuery.Where( i => i.PersonAliasId == p.Id ).Count() == comparisonValue );
 
             BinaryExpression compareEqualExpression = FilterExpressionExtractor.Extract<Rock.Model.PersonAlias>( personAliasCompareEqualQuery, parameterExpression, "p" ) as BinaryExpression;
-            BinaryExpression result = FilterExpressionExtractor.AlterComparisonType( comparisonType, compareEqualExpression, 0 );
-            return result;
+            return FilterExpressionExtractor.AlterComparisonType( comparisonType, compareEqualExpression, 0 );
         }
     }
 }

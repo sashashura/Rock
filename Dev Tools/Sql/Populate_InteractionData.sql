@@ -10,7 +10,13 @@ SET NOCOUNT ON
 DELETE
 FROM Interaction
 WHERE ForeignKey = 'Interactions Sample Data'
-DELETE from InteractionSession where Id not in (select InteractionSessionId from Interaction)
+
+DELETE
+FROM InteractionSession
+WHERE Id NOT IN (
+        SELECT InteractionSessionId
+        FROM Interaction
+        )
 
 DECLARE @populateStartDateTimeLastHour DATETIME = DateAdd(hour, - 1, GetDate())
     , @populateStartDateTimeLast12Months DATETIME = DateAdd(MONTH, - 12, GetDate())
@@ -20,6 +26,7 @@ DECLARE
     @populateStartDateTime DATETIME = @populateStartDateTimeLast5Years
     , @populateEndDateTime DATETIME = DateAdd(hour, 0, GetDate())
     , @maxInteractionCount INT = 500000
+    , @avgInteractionsPerSession INT = 10
     , @personSampleSize INT = 10000 -- number of people to use when randomly assigning a person to each interaction. You might want to set this lower or higher depending on what type of data you want
     -- Parameters
 DECLARE
@@ -141,13 +148,6 @@ OPEN interactionPersonAliasIdCursor;
 -- Loop for each interaction
 WHILE @interactionDateTime <= @populateEndDateTime
 BEGIN
-    SET @interactionCounter += 1;
-    SET @interactionComponentId = (
-            SELECT TOP 1 Id
-            FROM @componentIds
-            ORDER BY newid()
-            )
-
     FETCH NEXT
     FROM interactionPersonAliasIdCursor
     INTO @interactionPersonAliasId;
@@ -194,47 +194,61 @@ BEGIN
 
     SET @interactionSessionId = SCOPE_IDENTITY()
 
-    INSERT INTO Interaction (
-        InteractionComponentId
-        , Operation
-        , InteractionData
-        , PersonAliasId
-        , InteractionDateTime
-        , InteractionSessionId
-        , [Guid]
-        , ForeignKey
-        , CreatedDateTime
-        , CreatedByPersonAliasId
-        , ModifiedDateTime
-        , ModifiedByPersonAliasId
-        , InteractionDateKey
-        )
-    VALUES (
-        @interactionComponentId
-        , 'View'
-        , CONCAT (
-            'http//:localhost/page/'
-            , @interactionComponentId
-            )
-        , @interactionPersonAliasId
-        , @interactionDateTime
-        , @interactionSessionId
-        , NEWID()
-        , @foreignKey
-        , @interactionDateTime
-        , @interactionPersonAliasId
-        , @interactionDateTime
-        , @interactionPersonAliasId
-        , CAST(DATEPART(yyyy, @interactionDateTime) AS VARCHAR(4)) + CAST(DATEPART(mm, @interactionDateTime) AS VARCHAR(2)) + CAST(DATEPART(dd, @interactionDateTime) AS VARCHAR(2))
-        );
+    DECLARE @interactionCount INT = ROUND((RAND() * @avgInteractionsPerSession * 2), 0)
+        , @interactionLoopCounter INT = 0;
 
-    SET @interactionDateTime = DATEADD(ms, @millsecondsIncrement, @interactionDateTime)
-
-    -- Print if a multiple of 500
-    IF (@interactionCounter % 500 = 0)
+    WHILE (@interactionLoopCounter < @interactionCount)
     BEGIN
-        PRINT @interactionDateTime
-        PRINT @interactionCounter
+        SET @interactionCounter += 1;
+        SET @interactionLoopCounter = @interactionLoopCounter + 1;
+        SET @interactionComponentId = (
+                SELECT TOP 1 Id
+                FROM @componentIds
+                ORDER BY newid()
+                )
+
+        INSERT INTO Interaction (
+            InteractionComponentId
+            , Operation
+            , InteractionData
+            , PersonAliasId
+            , InteractionDateTime
+            , InteractionSessionId
+            , [Guid]
+            , ForeignKey
+            , CreatedDateTime
+            , CreatedByPersonAliasId
+            , ModifiedDateTime
+            , ModifiedByPersonAliasId
+            , InteractionDateKey
+            )
+        VALUES (
+            @interactionComponentId
+            , 'View'
+            , CONCAT (
+                'http//:localhost/page/'
+                , @interactionComponentId
+                )
+            , @interactionPersonAliasId
+            , @interactionDateTime
+            , @interactionSessionId
+            , NEWID()
+            , @foreignKey
+            , @interactionDateTime
+            , @interactionPersonAliasId
+            , @interactionDateTime
+            , @interactionPersonAliasId
+            , CAST(DATEPART(yyyy, @interactionDateTime) AS VARCHAR(4)) + CAST(DATEPART(mm, @interactionDateTime) AS VARCHAR(2)) + CAST(DATEPART(dd, @interactionDateTime) AS VARCHAR(2))
+            );
+
+        SET @interactionDateTime = DATEADD(ms, @millsecondsIncrement, @interactionDateTime)
+
+        -- Print if a multiple of 500
+        IF (@interactionCounter % 500 = 0)
+        BEGIN
+            PRINT @interactionDateTime
+            PRINT @interactionCounter
+        END
     END
 END
 

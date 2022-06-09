@@ -17,6 +17,8 @@
 
 using Rock.Data;
 using Rock.Model;
+using Rock.Personalization;
+
 using System;
 using System.Runtime.Serialization;
 
@@ -31,50 +33,32 @@ namespace Rock.Web.Cache
     {
         #region Properties
 
-        /// <summary>
-        /// Gets or sets the name.
-        /// </summary>
-        /// <value>
-        /// The name.
-        /// </value>
+        /// <inheritdoc cref="RequestFilter.Name"/>
         [DataMember]
         public string Name { get; set; }
 
-        /// <summary>
-        /// Gets or sets the request filter key.
-        /// </summary>
-        /// <value>
-        /// The request filter key.
-        /// </value>
+        /// <inheritdoc cref="RequestFilter.RequestFilterKey"/>
         [DataMember]
         public string RequestFilterKey { get; set; }
 
-        /// <summary>
-        /// Gets or sets the site identifier.
-        /// </summary>
-        /// <value>
-        /// The site identifier.
-        /// </value>
+        /// <inheritdoc cref="RequestFilter.SiteId"/>
         [DataMember]
         public int? SiteId { get; set; }
 
-        /// <summary>
-        /// Gets or sets a value indicating whether this instance is active.
-        /// </summary>
-        /// <value>
-        ///   <c>true</c> if this instance is active; otherwise, <c>false</c>.
-        /// </value>
+        /// <inheritdoc cref="RequestFilter.IsActive"/>
         [DataMember]
         public bool IsActive { get; set; }
 
-        /// <summary>
-        /// Gets or sets the filter json.
-        /// </summary>
-        /// <value>
-        /// The filter json.
-        /// </value>
+        /// <inheritdoc cref="RequestFilter.FilterJson"/>
         [DataMember]
-        public string FilterJson { get; set; }
+        public string FilterJson
+        {
+            get => FilterConfiguration?.ToJson();
+            private set => FilterConfiguration = value?.FromJsonOrNull<Rock.Personalization.PersonalizationRequestFilterConfiguration>();
+        }
+
+        /// <inheritdoc cref="RequestFilter.FilterConfiguration"/>
+        public PersonalizationRequestFilterConfiguration FilterConfiguration { get; private set; }
 
         #endregion Properties
 

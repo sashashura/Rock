@@ -150,6 +150,7 @@ namespace Rock.Utility
 
         /// <summary>
         /// Determines whether the Client's IP Address falls within a range.
+        /// Uses suggested method from https://stackoverflow.com/a/2138724.
         /// </summary>
         /// <param name="request">The request.</param>
         /// <param name="beginningIPAddress">The beginning ip address.</param>
@@ -159,6 +160,7 @@ namespace Rock.Utility
         {
             var clientIPAddress = GetClientIpAddress( request );
 
+            // Using suggested method from https://stackoverflow.com/a/2138724
             if ( !IPAddress.TryParse( clientIPAddress, out var parsedClientIPAddress ) )
             {
                 return false;
@@ -173,13 +175,12 @@ namespace Rock.Utility
             {
                 return false;
             }
-
-            // Using suggested method from https://stackoverflow.com/a/2138724
+            
             var rangeAddressFamily = parsedBeginningIPAddress.AddressFamily;
 
             if ( parsedClientIPAddress.AddressFamily != rangeAddressFamily )
             {
-                // IP AddressFamilies are different IP4 vs IP6, etc,
+                // IP AddressFamilies are different. IPv4 vs IPv6, etc,
                 // so return false;
                 return false;
             }

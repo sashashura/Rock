@@ -4,12 +4,31 @@ using Rock.Model;
 
 namespace Rock.Personalization
 {
-    public class CookieRequestFilter : RequestFilter
+    /// <summary>
+    /// Class CookieRequestFilter.
+    /// Implements the <see cref="Rock.Personalization.PersonalizationRequestFilter" />
+    /// </summary>
+    /// <seealso cref="Rock.Personalization.PersonalizationRequestFilter" />
+    public class CookieRequestFilter : PersonalizationRequestFilter
     {
         #region Configuration
 
+        /// <summary>
+        /// Gets or sets the key.
+        /// </summary>
+        /// <value>The key.</value>
         public string Key { get; set; }
+
+        /// <summary>
+        /// Gets or sets the type of the comparison.
+        /// </summary>
+        /// <value>The type of the comparison.</value>
         public ComparisonType ComparisonType { get; set; }
+
+        /// <summary>
+        /// Gets or sets the comparison value.
+        /// </summary>
+        /// <value>The comparison value.</value>
         public string ComparisonValue { get; set; }
 
         #endregion Configuration

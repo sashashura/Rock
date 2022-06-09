@@ -22,7 +22,7 @@ using Rock.Personalization.SegmentFilters;
 namespace Rock.Personalization
 {
     /// <summary>
-    /// Configuration class for Additional Filters for Personalization Segments.
+    /// Configuration class for Additional Filters on <see cref="PersonalizationSegment"/>.
     /// </summary>
     public class PersonalizationSegmentAdditionalFilterConfiguration
     {
@@ -33,7 +33,7 @@ namespace Rock.Personalization
         public FilterExpressionType SessionFilterExpressionType { get; set; } = FilterExpressionType.GroupAll;
 
         /// <summary>
-        /// Gets or sets the session segment filters.
+        /// Gets or sets the session segment filters. These are either AND'd or OR'd depending on <see cref="SessionFilterExpressionType"/>.
         /// </summary>
         /// <value>The session segment filters.</value>
         public List<SessionCountSegmentFilter> SessionSegmentFilters { get; set; } = new List<SessionCountSegmentFilter>();
@@ -45,7 +45,7 @@ namespace Rock.Personalization
         public FilterExpressionType PageViewFilterExpressionType { get; set; } = FilterExpressionType.GroupAll;
 
         /// <summary>
-        /// Gets or sets the page view segment filters.
+        /// Gets or sets the page view segment filters. These are either AND'd or OR'd depending on <see cref="PageViewFilterExpressionType"/>.
         /// </summary>
         /// <value>The page view segment filters.</value>
         public List<PageViewSegmentFilter> PageViewSegmentFilters { get; set; } = new List<PageViewSegmentFilter>();
@@ -57,7 +57,7 @@ namespace Rock.Personalization
         public FilterExpressionType InteractionFilterExpressionType { get; set; } = FilterExpressionType.GroupAll;
 
         /// <summary>
-        /// Gets or sets the interaction segment filters.
+        /// Gets or sets the interaction segment filters. These are either AND'd or OR'd depending on <see cref="InteractionFilterExpressionType"/>.
         /// </summary>
         /// <value>The interaction segment filters.</value>
         public List<InteractionSegmentFilter> InteractionSegmentFilters { get; set; } = new List<InteractionSegmentFilter>();

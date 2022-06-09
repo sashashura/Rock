@@ -367,7 +367,7 @@ namespace RockWeb.Blocks.Cms
         protected void gSessionCountFilters_EditClick( object sender, Rock.Web.UI.Controls.RowEventArgs e )
         {
             var sessionSegmentFilterGuid = ( Guid ) e.RowKeyValue;
-            var sessionSegmentFilter = this.AdditionalFilterConfiguration.SessionSegmentFilters.Where( a => a.Guid == sessionSegmentFilterGuid ).FirstOrDefault();
+            var sessionSegmentFilter = this.AdditionalFilterConfiguration.SessionSegmentFilters.FirstOrDefault( a => a.Guid == sessionSegmentFilterGuid );
             ShowSessionCountFilterDialog( sessionSegmentFilter );
         }
 
@@ -729,7 +729,7 @@ namespace RockWeb.Blocks.Cms
         protected void gInteractionFilters_DeleteClick( object sender, Rock.Web.UI.Controls.RowEventArgs e )
         {
             var interactionFilterGuid = ( Guid ) e.RowKeyValue;
-            var interactionFilter = this.AdditionalFilterConfiguration.InteractionSegmentFilters.Where( a => a.Guid == interactionFilterGuid ).FirstOrDefault();
+            var interactionFilter = this.AdditionalFilterConfiguration.InteractionSegmentFilters.FirstOrDefault( a => a.Guid == interactionFilterGuid );
             if ( interactionFilter != null )
             {
                 this.AdditionalFilterConfiguration.InteractionSegmentFilters.Remove( interactionFilter );
@@ -750,6 +750,8 @@ namespace RockWeb.Blocks.Cms
 
         #endregion Interaction Filter Related
 
+// ## TODO ## remove this
+
         /// <summary>
         /// Handles the Click event of the btnTestSegmentFilters control.
         /// </summary>
@@ -758,12 +760,7 @@ namespace RockWeb.Blocks.Cms
         protected void btnTestSegmentFilters_Click( object sender, EventArgs e )
         {
             var rockContext = new RockContext();
-
-            //var personalizationSegmentService = new PersonalizationSegmentService( rockContext );
-
             var personalizationSegmentId = hfPersonalizationSegmentId.Value.AsInteger();
-            
-            //var personalizationSegment = personalizationSegmentService.Get( personalizationSegmentId );
 
             rockContext.SqlLogging( true );
             var personAliasService = new PersonAliasService( rockContext );

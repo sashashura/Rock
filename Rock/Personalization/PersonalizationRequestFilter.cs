@@ -6,7 +6,7 @@ namespace Rock.Personalization
     /// <summary>
     /// Filter that determines if a Browser request meets criteria.
     /// </summary>
-    public abstract class RequestFilter
+    public abstract class PersonalizationRequestFilter
     {
         /// <summary>
         /// Gets or sets the unique identifier.

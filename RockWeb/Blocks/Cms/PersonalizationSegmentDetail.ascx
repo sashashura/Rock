@@ -178,7 +178,6 @@
                         <span>optionally limited to the following pages</span>
 
                         <Rock:PagePicker ID="ppPageViewFilterPages" runat="server" AllowMultiSelect="true" ValidationGroup="vgPageViewFilterConfiguration"  Label="Page Picker Instead?"/>
-                        <Rock:RockListBox ID="lstPageViewFilterPages" runat="server" Required="false" ValidationGroup="vgPageViewFilterConfiguration" Label="##TODO## Select Page Views using this?" />
                     </div>
 
 
@@ -210,7 +209,6 @@
 
                         <br />
 
-                        
                     </div>
 
 

@@ -99,11 +99,12 @@ namespace Rock.Model
         #endregion Navigation Properties
 
         #region Entity Configuration
+
         /// <summary>
         /// EntityCampusFilterConfiguration class
         /// </summary>
         /// <seealso cref="T:System.Data.Entity.ModelConfiguration.EntityTypeConfiguration{Rock.Model.RequestFilter}" />
-        public partial class RequestFilterConfiguration : EntityTypeConfiguration<RequestFilter>
+        public class RequestFilterConfiguration : EntityTypeConfiguration<RequestFilter>
         {
             /// <summary>
             /// Initializes a new instance of the <see cref="RequestFilterConfiguration"/> class.

@@ -1,24 +1,34 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Text;
-using System.Threading.Tasks;
-using System.Web;
+﻿using System.Web;
 
 using Rock.Model;
-using Rock.Reporting;
-using Rock.Web.UI;
 
 namespace Rock.Personalization
 {
-    public class QueryStringRequestFilter : RequestFilter
+    /// <summary>
+    /// Class QueryStringRequestFilter.
+    /// Implements the <see cref="Rock.Personalization.PersonalizationRequestFilter" />
+    /// </summary>
+    /// <seealso cref="Rock.Personalization.PersonalizationRequestFilter" />
+    public class QueryStringRequestFilter : PersonalizationRequestFilter
     {
         #region Configuration
 
+        /// <summary>
+        /// Gets or sets the key.
+        /// </summary>
+        /// <value>The key.</value>
         public string Key { get; set; }
+
+        /// <summary>
+        /// Gets or sets the type of the comparison.
+        /// </summary>
+        /// <value>The type of the comparison.</value>
         public ComparisonType ComparisonType { get; set; }
+
+        /// <summary>
+        /// Gets or sets the comparison value.
+        /// </summary>
+        /// <value>The comparison value.</value>
         public string ComparisonValue { get; set; }
 
         #endregion Configuration

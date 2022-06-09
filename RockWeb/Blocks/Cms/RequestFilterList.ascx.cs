@@ -15,21 +15,16 @@
 // </copyright>
 //
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.IO;
-using System.Data.Entity;
 using System.Linq;
 using System.Web.UI;
-using System.Web.UI.WebControls;
 
 using Rock;
+using Rock.Attribute;
 using Rock.Data;
 using Rock.Model;
-using Rock.Web.Cache;
-using Rock.Web.UI.Controls;
-using Rock.Attribute;
 using Rock.Web.UI;
+using Rock.Web.UI.Controls;
 
 namespace RockWeb.Blocks.Cms
 {
@@ -207,7 +202,6 @@ namespace RockWeb.Blocks.Cms
         {
             tbNameFilter.Text = gFilter.GetUserPreference( UserPreferenceKey.RequestFilterName );
         }
-
 
         /// <summary>
         /// Binds the grid.

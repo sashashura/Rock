@@ -1,22 +1,33 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Web;
+﻿using System.Web;
 
 using Rock.Utility;
-using Rock.Web.UI;
 
 namespace Rock.Personalization
 {
-    public class IPAddressRequestFilter : RequestFilter
+    /// <summary>
+    /// Class IPAddressRequestFilter.
+    /// Implements the <see cref="Rock.Personalization.PersonalizationRequestFilter" />
+    /// </summary>
+    /// <seealso cref="Rock.Personalization.PersonalizationRequestFilter" />
+    public class IPAddressRequestFilter : PersonalizationRequestFilter
     {
         #region Configuration
 
+        /// <summary>
+        /// Gets or sets the type of the match.
+        /// </summary>
+        /// <value>The type of the match.</value>
         public RangeType MatchType { get; set; }
 
+        /// <summary>
+        /// Gets or sets the beginning ip address.
+        /// </summary>
+        /// <value>The beginning ip address.</value>
         public string BeginningIPAddress { get; set; }
+        /// <summary>
+        /// Gets or sets the ending ip address.
+        /// </summary>
+        /// <value>The ending ip address.</value>
         public string EndingIPAddress { get; set; }
 
         #endregion Configuration
@@ -39,9 +50,18 @@ namespace Rock.Personalization
             }
         }
 
+        /// <summary>
+        /// Enum RangeType
+        /// </summary>
         public enum RangeType
         {
+            /// <summary>
+            /// The in range
+            /// </summary>
             InRange,
+            /// <summary>
+            /// The not in range
+            /// </summary>
             NotInRange
         }
     }
