@@ -24,6 +24,7 @@ using System.Web.UI.WebControls;
 
 using Rock;
 using Rock.Attribute;
+using Rock.Constants;
 using Rock.Data;
 using Rock.Model;
 using Rock.Personalization.SegmentFilters;
@@ -162,6 +163,15 @@ namespace RockWeb.Blocks.Cms
             if ( personalizationSegment == null )
             {
                 personalizationSegment = new PersonalizationSegment();
+            }
+
+            if ( personalizationSegment.Id == 0 )
+            {
+                lPanelTitle.Text = ActionTitle.Add( PersonalizationSegment.FriendlyTypeName ).FormatAsHtmlTitle();
+            }
+            else
+            {
+                lPanelTitle.Text = personalizationSegment.Name;
             }
 
             /* Name, etc */
@@ -749,10 +759,17 @@ namespace RockWeb.Blocks.Cms
         {
             var rockContext = new RockContext();
 
+            //var personalizationSegmentService = new PersonalizationSegmentService( rockContext );
+
+            var personalizationSegmentId = hfPersonalizationSegmentId.Value.AsInteger();
+            
+            //var personalizationSegment = personalizationSegmentService.Get( personalizationSegmentId );
+
             rockContext.SqlLogging( true );
             var personAliasService = new PersonAliasService( rockContext );
             var parameterExpression = personAliasService.ParameterExpression;
-            Expression segmentFiltersWhereExpression = AdditionalFilterConfiguration.GetPersonAliasFiltersWhereExpression( personAliasService, parameterExpression );
+            var personalizationSegmentCache = PersonalizationSegmentCache.Get( personalizationSegmentId );
+            Expression segmentFiltersWhereExpression = personalizationSegmentCache.GetPersonAliasFiltersWhereExpression( personAliasService, parameterExpression );
 
             var personAliasQuery = personAliasService.Get( parameterExpression, segmentFiltersWhereExpression );
 

@@ -22,7 +22,7 @@ namespace Rock.Migrations
     /// <summary>
     ///
     /// </summary>
-    public partial class AddedPersonalizationEntities : Rock.Migrations.RockMigration
+    public partial class Personalization : Rock.Migrations.RockMigration
     {
         /// <summary>
         /// Operations to be performed during the upgrade process.
@@ -37,7 +37,9 @@ namespace Rock.Migrations
                     PersonalizationType = c.Int( nullable: false ),
                     PersonalizationTypeId = c.Int( nullable: false ),
                 } )
-                .PrimaryKey( t => new { t.PersonAliasId, t.PersonalizationType, t.PersonalizationTypeId } );
+                .PrimaryKey( t => new { t.PersonAliasId, t.PersonalizationType, t.PersonalizationTypeId } )
+                .ForeignKey( "dbo.PersonAlias", t => t.PersonAliasId )
+                .Index( t => t.PersonAliasId );
 
             CreateTable(
                 "dbo.PersonalizedEntity",
@@ -48,7 +50,9 @@ namespace Rock.Migrations
                     PersonalizationType = c.Int( nullable: false ),
                     PersonalizationTypeId = c.Int( nullable: false ),
                 } )
-                .PrimaryKey( t => new { t.EntityTypeId, t.EntityId, t.PersonalizationType, t.PersonalizationTypeId } );
+                .PrimaryKey( t => new { t.EntityTypeId, t.EntityId, t.PersonalizationType, t.PersonalizationTypeId } )
+                .ForeignKey( "dbo.EntityType", t => t.EntityTypeId )
+                .Index( t => t.EntityTypeId );
 
             CreateTable(
                 "dbo.RequestFilter",
@@ -72,12 +76,14 @@ namespace Rock.Migrations
                 .PrimaryKey( t => t.Id )
                 .ForeignKey( "dbo.PersonAlias", t => t.CreatedByPersonAliasId )
                 .ForeignKey( "dbo.PersonAlias", t => t.ModifiedByPersonAliasId )
+                .ForeignKey( "dbo.Site", t => t.SiteId )
+                .Index( t => t.SiteId )
                 .Index( t => t.CreatedByPersonAliasId )
                 .Index( t => t.ModifiedByPersonAliasId )
                 .Index( t => t.Guid, unique: true );
 
             CreateTable(
-                "dbo.Segment",
+                "dbo.PersonalizationSegment",
                 c => new
                 {
                     Id = c.Int( nullable: false, identity: true ),
@@ -97,7 +103,9 @@ namespace Rock.Migrations
                 } )
                 .PrimaryKey( t => t.Id )
                 .ForeignKey( "dbo.PersonAlias", t => t.CreatedByPersonAliasId )
+                .ForeignKey( "dbo.DataView", t => t.FilterDataViewId )
                 .ForeignKey( "dbo.PersonAlias", t => t.ModifiedByPersonAliasId )
+                .Index( t => t.FilterDataViewId )
                 .Index( t => t.CreatedByPersonAliasId )
                 .Index( t => t.ModifiedByPersonAliasId )
                 .Index( t => t.Guid, unique: true );
@@ -108,7 +116,6 @@ namespace Rock.Migrations
             AddColumn( "dbo.ContentChannel", "EnablePersonalization", c => c.Boolean( nullable: false ) );
             AddColumn( "dbo.Site", "EnableVisitorTracking", c => c.Boolean( nullable: false ) );
             AddColumn( "dbo.Site", "EnablePersonalization", c => c.Boolean( nullable: false ) );
-
             Sql( @"
                WITH CTE AS
                 (SELECT
@@ -125,7 +132,7 @@ namespace Rock.Migrations
 
             AddAnonymousVisitor_Up();
 
-            Sql( MigrationSQL._202205311816200_AddedPersonalizationEntities_spCrm_PersonMerge );
+            Sql( MigrationSQL._202206081802045_Personalization_spCrm_PersonMerge );
         }
 
         private void AddAnonymousVisitor_Up()
@@ -314,25 +321,31 @@ VALUES (
         /// </summary>
         public override void Down()
         {
-            AddAnonymousVisitor_Down();
-
-            DropForeignKey( "dbo.Segment", "ModifiedByPersonAliasId", "dbo.PersonAlias" );
-            DropForeignKey( "dbo.Segment", "CreatedByPersonAliasId", "dbo.PersonAlias" );
+            DropForeignKey( "dbo.PersonalizationSegment", "ModifiedByPersonAliasId", "dbo.PersonAlias" );
+            DropForeignKey( "dbo.PersonalizationSegment", "FilterDataViewId", "dbo.DataView" );
+            DropForeignKey( "dbo.PersonalizationSegment", "CreatedByPersonAliasId", "dbo.PersonAlias" );
+            DropForeignKey( "dbo.RequestFilter", "SiteId", "dbo.Site" );
             DropForeignKey( "dbo.RequestFilter", "ModifiedByPersonAliasId", "dbo.PersonAlias" );
             DropForeignKey( "dbo.RequestFilter", "CreatedByPersonAliasId", "dbo.PersonAlias" );
-            DropIndex( "dbo.Segment", new[] { "Guid" } );
-            DropIndex( "dbo.Segment", new[] { "ModifiedByPersonAliasId" } );
-            DropIndex( "dbo.Segment", new[] { "CreatedByPersonAliasId" } );
+            DropForeignKey( "dbo.PersonalizedEntity", "EntityTypeId", "dbo.EntityType" );
+            DropForeignKey( "dbo.PersonAliasPersonalization", "PersonAliasId", "dbo.PersonAlias" );
+            DropIndex( "dbo.PersonalizationSegment", new[] { "Guid" } );
+            DropIndex( "dbo.PersonalizationSegment", new[] { "ModifiedByPersonAliasId" } );
+            DropIndex( "dbo.PersonalizationSegment", new[] { "CreatedByPersonAliasId" } );
+            DropIndex( "dbo.PersonalizationSegment", new[] { "FilterDataViewId" } );
             DropIndex( "dbo.RequestFilter", new[] { "Guid" } );
             DropIndex( "dbo.RequestFilter", new[] { "ModifiedByPersonAliasId" } );
             DropIndex( "dbo.RequestFilter", new[] { "CreatedByPersonAliasId" } );
+            DropIndex( "dbo.RequestFilter", new[] { "SiteId" } );
+            DropIndex( "dbo.PersonalizedEntity", new[] { "EntityTypeId" } );
+            DropIndex( "dbo.PersonAliasPersonalization", new[] { "PersonAliasId" } );
             DropColumn( "dbo.Site", "EnablePersonalization" );
             DropColumn( "dbo.Site", "EnableVisitorTracking" );
             DropColumn( "dbo.ContentChannel", "EnablePersonalization" );
             DropColumn( "dbo.PersonAlias", "LastVisitDateTime" );
             DropColumn( "dbo.PersonAlias", "AliasedDateTime" );
             DropColumn( "dbo.PersonAlias", "IsPrimaryAlias" );
-            DropTable( "dbo.Segment" );
+            DropTable( "dbo.PersonalizationSegment" );
             DropTable( "dbo.RequestFilter" );
             DropTable( "dbo.PersonalizedEntity" );
             DropTable( "dbo.PersonAliasPersonalization" );
@@ -340,6 +353,8 @@ VALUES (
 
         private void AddAnonymousVisitor_Down()
         {
+            AddAnonymousVisitor_Down();
+
             Sql( $@"UPDATE Person
 SET PrimaryFamilyId = NULL
 WHERE [Guid] = '{SystemGuid.Person.ANONYMOUS_VISITOR}'

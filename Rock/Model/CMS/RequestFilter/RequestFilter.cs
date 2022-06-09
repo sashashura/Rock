@@ -86,6 +86,7 @@ namespace Rock.Model
         #endregion Entity Properties
 
         #region Navigation Properties
+
         /// <summary>
         /// Gets or sets the site
         /// </summary>

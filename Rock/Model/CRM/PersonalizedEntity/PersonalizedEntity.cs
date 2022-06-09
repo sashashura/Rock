@@ -65,7 +65,9 @@ namespace Rock.Model
         public PersonalizationType PersonalizationType { get; set; }
 
         /// <summary>
-        /// Gets or sets the personalization type identifier.
+        /// Depending on <see cref="PersonalizationType"/>, this will either be an Id of
+        /// <seealso cref="PersonalizationSegment"/> or <seealso cref="RequestFilter"/>.
+        /// In other words, it is a loose foreign key to either <seealso cref="PersonalizationSegment"/> or <seealso cref="RequestFilter"/>.
         /// </summary>
         /// <value>
         /// The personalization type identifier.
@@ -78,6 +80,15 @@ namespace Rock.Model
         #region Entity Configuration
 
         /// <summary>
+        /// Gets or sets the type of the entity.
+        /// </summary>
+        /// <value>
+        /// The type of the entity.
+        /// </value>
+        [DataMember]
+        public virtual Model.EntityType EntityType { get; set; }
+
+        /// <summary>
         /// PersonalizedEntity Configuration class.
         /// </summary>
         public partial class PersonalizedEntityConfiguration : EntityTypeConfiguration<PersonalizedEntity>
@@ -88,6 +99,7 @@ namespace Rock.Model
             public PersonalizedEntityConfiguration()
             {
                 HasKey( a => new { a.EntityTypeId, a.EntityId, a.PersonalizationType, a.PersonalizationTypeId } );
+                this.HasRequired( a => a.EntityType ).WithMany().HasForeignKey( a => a.EntityTypeId ).WillCascadeOnDelete( false );
             }
         }
 

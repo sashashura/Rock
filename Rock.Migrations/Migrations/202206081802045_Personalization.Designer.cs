@@ -7,13 +7,13 @@ namespace Rock.Migrations
     using System.Resources;
     
     [GeneratedCode("EntityFramework.Migrations", "6.4.4")]
-    public sealed partial class AddedPersonalizationEntities : IMigrationMetadata
+    public sealed partial class Personalization : IMigrationMetadata
     {
-        private readonly ResourceManager Resources = new ResourceManager(typeof(AddedPersonalizationEntities));
+        private readonly ResourceManager Resources = new ResourceManager(typeof(Personalization));
         
         string IMigrationMetadata.Id
         {
-            get { return "202205311816200_AddedPersonalizationEntities"; }
+            get { return "202206081802045_Personalization"; }
         }
         
         string IMigrationMetadata.Source

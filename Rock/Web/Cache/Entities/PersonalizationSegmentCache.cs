@@ -20,6 +20,7 @@ using System.Runtime.Serialization;
 using Rock.Data;
 using Rock.Model;
 using Rock.Personalization;
+using System.Linq.Expressions;
 
 namespace Rock.Web.Cache
 {
@@ -47,7 +48,7 @@ namespace Rock.Web.Cache
         /// <inheritdoc cref="PersonalizationSegment.FilterDataViewId"/>
         [DataMember]
         public int? FilterDataViewId { get; private set; }
-        
+
         /// <inheritdoc cref="PersonalizationSegment.AdditionalFilterJson"/>
         [DataMember]
         public string AdditionalFilterJson
@@ -62,6 +63,17 @@ namespace Rock.Web.Cache
         #endregion
 
         #region Public Methods
+
+        /// <summary>
+        /// Gets the person alias filters where expression.
+        /// </summary>
+        /// <param name="personAliasService">The person alias service.</param>
+        /// <param name="parameterExpression">The parameter expression.</param>
+        /// <returns>Expression.</returns>
+        public Expression GetPersonAliasFiltersWhereExpression( PersonAliasService personAliasService, ParameterExpression parameterExpression )
+        {
+            return PersonalizationSegment.GetPersonAliasFiltersWhereExpression( this.Id, personAliasService, parameterExpression );
+        }
 
         /// <summary>
         /// Set's the cached objects properties from the model/entities properties.
@@ -91,7 +103,7 @@ namespace Rock.Web.Cache
         {
             return Name;
         }
-        
+
         #endregion Public Methods
     }
 }

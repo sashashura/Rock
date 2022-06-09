@@ -22,7 +22,7 @@ using Rock.Model;
 namespace Rock.Personalization
 {
     /// <summary>
-    /// Class Filter.
+    /// Filter to determine if a person alias meets criteria based on activity.
     /// </summary>
     public abstract class PersonalizationSegmentFilter
     {

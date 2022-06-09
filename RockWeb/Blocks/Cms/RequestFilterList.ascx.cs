@@ -33,7 +33,7 @@ using Rock.Web.UI;
 
 namespace RockWeb.Blocks.Cms
 {
-    [DisplayName( "Request Filter" )]
+    [DisplayName( "Request Filter List" )]
     [Category( "Cms" )]
     [Description( "Block that lists existing Request Filters." )]
 

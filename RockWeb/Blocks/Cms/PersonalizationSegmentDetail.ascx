@@ -7,10 +7,8 @@
             <asp:HiddenField ID="hfPersonalizationSegmentId" runat="server" />
             <div class="panel-heading">
                 <h1 class="panel-title">
-
-                    <i class="fa fa-star"></i>
-                    <asp:Literal ID="lActionTitle" runat="server" Text="#TODO#" />
-
+                    <i class="fa fa-user-tag"></i>
+                    <asp:Literal ID="lPanelTitle" runat="server" Text="" />
 
                 </h1>
                 <div class="panel-labels">

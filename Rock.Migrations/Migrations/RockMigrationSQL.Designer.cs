@@ -1037,9 +1037,9 @@ namespace Rock.Migrations.Migrations {
         ///		Uses the following constants:
         ///			* Group Type - Family: 790E [rest of string was truncated]&quot;;.
         /// </summary>
-        public static string _202205311816200_AddedPersonalizationEntities_spCrm_PersonMerge {
+        public static string _202206081802045_Personalization_spCrm_PersonMerge {
             get {
-                return ResourceManager.GetString("_202205311816200_AddedPersonalizationEntities_spCrm_PersonMerge", resourceCulture);
+                return ResourceManager.GetString("_202206081802045_Personalization_spCrm_PersonMerge", resourceCulture);
             }
         }
     }
