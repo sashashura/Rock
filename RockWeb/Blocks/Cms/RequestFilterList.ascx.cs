@@ -23,6 +23,7 @@ using Rock;
 using Rock.Attribute;
 using Rock.Data;
 using Rock.Model;
+using Rock.Security;
 using Rock.Web.UI;
 using Rock.Web.UI.Controls;
 
@@ -81,6 +82,12 @@ namespace RockWeb.Blocks.Cms
             base.OnInit( e );
             gList.GridRebind += gList_GridRebind;
             gList.DataKeyNames = new string[] { "Id" };
+
+            bool canAddEditDelete = IsUserAuthorized( Authorization.EDIT );
+            gList.Actions.ShowAdd = canAddEditDelete;
+            gList.Actions.AddClick += gList_AddClick;
+
+            gList.IsDeleteEnabled = canAddEditDelete;
 
             // this event gets fired after block settings are updated. it's nice to repaint the screen if these settings would alter it
             this.BlockUpdated += Block_BlockUpdated;
