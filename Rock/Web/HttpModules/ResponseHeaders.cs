@@ -98,7 +98,7 @@ namespace Rock.Web.HttpModules
             // request and response properties.
             HttpApplication application = ( HttpApplication ) source;
             HttpContext context = application.Context;
-            
+
             foreach(var header in Headers )
             {
                 context.Response.Headers.Add( header.Key, header.Value.ToString() );

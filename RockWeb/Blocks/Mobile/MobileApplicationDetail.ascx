@@ -4,6 +4,7 @@
     .mobile-app-preview {
         padding: 20px;
     }
+
     .mobile-app-preview img {
         width: 100%;
         height: auto;
@@ -11,6 +12,7 @@
         min-height: 50px;
         background-color: #ddd;
     }
+
     .mobile-app-icon {
         width: 100%;
         height: auto;
@@ -53,6 +55,9 @@
                                 </li>
                                 <li id="liTabPages" runat="server">
                                     <asp:LinkButton ID="lbTabPages" runat="server" OnClick="lbTabPages_Click">Pages</asp:LinkButton>
+                                </li>
+                                <li id="liTabDeepLinks" runat="server">
+                                    <asp:LinkButton ID="lbTabDeepLinks" runat="server" OnClick="lbTabDeepLinks_Click">Deep Links</asp:LinkButton>
                                 </li>
                             </ul>
 
@@ -211,6 +216,24 @@
                                     </Columns>
                                 </Rock:Grid>
                             </asp:Panel>
+
+                            <asp:Panel ID="pnlDeepLinks" runat="server">
+                                <Rock:Grid ID="gDeepLinks" runat="server" RowItemText="Deep Link" DisplayType="Light" OnGridRebind="gDeepLinks_GridRebind" OnRowSelected="gDeepLinks_RowSelected" OnGridReorder="gDeepLinks_GridReorder" OnRowDataBound="gDeepLinks_RowDataBound">
+                                    <Columns>
+                                        <Rock:ReorderField />
+                                        <Rock:RockBoundField DataField="Route" SortExpression="Route" HeaderText="Route" DataFormatString="/{0}" />
+                                        <Rock:RockBoundField DataField="Page" SortExpression="Page" HeaderText="Mobile Page" />
+
+                                        <Rock:RockTemplateField SortExpression="Fallback" HeaderText="Fallback">
+                                            <ItemTemplate>
+                                                <asp:Label runat="server" Visible='<%#Eval("IsUrl") %>' CssClass="badge badge-info" Text='URL' />
+                                                <asp:Label runat="server" Text='<%#Eval("Fallback") %>' />
+                                            </ItemTemplate>
+                                        </Rock:RockTemplateField>
+                                        <Rock:DeleteField OnClick="gDeepLinks_DeleteClick" />
+                                    </Columns>
+                                </Rock:Grid>
+                            </asp:Panel>
                         </div>
                     </div>
                 </asp:Panel>
@@ -300,6 +323,25 @@
 
                         <Rock:CodeEditor ID="ceToastXaml" runat="server" Label="Toast XAML" Help="The XAML template to use for when a Toast is displayed." EditorMode="Xml" Required="false" />
                     </Rock:PanelWidget>
+
+                    <Rock:PanelWidget ID="pwEditDeepLinkSettings" runat="server" Title="Deep Link Settings">
+                        <asp:Label ID="lblDeepLinkNote" Visible="false" CssClass="label label-warning" runat="server">Please note, that once your app is published, disabling deep linking may take up to 30 days to reflect without an update or reinstallation of the application.</asp:Label>
+                        <Rock:RockCheckBox ID="cbEnableDeepLinking" OnCheckedChanged="cbEnableDeepLinking_CheckedChanged" runat="server" Label="Enable Deep Linking" Help="When turned on, you can add support to open specific links directly into your mobile application." AutoPostBack="true" />
+                        <asp:Panel ID="pnlDeepLinkSettings" runat="server">
+                            <h2>iOS Settings</h3>
+                            <Rock:RockTextBox ID="tbTeamId" runat="server" Label="Team Id" Required="true" />
+                                <Rock:RockTextBox ID="tbBundleId" runat="server" Label="Bundle Id" Required="true" />
+                                <h2>Android Settings</h2>
+                                <Rock:RockTextBox ID="tbPackageName" runat="server" Label="Package Name" Required="true" />
+                                <Rock:RockTextBox ID="tbCertificateFingerprint" runat="server" Label="Certificate Fingerprint" Required="true" />
+                                <h2>Advanced Settings</h2>
+                                <Rock:NotificationBox ID="nbDeepLinks" runat="server" Visible="false" NotificationBoxType="Danger" />
+                                <asp:Label ID="lblPathPrefixNote" CssClass="label label-warning" runat="server">Please note, that once your app is published, a change to the 'Deep Link Path Prefix' setting requires a complete update or reinstallation of your application to reflect.</asp:Label>
+                                <Rock:RockTextBox ID="tbDeepLinkPathPrefix" runat="server" Label="Deep Link Path Prefix" Required="true" />
+                                <Rock:RockTextBox ID="tbSiteDomains" runat="server" TextMode="MultiLine" Label="Target Domain(s)" Help="A list of domains that are associated with this application (list can be either comma delimited or each on a separate line).  These values are used by Rock to load the correct site whenever a specific page or route is not provided in the URL. Rock will determine the site to use by finding the first site with a domain value that is contained by the current request's hostname in the url.  It will then display that site's default page." />
+                        </asp:Panel>
+                    </Rock:PanelWidget>
+
                     <div class="actions margin-t-md">
                         <asp:LinkButton ID="lbEditSave" runat="server" CssClass="btn btn-primary" Text="Save" OnClick="lbEditSave_Click" AccessKey="s" ToolTip="Alt+s" />
                         <asp:LinkButton ID="lbEditCancel" runat="server" CssClass="btn btn-link" Text="Cancel" OnClick="lbEditCancel_Click" CausesValidation="false" AccessKey="c" ToolTip="Alt+c" />
