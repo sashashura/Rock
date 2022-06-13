@@ -26,7 +26,7 @@
                     <div class="col-md-6">
                         <Rock:HiddenFieldWithClass ID="hfExistingSegmentKeyNames" runat="server" CssClass="js-existing-key-names" />
                         <Rock:DataTextBox ID="tbName" runat="server" SourceTypeName="Rock.Model.PersonalizationSegment, Rock" PropertyName="Name" onblur="populateSegmentKey()" />
-                        <Rock:DataTextBox ID="tbSegmentKey" runat="server" SourceTypeName="Rock.Model.PersonalizationSegment, Rock" PropertyName="SegmentKey" Label="Site"/>
+                        <Rock:DataTextBox ID="tbSegmentKey" runat="server" SourceTypeName="Rock.Model.PersonalizationSegment, Rock" PropertyName="SegmentKey" Label="Site" Help="Site - Optional site to limit the request filter to."/>
                     </div>
 
                     <div class="col-md-6">
@@ -116,7 +116,7 @@
                         <div class="panel-title">Previous Activity</div>
                     </div>
                     <div class="panel-body">
-                        <Rock:RockCheckBoxList ID="cblPreviousActivity" runat="server" Label="Previous Activity" RepeatDirection="Horizontal" />
+                        <Rock:RockCheckBoxList ID="cblPreviousActivity" runat="server" Label="Vistor Type" RepeatDirection="Horizontal" />
                     </div>
                 </asp:Panel>
 
@@ -137,8 +137,9 @@
                 <%-- Query String Filter --%>
                 <asp:Panel ID="pnlQueryStringFilter" runat="server" CssClass="panel panel-section">
                     <div class="panel-heading">
-                        <div class="panel-title">Query String Filter</div>
-                        <Rock:Toggle ID="tglQueryStringFiltersAllAny" runat="server" OnText="All" OffText="Any" ActiveButtonCssClass="btn-info" ButtonSizeCssClass="btn-xs" />
+                        <div class="panel-title pull-left">Query String Filter</div>
+                        <Rock:Toggle ID="tglQueryStringFiltersAllAny" runat="server" OnText="All" OffText="Any" ActiveButtonCssClass="btn-info" ButtonSizeCssClass="btn-xs" CssClass="panel-title pull-right" />
+                        <div class="clearfix"></div>
                     </div>
                     <div class="panel-body">
                         <Rock:Grid ID="gQueryStringFilter" runat="server" DisplayType="Light" RowItemText="Query String Filter">
@@ -158,8 +159,9 @@
                 <%-- Cookie --%>
                 <asp:Panel ID="pnlCookie" runat="server" CssClass="panel panel-section">
                     <div class="panel-heading">
-                        <div class="panel-title">Cookie</div>
-                        <Rock:Toggle ID="tglCookiesAllAny" runat="server" OnText="All" OffText="Any" ActiveButtonCssClass="btn-info" ButtonSizeCssClass="btn-xs" />
+                        <div class="panel-title pull-left">Cookie</div>
+                        <Rock:Toggle ID="tglCookiesAllAny" runat="server" OnText="All" OffText="Any" ActiveButtonCssClass="btn-info" ButtonSizeCssClass="btn-xs" CssClass="panel-title pull-right" />
+                        <div class="clearfix"></div>                        
                     </div>
                     <div class="panel-body">
                         <Rock:Grid ID="gCookie" runat="server" DisplayType="Light" RowItemText="Cookie">
