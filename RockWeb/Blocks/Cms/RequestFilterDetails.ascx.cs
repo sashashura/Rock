@@ -106,8 +106,215 @@ namespace RockWeb.Blocks.Cms
 
             gIPAddress.Actions.ShowAdd = true;
             gBrowser.Actions.ShowAdd = true;
+
             gCookie.Actions.ShowAdd = true;
+            gCookie.Actions.AddClick += gCookie_AddClick;
+
+            gQueryStringFilter.Actions.ShowAdd = true;
+            gQueryStringFilter.Actions.AddClick += gQueryStringFilter_AddClick;
         }
+
+        #region Query String Filter
+        private void gQueryStringFilter_AddClick( object sender, EventArgs e )
+        {
+            ShowQueryStringFilterDialog( null );
+        }
+
+        /// <summary>
+        /// Handles the EditClick event of the gInteractionFilters control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="Rock.Web.UI.Controls.RowEventArgs"/> instance containing the event data.</param>
+        protected void gQueryStringFilter_EditClick( object sender, Rock.Web.UI.Controls.RowEventArgs e )
+        {
+            var queryStringFilterGuid = ( Guid ) e.RowKeyValue;
+            var queryStringFilter = this.AdditionalFilterConfiguration.InteractionSegmentFilters.Where( a => a.Guid == queryStringFilterGuid ).FirstOrDefault();
+            ShowQueryStringFilterDialog( queryStringFilter );
+        }
+
+        /// <summary>
+        /// Shows the query filter string dialog.
+        /// </summary>
+        /// <param name="pageViewFilterSegmentFilter">The interaction filter segment filter.</param>
+        private void ShowQueryStringFilterDialog( Rock.Personalization.SegmentFilters.InteractionSegmentFilter interactionSegmentFilter )
+        {
+            if ( interactionSegmentFilter == null )
+            {
+                interactionSegmentFilter = new InteractionSegmentFilter();
+                interactionSegmentFilter.Guid = Guid.NewGuid();
+                mdQueryStringFilter.Title = "Add Query String Filter";
+            }
+            else
+            {
+                mdQueryStringFilter.Title = "Edit Query String Filter";
+            }
+
+            ddlQueryStringFilterMatchOptions.BindToEnum<ComparisonType>( ignoreTypes: new ComparisonType []
+            { ComparisonType.GreaterThan, ComparisonType.GreaterThanOrEqualTo, ComparisonType.LessThan, ComparisonType.LessThanOrEqualTo, ComparisonType.Between, ComparisonType.RegularExpression } );
+
+
+            hfInteractionFilterGuid.Value = interactionSegmentFilter.Guid.ToString();
+
+            ComparisonHelper.PopulateComparisonControl( ddlInteractionFilterComparisonType, ComparisonHelper.NumericFilterComparisonTypes, true );
+            ddlInteractionFilterComparisonType.SetValue( interactionSegmentFilter.ComparisonType.ConvertToInt() );
+            nbInteractionFilterCompareValue.Text = interactionSegmentFilter.ComparisonValue.ToString();
+
+            var interactionChannelId = InteractionChannelCache.GetId( interactionSegmentFilter.InteractionChannelGuid );
+
+            pInteractionFilterInteractionChannel.SetValue( interactionChannelId );
+            pInteractionFilterInteractionComponent.InteractionChannelId = interactionChannelId;
+
+            var interactionComponentId = interactionSegmentFilter.InteractionComponentGuid.HasValue ? InteractionComponentCache.GetId( interactionSegmentFilter.InteractionComponentGuid.Value ) : null;
+            pInteractionFilterInteractionComponent.SetValue( interactionComponentId );
+            tbInteractionFilterOperation.Text = interactionSegmentFilter.Operation;
+
+            drpInteractionFilterSlidingDateRange.DelimitedValues = interactionSegmentFilter.SlidingDateRangeDelimitedValues;
+
+            mdQueryStringFilter.Show();
+        }
+
+        protected void mdQueryStringFilter_SaveClick( object sender, EventArgs e )
+        {
+            var queryStringFilterGuid = hfQueryStringFilter.Value.AsGuid();
+            var queryStringFilter = this.AdditionalFilterConfiguration.InteractionSegmentFilters
+                .Where( a => a.Guid == queryStringFilterGuid )
+                .FirstOrDefault();
+
+            if ( queryStringFilter == null )
+            {
+                queryStringFilter = new InteractionSegmentFilter();
+                queryStringFilter.Guid = hfInteractionFilterGuid.Value.AsGuid();
+                this.AdditionalFilterConfiguration.InteractionSegmentFilters.Add( queryStringFilter );
+            }
+
+            var interactionChannelId = pInteractionFilterInteractionChannel.SelectedValueAsId();
+            if ( interactionChannelId == null )
+            {
+                return;
+            }
+
+            queryStringFilter.ComparisonType = ddlInteractionFilterComparisonType.SelectedValueAsEnumOrNull<ComparisonType>() ?? ComparisonType.GreaterThanOrEqualTo;
+            queryStringFilter.ComparisonValue = nbInteractionFilterCompareValue.Text.AsInteger();
+            queryStringFilter.InteractionChannelGuid = InteractionChannelCache.Get( interactionChannelId.Value ).Guid;
+
+            var interactionComponentId = pInteractionFilterInteractionComponent.SelectedValueAsId();
+            if ( interactionComponentId.HasValue )
+            {
+                queryStringFilter.InteractionComponentGuid = InteractionComponentCache.Get( interactionComponentId.Value )?.Guid;
+            }
+            else
+            {
+                queryStringFilter.InteractionComponentGuid = null;
+            }
+
+            queryStringFilter.SlidingDateRangeDelimitedValues = drpInteractionFilterSlidingDateRange.DelimitedValues;
+            queryStringFilter.Operation = tbInteractionFilterOperation.Text;
+            mdQueryStringFilter.Hide();
+            BindInteractionFiltersGrid();
+        }
+
+        #endregion Query String Filter
+
+        #region Cookie Filter
+        private void gCookie_AddClick( object sender, EventArgs e )
+        {
+            ShowCookieDialog( null );
+        }
+
+        /// <summary>
+        /// Handles the EditClick event of the gInteractionFilters control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="Rock.Web.UI.Controls.RowEventArgs"/> instance containing the event data.</param>
+        protected void gCookie_EditClick( object sender, Rock.Web.UI.Controls.RowEventArgs e )
+        {
+            var cookieGuid = ( Guid ) e.RowKeyValue;
+            var cookie = this.AdditionalFilterConfiguration.InteractionSegmentFilters.Where( a => a.Guid == cookieGuid ).FirstOrDefault();
+            ShowCookieDialog( cookie );
+        }
+
+        /// <summary>
+        /// Shows the query filter string dialog.
+        /// </summary>
+        /// <param name="pageViewFilterSegmentFilter">The interaction filter segment filter.</param>
+        private void ShowCookieDialog( Rock.Personalization.SegmentFilters.InteractionSegmentFilter interactionSegmentFilter )
+        {
+            if ( interactionSegmentFilter == null )
+            {
+                interactionSegmentFilter = new InteractionSegmentFilter();
+                interactionSegmentFilter.Guid = Guid.NewGuid();
+                mdCookie.Title = "Add Cookie Filter";
+            }
+            else
+            {
+                mdCookie.Title = "Edit Cookie Filter";
+            }
+
+            ddlCookieMatchOptions.BindToEnum<ComparisonType>( ignoreTypes: new ComparisonType[]
+            { ComparisonType.GreaterThan, ComparisonType.GreaterThanOrEqualTo, ComparisonType.LessThan, ComparisonType.LessThanOrEqualTo, ComparisonType.Between, ComparisonType.RegularExpression } );
+
+
+            hfInteractionFilterGuid.Value = interactionSegmentFilter.Guid.ToString();
+
+            ComparisonHelper.PopulateComparisonControl( ddlInteractionFilterComparisonType, ComparisonHelper.NumericFilterComparisonTypes, true );
+            ddlInteractionFilterComparisonType.SetValue( interactionSegmentFilter.ComparisonType.ConvertToInt() );
+            nbInteractionFilterCompareValue.Text = interactionSegmentFilter.ComparisonValue.ToString();
+
+            var interactionChannelId = InteractionChannelCache.GetId( interactionSegmentFilter.InteractionChannelGuid );
+
+            pInteractionFilterInteractionChannel.SetValue( interactionChannelId );
+            pInteractionFilterInteractionComponent.InteractionChannelId = interactionChannelId;
+
+            var interactionComponentId = interactionSegmentFilter.InteractionComponentGuid.HasValue ? InteractionComponentCache.GetId( interactionSegmentFilter.InteractionComponentGuid.Value ) : null;
+            pInteractionFilterInteractionComponent.SetValue( interactionComponentId );
+            tbInteractionFilterOperation.Text = interactionSegmentFilter.Operation;
+
+            drpInteractionFilterSlidingDateRange.DelimitedValues = interactionSegmentFilter.SlidingDateRangeDelimitedValues;
+
+            mdCookie.Show();
+        }
+        protected void mdCookie_SaveClick( object sender, EventArgs e )
+        {
+            var cookieGuid = hfQueryStringFilter.Value.AsGuid();
+            var cookieFilter = this.AdditionalFilterConfiguration.InteractionSegmentFilters
+                .Where( a => a.Guid == cookieGuid )
+                .FirstOrDefault();
+
+            if ( cookieFilter == null )
+            {
+                cookieFilter = new InteractionSegmentFilter();
+                cookieFilter.Guid = hfCookie.Value.AsGuid();
+                this.AdditionalFilterConfiguration.InteractionSegmentFilters.Add( cookieFilter );
+            }
+
+            var interactionChannelId = pInteractionFilterInteractionChannel.SelectedValueAsId();
+            if ( interactionChannelId == null )
+            {
+                return;
+            }
+
+            cookieFilter.ComparisonType = ddlInteractionFilterComparisonType
+                    .SelectedValueAsEnumOrNull<ComparisonType>() ?? ComparisonType.GreaterThanOrEqualTo;
+            cookieFilter.ComparisonValue = nbInteractionFilterCompareValue.Text.AsInteger();
+            cookieFilter.InteractionChannelGuid = InteractionChannelCache.Get( interactionChannelId.Value ).Guid;
+
+            var interactionComponentId = pInteractionFilterInteractionComponent.SelectedValueAsId();
+            if ( interactionComponentId.HasValue )
+            {
+                cookieFilter.InteractionComponentGuid = InteractionComponentCache.Get( interactionComponentId.Value )?.Guid;
+            }
+            else
+            {
+                cookieFilter.InteractionComponentGuid = null;
+            }
+
+            cookieFilter.SlidingDateRangeDelimitedValues = drpInteractionFilterSlidingDateRange.DelimitedValues;
+            cookieFilter.Operation = tbInteractionFilterOperation.Text;
+            mdCookie.Hide();
+            BindInteractionFiltersGrid();
+        }
+
+        #endregion Cookie Filter
 
         /// <summary>
         /// Raises the <see cref="E:System.Web.UI.Control.Load" /> event.

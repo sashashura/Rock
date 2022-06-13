@@ -222,6 +222,61 @@
                 </div>
             </div>
 
+            <%-- Modal for Query String Filter --%>
+            <Rock:ModalDialog ID="mdQueryStringFilter" runat="server" OnSaveClick="mdQueryStringFilter_SaveClick" ValidationGroup="vgQueryStringFilter">
+                <Content>
+                    <div class="panel-body">
+                        <asp:HiddenField ID="hfQueryStringFilter" runat="server" />
+
+                        <asp:ValidationSummary ID="vsQueryFilterString" runat="server" HeaderText="Please correct the following:" CssClass="alert alert-validation" ValidationGroup="vgQueryFilterString" />
+
+                        <div class="container">
+                            <div class="row">
+                                <span class="col-sm-2">Where the parameter </span>
+                                <Rock:RockTextBox ID="tbQueryStringFilterParameter" runat="server" CssClass="col-sm-4"/>
+                                <Rock:RockDropDownList ID="ddlQueryStringFilterMatchOptions" runat="server" CssClass="col-sm-2" />
+                            </div>
+                        </div>
+
+
+                        <span>the value</span>
+                        
+                        <Rock:RockTextBox ID="tbQueryStringFilterValue" runat="server" />
+
+                    </div>
+
+
+                </Content>
+            </Rock:ModalDialog>
+
+            <%-- Modal for Cookie --%>
+            <Rock:ModalDialog ID="mdCookie" runat="server" OnSaveClick="mdCookie_SaveClick" ValidationGroup="vgCookie">
+                <Content>
+                    <div class="panel-body">
+                        <asp:HiddenField ID="hfCookie" runat="server" />
+
+                        <asp:ValidationSummary ID="vgCookie" runat="server" HeaderText="Please correct the following:" CssClass="alert alert-validation" ValidationGroup="vgCookie" />
+
+                        <div class="container">
+                            <div class="row">
+                                <span class="col-sm-2">Where the parameter </span>
+                                <Rock:RockTextBox ID="tbCookieParameter" runat="server" CssClass="col-sm-4"/>
+                                <Rock:RockDropDownList ID="ddlCookieMatchOptions" runat="server" CssClass="col-sm-2" />
+                            </div>
+                        </div>
+
+
+                        <span>the value</span>
+                        
+                        <Rock:RockTextBox ID="tbCookieValue" runat="server" />
+
+                    </div>
+
+
+                </Content>
+            </Rock:ModalDialog>
+
+
             <%-- Modal for Session Count Filter --%>
             <Rock:ModalDialog ID="mdSessionCountFilterConfiguration" runat="server" OnSaveClick="mdSessionCountFilterConfiguration_SaveClick" ValidationGroup="vgSessionCountFilterConfiguration">
                 <Content>
