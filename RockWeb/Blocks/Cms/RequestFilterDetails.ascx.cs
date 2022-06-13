@@ -31,6 +31,8 @@ using Rock.Personalization.SegmentFilters;
 using Rock.Reporting;
 using Rock.Web.Cache;
 using Rock.Web.UI.Controls;
+using static Rock.Personalization.DeviceTypeRequestFilter;
+using static Rock.Personalization.PreviousActivityRequestFilter;
 
 namespace RockWeb.Blocks.Cms
 {
@@ -209,10 +211,9 @@ namespace RockWeb.Blocks.Cms
             gCookie.DataBind();
             gQueryStringFilter.DataBind();
 
-            cblDeviceTypes.BindToEnum();
-            cblDeviceTypes.DataTextField = "Text";
-            cblDeviceTypes.DataValueField = "Value";
-            cblDeviceTypes.DataBind();
+
+            cblDeviceTypes.BindToEnum<DeviceType>();
+            cblPreviousActivity.BindToEnum<PreviousActivityType>();
         }
 
         #endregion Methods

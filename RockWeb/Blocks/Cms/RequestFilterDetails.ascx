@@ -109,6 +109,19 @@
                     </div>
                 </asp:Panel>
 
+                
+                <%-- Previous Activity --%>
+                <asp:Panel ID="pnlPreviousActivity" runat="server" CssClass="panel panel-section">
+                    <div class="panel-heading">
+                        <div class="panel-title">Previous Activity</div>
+                    </div>
+                    <div class="panel-body">
+                        <Rock:RockCheckBoxList ID="cblPreviousActivity" runat="server" Label="Previous Activity" RepeatDirection="Horizontal" />
+                    </div>
+                </asp:Panel>
+
+                <span class="segment-and">--[AND]--</span>
+
                 <%-- Device Types --%>
                 <asp:Panel ID="pnlDeviceType" runat="server" CssClass="panel panel-section">
                     <div class="panel-heading">
