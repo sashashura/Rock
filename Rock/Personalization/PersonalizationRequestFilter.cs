@@ -1,5 +1,4 @@
-﻿using System;
-using System.Web;
+﻿using System.Web;
 
 namespace Rock.Personalization
 {
@@ -8,12 +7,6 @@ namespace Rock.Personalization
     /// </summary>
     public abstract class PersonalizationRequestFilter
     {
-        /// <summary>
-        /// Gets or sets the unique identifier.
-        /// </summary>
-        /// <value>The unique identifier.</value>
-        public Guid Guid { get; set; }
-
         /// <summary>
         /// Determines whether the specified HTTP request meets the criteria of this filter.
         /// </summary>

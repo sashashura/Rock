@@ -1,4 +1,5 @@
-﻿using System.Web;
+﻿using System;
+using System.Web;
 
 using Rock.Model;
 
@@ -30,6 +31,12 @@ namespace Rock.Personalization
         /// </summary>
         /// <value>The comparison value.</value>
         public string ComparisonValue { get; set; }
+
+        /// <summary>
+        /// Gets or sets the unique identifier.
+        /// </summary>
+        /// <value>The unique identifier.</value>
+        public Guid Guid { get; set; }
 
         #endregion Configuration
 

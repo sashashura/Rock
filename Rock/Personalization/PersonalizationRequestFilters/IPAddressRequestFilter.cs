@@ -1,4 +1,5 @@
-﻿using System.Web;
+﻿using System;
+using System.Web;
 
 using Rock.Utility;
 
@@ -29,6 +30,12 @@ namespace Rock.Personalization
         /// </summary>
         /// <value>The ending ip address.</value>
         public string EndingIPAddress { get; set; }
+
+        /// <summary>
+        /// Gets or sets the unique identifier.
+        /// </summary>
+        /// <value>The unique identifier.</value>
+        public Guid Guid { get; set; }
 
         #endregion Configuration
 

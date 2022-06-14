@@ -25,8 +25,8 @@
                 <div class="row">
                     <div class="col-md-6">
                         <Rock:HiddenFieldWithClass ID="hfExistingSegmentKeyNames" runat="server" CssClass="js-existing-key-names" />
-                        <Rock:DataTextBox ID="tbName" runat="server" SourceTypeName="Rock.Model.PersonalizationSegment, Rock" PropertyName="Name" onblur="populateSegmentKey()" />
-                        <Rock:DataTextBox ID="tbSegmentKey" runat="server" SourceTypeName="Rock.Model.PersonalizationSegment, Rock" PropertyName="SegmentKey" Label="Site" Help="Site - Optional site to limit the request filter to."/>
+                        <Rock:DataTextBox ID="tbName" runat="server" SourceTypeName="Rock.Model.RequestFilter, Rock" PropertyName="Name" onblur="populateSegmentKey()" />
+                        <Rock:DataTextBox ID="tbSegmentKey" runat="server" SourceTypeName="Rock.Model.RequestFilter, Rock" PropertyName="SiteId" Label="Site" Help="Site - Optional site to limit the request filter to."/>
                     </div>
 
                     <div class="col-md-6">
@@ -53,62 +53,6 @@
                         </div>
                     </div>
                 </asp:Panel>
-
-                <%-- Session Filters --%>
-                <asp:Panel ID="pnlSessionCountFilters" runat="server" CssClass="panel panel-section" Visible="false">
-                    <div class="panel-heading">
-                        <div class="panel-title">Session Filters</div>
-                        <Rock:Toggle ID="tglSessionCountFiltersAllAny" runat="server" OnText="All" OffText="Any" ActiveButtonCssClass="btn-info" ButtonSizeCssClass="btn-xs" />
-                    </div>
-                    <div class="panel-panel-body">
-                        <Rock:Grid ID="gSessionCountFilters" runat="server" DisplayType="Light" RowItemText="Session Filter">
-                            <Columns>
-                                <Rock:RockLiteralField ID="lSessionCountFilterDescription" HeaderText="Description" OnDataBound="lSessionCountFilterDescription_DataBound" />
-                                <Rock:EditField OnClick="gSessionCountFilters_EditClick" />
-                                <Rock:DeleteField OnClick="gSessionCountFilters_DeleteClick" />
-                            </Columns>
-                        </Rock:Grid>
-                    </div>
-                </asp:Panel>
-
-                <%-- Page View Filters --%>
-                <asp:Panel ID="pnlPageViewFilters" runat="server" CssClass="panel panel-section" Visible="false">
-                    <div class="panel-heading">
-                        <div class="panel-title">Page View Filters</div>
-                        <Rock:Toggle ID="tglPageViewFiltersAllAny" runat="server" OnText="All" OffText="Any" ActiveButtonCssClass="btn-info" ButtonSizeCssClass="btn-xs" />
-                    </div>
-                    <div class="panel-panel-body">
-                        <Rock:Grid ID="gPageViewFilters" runat="server" DisplayType="Light" RowItemText="Page View Filter">
-                            <Columns>
-                                <Rock:RockLiteralField ID="lPageViewFilterDescription" HeaderText="Description" OnDataBound="lPageViewFilterDescription_DataBound" />
-                                <Rock:EditField OnClick="gPageViewFilters_EditClick" />
-                                <Rock:DeleteField OnClick="gPageViewFilters_DeleteClick" />
-                            </Columns>
-                        </Rock:Grid>
-                    </div>
-
-                </asp:Panel>
-
-                <%-- Interaction Filters --%>
-                <asp:Panel ID="pnlInteractionFilters" runat="server" CssClass="panel panel-section" Visible="false">
-                    <div class="panel-heading">
-                        <div class="panel-title">Interaction Filters</div>
-                    </div>
-                    <div class="panel-body">
-                        <Rock:Grid ID="gInteractionFilters" runat="server" DisplayType="Light" RowItemText="Interaction Filter">
-                            <Columns>
-                                <Rock:RockBoundField DataField="InteractionChannelName" HeaderText="Channel" />
-                                <Rock:RockBoundField DataField="InteractionComponentName" HeaderText="Component" />
-                                <Rock:RockBoundField DataField="Operation" HeaderText="Operation"  />
-                                <Rock:RockBoundField DataField="ComparisonText" HeaderText="Quantity"  />
-                                <Rock:RockBoundField DataField="DateRangeText" HeaderText="Date Range" />
-                                <Rock:EditField OnClick="gInteractionFilters_EditClick" />
-                                <Rock:DeleteField OnClick="gInteractionFilters_DeleteClick" />
-                            </Columns>
-                        </Rock:Grid>
-                    </div>
-                </asp:Panel>
-
                 
                 <%-- Previous Activity --%>
                 <asp:Panel ID="pnlPreviousActivity" runat="server" CssClass="panel panel-section">
@@ -147,8 +91,8 @@
                                 <Rock:RockBoundField DataField="Key" HeaderText="Key" />
                                 <Rock:RockBoundField DataField="MatchType" HeaderText="Match Type"  />
                                 <Rock:RockBoundField DataField="Value" HeaderText="Value"  />
-                                <Rock:EditField OnClick="gInteractionFilters_EditClick" />
-                                <Rock:DeleteField OnClick="gInteractionFilters_DeleteClick" />
+                                <Rock:EditField OnClick="gQueryStringFilter_EditClick" />
+                                <Rock:DeleteField OnClick="gQueryStringFilter_EditClick" />
                             </Columns>
                         </Rock:Grid>
                     </div>
@@ -169,8 +113,8 @@
                                 <Rock:RockBoundField DataField="Key" HeaderText="Key" />
                                 <Rock:RockBoundField DataField="MatchType" HeaderText="Match Type"  />
                                 <Rock:RockBoundField DataField="Value" HeaderText="Value"  />
-                                <Rock:EditField OnClick="gInteractionFilters_EditClick" />
-                                <Rock:DeleteField OnClick="gInteractionFilters_DeleteClick" />
+                                <Rock:EditField OnClick="gCookie_EditClick" />
+                                <Rock:DeleteField OnClick="gCookie_EditClick" />
                             </Columns>
                         </Rock:Grid>
                     </div>
@@ -189,8 +133,8 @@
                                 <Rock:RockBoundField DataField="BrowserFamily" HeaderText="Browser Family" />
                                 <Rock:RockBoundField DataField="MatchType" HeaderText="Match Type"  />
                                 <Rock:RockBoundField DataField="MajorVersion" HeaderText="Major Version"  />
-                                <Rock:EditField OnClick="gInteractionFilters_EditClick" />
-                                <Rock:DeleteField OnClick="gInteractionFilters_DeleteClick" />
+                                <Rock:EditField OnClick="gBrowser_EditClick" />
+                                <Rock:DeleteField OnClick="gBrowser_EditClick" />
                             </Columns>
                         </Rock:Grid>
                     </div>
@@ -209,8 +153,8 @@
                                 <Rock:RockBoundField DataField="BeginningAddress" HeaderText="Beginning Address" />
                                 <Rock:RockBoundField DataField="EndingAddress" HeaderText="Ending Address" />
                                 <Rock:RockBoundField DataField="MatchType" HeaderText="Match Type"  />
-                                <Rock:EditField OnClick="gInteractionFilters_EditClick" />
-                                <Rock:DeleteField OnClick="gInteractionFilters_DeleteClick" />
+                                <Rock:EditField OnClick="gIpAddress_EditClick" />
+                                <Rock:DeleteField OnClick="gIpAddress_EditClick" />
                             </Columns>
                         </Rock:Grid>
                     </div>
@@ -316,98 +260,6 @@
                                 <Rock:RockTextBox ID="tbIPAddressEndRange" runat="server" CssClass="col-sm-4"/>
                             </div>
                         </div>
-                    </div>
-
-
-                </Content>
-            </Rock:ModalDialog>
-
-
-            <%-- Modal for Session Count Filter --%>
-            <Rock:ModalDialog ID="mdSessionCountFilterConfiguration" runat="server" OnSaveClick="mdSessionCountFilterConfiguration_SaveClick" ValidationGroup="vgSessionCountFilterConfiguration">
-                <Content>
-                    <div class="panel-body">
-                        <asp:HiddenField ID="hfSessionCountFilterGuid" runat="server" />
-
-                        <asp:ValidationSummary ID="vsSessionCountFilterConfiguration" runat="server" HeaderText="Please correct the following:" CssClass="alert alert-validation" ValidationGroup="vgSessionCountFilterConfiguration" />
-
-                        <div class="field-criteria">
-                            <Rock:RockDropDownList ID="ddlSessionCountFilterComparisonType" CssClass="js-filter-compare" runat="server" ValidationGroup="vgSessionCountFilterConfiguration" />
-                            <Rock:NumberBox ID="nbSessionCountFilterCompareValue" runat="server" Required="true" CssClass="js-filter-control" ValidationGroup="vgSessionCountFilterConfiguration" />
-                        </div>
-
-                        <span>sessions on the</span>
-                        <Rock:RockListBox ID="lstSessionCountFilterWebSites" runat="server" Required="true" ValidationGroup="vgSessionCountFilterConfiguration" RequiredErrorMessage="Website is required." />
-                        <span>website(s)</span>
-
-                        <br />
-
-                        <span>In the following date range</span>
-                        <Rock:SlidingDateRangePicker ID="drpSessionCountFilterSlidingDateRange" runat="server" Label="" PreviewLocation="Right" EnabledSlidingDateRangeTypes="Previous, Last, Current, DateRange" ValidationGroup="vgSessionCountFilterConfiguration" />
-                    </div>
-
-
-                </Content>
-            </Rock:ModalDialog>
-
-            <%-- Modal for Page Views Filter --%>
-            <Rock:ModalDialog ID="mdPageViewFilterConfiguration" runat="server" OnSaveClick="mdPageViewFilterConfiguration_SaveClick" ValidationGroup="vgPageViewFilterConfiguration">
-                <Content>
-                    <div class="panel-body">
-                        <asp:HiddenField ID="hfPageViewFilterGuid" runat="server" />
-
-                        <asp:ValidationSummary ID="vsPageViewFilterConfiguration" runat="server" HeaderText="Please correct the following:" CssClass="alert alert-validation" ValidationGroup="vgPageViewFilterConfiguration" />
-
-                        <div class="field-criteria">
-                            <Rock:RockDropDownList ID="ddlPageViewFilterComparisonType" CssClass="js-filter-compare" runat="server" ValidationGroup="vgPageViewFilterConfiguration" />
-                            <Rock:NumberBox ID="nbPageViewFilterCompareValue" runat="server" Required="true" CssClass="js-filter-control" ValidationGroup="vgPageViewFilterConfiguration" />
-                        </div>
-
-                        <span>page views on the</span>
-                        <Rock:RockListBox ID="lstPageViewFilterWebSites" runat="server" Required="true" ValidationGroup="vgPageViewFilterConfiguration" RequiredErrorMessage="Web Site is required." />
-                        <span>website(s)</span>
-
-                        <br />
-
-                        <span>In the following date range</span>
-                        <Rock:SlidingDateRangePicker ID="drpPageViewFilterSlidingDateRange" runat="server" Label="" PreviewLocation="Right" EnabledSlidingDateRangeTypes="Previous, Last, Current, DateRange" ValidationGroup="vgPageViewFilterConfiguration" ToolTip="<div class='js-slidingdaterange-info'></>" />
-
-                        <br />
-
-                        <span>optionally limited to the following pages</span>
-
-                        <Rock:PagePicker ID="ppPageViewFilterPages" runat="server" AllowMultiSelect="true" ValidationGroup="vgPageViewFilterConfiguration"  Label="Page Picker Instead?"/>
-                    </div>
-
-
-                </Content>
-            </Rock:ModalDialog>
-
-            <%-- Modal for Interactions Filter --%>
-            <Rock:ModalDialog ID="mdInteractionFilterConfiguration" runat="server" OnSaveClick="mdInteractionFilterConfiguration_SaveClick" ValidationGroup="vgInteractionFilterConfiguration">
-                <Content>
-                    <div class="panel-body">
-                        <asp:HiddenField ID="hfInteractionFilterGuid" runat="server" />
-
-                        <asp:ValidationSummary ID="vsInteractionFilterConfiguration" runat="server" HeaderText="Please correct the following:" CssClass="alert alert-validation" ValidationGroup="vgInteractionFilterConfiguration" />
-
-                        <div class="field-criteria">
-                            <Rock:RockDropDownList ID="ddlInteractionFilterComparisonType" CssClass="js-filter-compare" runat="server" ValidationGroup="vgInteractionFilterConfiguration" />
-                            <Rock:NumberBox ID="nbInteractionFilterCompareValue" runat="server" Required="true" CssClass="js-filter-control" ValidationGroup="vgInteractionFilterConfiguration" />
-                        </div>
-
-                        <span>interactions in the channel/component</span>
-
-                        <Rock:InteractionChannelPicker ID="pInteractionFilterInteractionChannel" runat="server" Label="Channel" ValidationGroup="vgInteractionFilterConfiguration" Required="true" AutoPostBack="true" OnSelectedIndexChanged="pInteractionFilterInteractionChannel_SelectedIndexChanged" />
-                        <Rock:InteractionComponentPicker ID="pInteractionFilterInteractionComponent" runat="server" Label="Component" ValidationGroup="vgInteractionFilterConfiguration" Required="false" />
-
-                        <Rock:RockTextBox ID="tbInteractionFilterOperation" runat="server" Label="Operation" />
-
-                        <span>In the following date range</span>
-                        <Rock:SlidingDateRangePicker ID="drpInteractionFilterSlidingDateRange" runat="server" Label="" PreviewLocation="Right" EnabledSlidingDateRangeTypes="Previous, Last, Current, DateRange" ValidationGroup="vgInteractionFilterConfiguration" ToolTip="<div class='js-slidingdaterange-info'></>" />
-
-                        <br />
-
                     </div>
 
 

@@ -37,6 +37,12 @@ namespace Rock.Personalization
         /// </summary>
         public int MajorVersion;
 
+        /// <summary>
+        /// Gets or sets the unique identifier.
+        /// </summary>
+        /// <value>The unique identifier.</value>
+        public Guid Guid { get; set; }
+
         #endregion Configuration
 
         /// <summary>
