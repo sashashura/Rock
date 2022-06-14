@@ -1686,6 +1686,10 @@ Obsidian.init({{ debug: true, fingerprint: ""v={_obsidianFingerprint}"" }});
             }
         }
 
+        /// <summary>
+        /// If <see cref="SiteCache.EnableVisitorTracking"/>, this will determine the <see cref="CurrentVisitor"/>
+        /// and do any additional processing needed to verify and validate the CurrentVisitor.
+        /// </summary>
         private void ProcessCurrentVisitor()
         {
             if ( !Site.EnableVisitorTracking )
@@ -1694,22 +1698,7 @@ Obsidian.init({{ debug: true, fingerprint: ""v={_obsidianFingerprint}"" }});
                 return;
             }
 
-            PersonAlias visitorPersonAlias = null;
             var rockContext = new RockContext();
-            var personAliasService = new PersonAliasService( rockContext );
-            var visitorKeyCookie = this.Request.Cookies.Get( Rock.Personalization.RequestCookieKey.ROCK_VISITOR_KEY );
-            if ( visitorKeyCookie != null && visitorKeyCookie.Value.IsNotNullOrWhiteSpace() )
-            {
-                var personAliasIDKey = visitorKeyCookie.Value;
-                visitorPersonAlias = personAliasService.Get( personAliasIDKey );
-
-                if ( visitorPersonAlias == null )
-                {
-                    // There is a ROCK_VISITOR_KEY key with an IDKey, but that PersonAlias record
-                    // isn't in the database, so it isn't a valid ROCK_VISITOR_KEY
-                    visitorKeyCookie = null;
-                }
-            }
 
             var ghostVisitorPersonGuid = Rock.SystemGuid.Person.ANONYMOUS_VISITOR.AsGuid();
             var ghostPersonId = new PersonService( rockContext ).GetId( ghostVisitorPersonGuid );
@@ -1722,62 +1711,123 @@ Obsidian.init({{ debug: true, fingerprint: ""v={_obsidianFingerprint}"" }});
                 return;
             }
 
-            var currentPerson = CurrentPerson;
-            if ( visitorKeyCookie == null && currentPerson == null )
+            var visitorKeyCookie = this.Request.Cookies.Get( Rock.Personalization.RequestCookieKey.ROCK_VISITOR_KEY );
+            if ( visitorKeyCookie != null )
             {
-                // If ROCK_VISITOR_KEY does not exist and nobody is logged in, create a new PersonAlias tied to the GhostPersonId.
-                visitorPersonAlias = new PersonAlias();
-                visitorPersonAlias.PersonId = ghostPersonId.Value;
-                visitorPersonAlias.AliasPersonId = null;
-                personAliasService.Add( visitorPersonAlias );
-                rockContext.SaveChanges();
-
-                var visitorPersonAliasIDKey = visitorPersonAlias.IdKey;
-                visitorKeyCookie = new System.Web.HttpCookie( Rock.Personalization.RequestCookieKey.ROCK_VISITOR_KEY, visitorPersonAliasIDKey );
-                RockPage.AddOrUpdateCookie( visitorKeyCookie );
-
-                var currentUTCDateTime = RockDateTime.Now.ToUniversalTime();
-
-                var rockVisitorCreatedDateTimeCookie = new System.Web.HttpCookie( Rock.Personalization.RequestCookieKey.ROCK_VISITOR_CREATED_DATETIME, currentUTCDateTime.ToISO8601DateString() );
-                RockPage.AddOrUpdateCookie( rockVisitorCreatedDateTimeCookie );
-            }
-
-
-
-            if ( visitorKeyCookie == null )
-            {
-
-            }
-
-
-
-            if ( CurrentPerson != null )
-            {
-                if ( visitorPersonAlias != null )
+                var visitorKeyPersonAliasIDKey = visitorKeyCookie.Value;
+                if ( visitorKeyPersonAliasIDKey.IsNullOrWhiteSpace() )
                 {
-                    if ( visitorPersonAlias.PersonId == CurrentPerson.Id )
-                    {
-                        // CurrentPerson and Visitor Person are the same person, so we are good.
-                        CurrentVisitor = visitorPersonAlias;
-                        return;
-                    }
-
-
-
-                    if ( visitorPersonAlias.PersonId == ghostPersonId )
-                    {
-                        // _visitorPersonAlias is the Anonymous person, but now there is a real person logged in
-                    }
-
+                    // There is a ROCK_VISITOR_KEY key, but it doesn't have a value, so invalid visitor key. 
+                    visitorKeyCookie = null;
+                }
+                else if ( !new PersonAliasService( rockContext ).GetQueryableByKey( visitorKeyPersonAliasIDKey ).Any() )
+                {
+                    // There is a ROCK_VISITOR_KEY key with an IDKey, but that PersonAlias record
+                    // isn't in the database, so it isn't a valid ROCK_VISITOR_KEY
+                    visitorKeyCookie = null;
                 }
             }
 
+            var currentUTCDateTime = RockDateTime.Now.ToUniversalTime();
 
+            // TODO, what should this be?
+            var persistedCookieExpiration = currentUTCDateTime.AddYears( 1 );
+            var sessionCookieExpiration = currentUTCDateTime.AddDays( -10 );
 
+            if ( visitorKeyCookie == null )
+            {
+                if ( CurrentPersonAlias == null )
+                {
+                    // ROCK_VISITOR_KEY does not exist and nobody is logged in, create a new PersonAlias and new Visitor Cookie tied to the GhostPersonId.
+                    var personAliasService = new PersonAliasService( rockContext );
+                    var visitorPersonAlias = new PersonAlias();
+                    visitorPersonAlias.PersonId = ghostPersonId.Value;
+                    visitorPersonAlias.AliasPersonId = null;
+                    personAliasService.Add( visitorPersonAlias );
+                    rockContext.SaveChanges();
 
+                    var visitorPersonAliasIDKey = visitorPersonAlias.IdKey;
+                    visitorKeyCookie = new System.Web.HttpCookie( Rock.Personalization.RequestCookieKey.ROCK_VISITOR_KEY, visitorPersonAliasIDKey )
+                    {
 
+                        Expires = persistedCookieExpiration
+                    };
 
+                    RockPage.AddOrUpdateCookie( visitorKeyCookie );
+                    RockPage.AddOrUpdateCookie( Rock.Personalization.RequestCookieKey.ROCK_VISITOR_CREATED_DATETIME, currentUTCDateTime.ToISO8601DateString(), persistedCookieExpiration );
+                    RockPage.AddOrUpdateCookie( Rock.Personalization.RequestCookieKey.ROCK_FIRSTTIME_VISITOR, true.ToString(), sessionCookieExpiration );
 
+                    CurrentVisitor = visitorPersonAlias;
+                }
+                else
+                {
+                    // If ROCK_VISITOR_KEY does not exist and person *is* logged in, create a new ROCK_VISITOR_KEY cookie using the CurrentPersonAlias's IDKey
+                    var visitorPersonAliasIDKey = CurrentPersonAlias.IdKey;
+                    visitorKeyCookie = new System.Web.HttpCookie( Rock.Personalization.RequestCookieKey.ROCK_VISITOR_KEY, visitorPersonAliasIDKey )
+                    {
+                        Expires = persistedCookieExpiration
+                    };
+
+                    RockPage.AddOrUpdateCookie( visitorKeyCookie );
+                }
+
+                // TODO: Is this where we want to do this?
+                RockPage.AddOrUpdateCookie( Rock.Personalization.RequestCookieKey.ROCK_SESSION_START_DATETIME, currentUTCDateTime.ToISO8601DateString(), sessionCookieExpiration );
+            }
+            else
+            {
+                // ROCK_VISITOR_KEY exists
+                var personAliasService = new PersonAliasService( rockContext );
+                var visitorPersonAliasIDKey = visitorKeyCookie.Value;
+                var currentVisitorCookiePersonAlias = personAliasService.Get( visitorPersonAliasIDKey );
+
+                if ( CurrentPersonAlias == null )
+                {
+                    // ROCK_VISITOR_KEY exists, but nobody is logged in
+                    CurrentVisitor = currentVisitorCookiePersonAlias;
+
+                    // renew, extend cookie
+                    visitorKeyCookie.Expires = persistedCookieExpiration;
+                    RockPage.AddOrUpdateCookie( visitorKeyCookie );
+                }
+                else
+                {
+                    /* Verify and upodate the CurrentVisitor Cookie */
+                    // TODO, how do we indicate that we haven't already done this for this session?
+
+                    // ROCK_VISITOR_KEY exists, and somebody is logged in
+                    if ( currentVisitorCookiePersonAlias.PersonId == ghostPersonId )
+                    {
+                        // Our current visitor cookie was associated with GhostPerson, but now we have a current person,
+                        // so convert the GhostVisitor PersonAlias to a PersonAlias of the CurrentPerson.
+
+                        // #TODO Merge Task or background thread?
+                        // What if this takes too long as a background task?
+                        currentVisitorCookiePersonAlias.PersonId = CurrentPersonId.Value;
+                        rockContext.SaveChanges();
+                    }
+                    else if ( currentVisitorCookiePersonAlias.PersonId != CurrentPersonId.Value )
+                    {
+                        // Our visitor person alias is for some other person that has previously logged into rock with this browser
+                        // So update the cookie to the current person's PersonAlias
+                        visitorKeyCookie.Value = CurrentPersonAlias.IdKey;
+                        visitorKeyCookie.Expires = persistedCookieExpiration;
+
+                        RockPage.AddOrUpdateCookie( visitorKeyCookie );
+                    }
+                    else
+                    {
+                        // Our visitor person alias is already associated with the current person,
+                        // so we are good. Extend expiration.
+                        visitorKeyCookie.Expires = persistedCookieExpiration;
+                        RockPage.AddOrUpdateCookie( visitorKeyCookie );
+                    }
+
+                    CurrentVisitor = CurrentPersonAlias;
+                }
+            }
+
+            RockPage.AddOrUpdateCookie( Rock.Personalization.RequestCookieKey.ROCK_VISITOR_LASTSEEN, currentUTCDateTime.ToISO8601DateString(), persistedCookieExpiration );
         }
 
         /// <summary>
