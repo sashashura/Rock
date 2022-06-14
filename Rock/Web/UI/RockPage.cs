@@ -45,7 +45,9 @@ using Rock.ViewModels;
 using Rock.ViewModels.Utility;
 using Rock.Web.Cache;
 using Rock.Web.UI.Controls;
+
 using static Rock.Security.Authorization;
+
 using Page = System.Web.UI.Page;
 
 namespace Rock.Web.UI
@@ -256,6 +258,26 @@ namespace Rock.Web.UI
         /// for this Page.
         /// </value>
         public List<BreadCrumb> BreadCrumbs { get; private set; }
+
+        private Rock.Model.PersonAlias _CurrentVisitor;
+
+        public Rock.Model.PersonAlias CurrentVisitor
+        {
+            get
+            {
+                if ( _CurrentVisitor != null )
+                {
+                    return _CurrentVisitor;
+                }
+
+                return null;
+            }
+
+            private set
+            {
+                _CurrentVisitor = value;
+            }
+        }
 
         /// <summary>
         /// Publicly gets and privately sets the currently logged in user.
@@ -842,6 +864,8 @@ namespace Rock.Web.UI
             // Get current user/person info
             Page.Trace.Warn( "Getting CurrentUser" );
             Rock.Model.UserLogin user = CurrentUser;
+
+            ProcessCurrentVisitor();
 
             if ( _showDebugTimings )
             {
@@ -1662,6 +1686,100 @@ Obsidian.init({{ debug: true, fingerprint: ""v={_obsidianFingerprint}"" }});
             }
         }
 
+        private void ProcessCurrentVisitor()
+        {
+            if ( !Site.EnableVisitorTracking )
+            {
+                // Visitor Tracking isn't enabled, so we can just return.
+                return;
+            }
+
+            PersonAlias visitorPersonAlias = null;
+            var rockContext = new RockContext();
+            var personAliasService = new PersonAliasService( rockContext );
+            var visitorKeyCookie = this.Request.Cookies.Get( Rock.Personalization.RequestCookieKey.ROCK_VISITOR_KEY );
+            if ( visitorKeyCookie != null && visitorKeyCookie.Value.IsNotNullOrWhiteSpace() )
+            {
+                var personAliasIDKey = visitorKeyCookie.Value;
+                visitorPersonAlias = personAliasService.Get( personAliasIDKey );
+
+                if ( visitorPersonAlias == null )
+                {
+                    // There is a ROCK_VISITOR_KEY key with an IDKey, but that PersonAlias record
+                    // isn't in the database, so it isn't a valid ROCK_VISITOR_KEY
+                    visitorKeyCookie = null;
+                }
+            }
+
+            var ghostVisitorPersonGuid = Rock.SystemGuid.Person.ANONYMOUS_VISITOR.AsGuid();
+            var ghostPersonId = new PersonService( rockContext ).GetId( ghostVisitorPersonGuid );
+            if ( !ghostPersonId.HasValue )
+            {
+                // ## TODO can we prevent this from happening? https://app.asana.com/0/0/1202438729153510/f
+
+                // Somehow the Person record for ANONYMOUS_VISITOR is gone!
+                // I guess we can't do Visitor tracking. So just exit.
+                return;
+            }
+
+            var currentPerson = CurrentPerson;
+            if ( visitorKeyCookie == null && currentPerson == null )
+            {
+                // If ROCK_VISITOR_KEY does not exist and nobody is logged in, create a new PersonAlias tied to the GhostPersonId.
+                visitorPersonAlias = new PersonAlias();
+                visitorPersonAlias.PersonId = ghostPersonId.Value;
+                visitorPersonAlias.AliasPersonId = null;
+                personAliasService.Add( visitorPersonAlias );
+                rockContext.SaveChanges();
+
+                var visitorPersonAliasIDKey = visitorPersonAlias.IdKey;
+                visitorKeyCookie = new System.Web.HttpCookie( Rock.Personalization.RequestCookieKey.ROCK_VISITOR_KEY, visitorPersonAliasIDKey );
+                RockPage.AddOrUpdateCookie( visitorKeyCookie );
+
+                var currentUTCDateTime = RockDateTime.Now.ToUniversalTime();
+
+                var rockVisitorCreatedDateTimeCookie = new System.Web.HttpCookie( Rock.Personalization.RequestCookieKey.ROCK_VISITOR_CREATED_DATETIME, currentUTCDateTime.ToISO8601DateString() );
+                RockPage.AddOrUpdateCookie( rockVisitorCreatedDateTimeCookie );
+            }
+
+
+
+            if ( visitorKeyCookie == null )
+            {
+
+            }
+
+
+
+            if ( CurrentPerson != null )
+            {
+                if ( visitorPersonAlias != null )
+                {
+                    if ( visitorPersonAlias.PersonId == CurrentPerson.Id )
+                    {
+                        // CurrentPerson and Visitor Person are the same person, so we are good.
+                        CurrentVisitor = visitorPersonAlias;
+                        return;
+                    }
+
+
+
+                    if ( visitorPersonAlias.PersonId == ghostPersonId )
+                    {
+                        // _visitorPersonAlias is the Anonymous person, but now there is a real person logged in
+                    }
+
+                }
+            }
+
+
+
+
+
+
+
+        }
+
         /// <summary>
         /// Verifies the block type instance properties to make sure they are compiled and have the attributes updated.
         /// </summary>
@@ -1906,7 +2024,7 @@ Obsidian.onReady(() => {{
                 }
 
                 string showTimingsUrl = this.Request.UrlProxySafe().ToString();
-                if ( showTimingsUrl.IndexOf( "ShowDebugTimings", StringComparison.OrdinalIgnoreCase) < 0)
+                if ( showTimingsUrl.IndexOf( "ShowDebugTimings", StringComparison.OrdinalIgnoreCase ) < 0 )
                 {
                     if ( showTimingsUrl.Contains( "?" ) )
                     {
@@ -1955,7 +2073,8 @@ Sys.Application.add_load(function () {
             _tsDuration = RockDateTime.Now.Subtract( ( DateTime ) Context.Items["Request_Start_Time"] );
             _duration = Math.Round( stepDuration, 2 );
 
-            var viewModel = new DebugTimingViewModel {
+            var viewModel = new DebugTimingViewModel
+            {
                 TimestampMs = _previousTiming,
                 DurationMs = _duration,
                 Title = eventTitle,
@@ -2128,7 +2247,7 @@ Sys.Application.add_load(function () {
                 // Add the measurement codes that start with 'UA' to the gtag script. If there are multiple measurement IDs the first one is used as the default.
                 gtagCodes.AddRange( code.Split( ',' ).Select( a => a.Trim() ).Where( a => a.StartsWith( "UA-", StringComparison.OrdinalIgnoreCase ) ).ToList() ?? new List<string>() );
 
-                if( gtagCodes.Any() )
+                if ( gtagCodes.Any() )
                 {
                     var sb = new StringBuilder();
                     sb.Append( $@"
@@ -2137,7 +2256,7 @@ Sys.Application.add_load(function () {
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){{window.dataLayer.push(arguments);}}
-      gtag('js', new Date());");
+      gtag('js', new Date());" );
                     sb.AppendLine( "" );
                     gtagCodes.ForEach( a => sb.AppendLine( $"      gtag('config', '{a}');" ) );
                     sb.AppendLine( "    </script>" );
@@ -3586,7 +3705,7 @@ Sys.Application.add_load(function () {
                     .OrderByDescending( d => d )
                     .FirstOrDefault();
 
-                _obsidianFingerprint = (lastWriteTime ?? RockDateTime.Now).Ticks;
+                _obsidianFingerprint = ( lastWriteTime ?? RockDateTime.Now ).Ticks;
 
                 // Check if we are in debug mode and if so enable the watchers.
                 var cfg = ( CompilationSection ) ConfigurationManager.GetSection( "system.web/compilation" );
@@ -3991,7 +4110,8 @@ Sys.Application.add_load(function () {
     /// <summary>
     /// Debug Timing
     /// </summary>
-    public sealed class DebugTimingViewModel {
+    public sealed class DebugTimingViewModel
+    {
         /// <summary>
         /// Gets or sets the timestamp milliseconds.
         /// </summary>
