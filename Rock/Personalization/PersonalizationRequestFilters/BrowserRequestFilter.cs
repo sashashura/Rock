@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Web;
 
 using Rock.Model;
@@ -68,18 +69,37 @@ namespace Rock.Personalization
         /// <summary>
         /// The supported browser family options that the Configuration UI for this filter should show,
         /// </summary>
-        public static readonly string[] SupportedBrowserFamilyOptions = new string[]
+        public enum BrowserFamilyEnum
         {
-            "Chrome",
-            "Chrome Mobile",
-            "Firefox",
-            "Firefox Mobile",
-            "Safari",
-            "Opera",
-            "Opera Mini",
-            "Edge",
-            "IE",
-            "Other"
-        };
+            [Description( "Chrome" )]
+            Chrome,
+
+            [Description( "Chrome Mobile" )]
+            ChromeMobie,
+                
+            [Description( "Firefox" )]
+            Firefox,
+
+            [Description( "Firefox Mobile" )]
+            FirefoxMobile,
+
+            [Description( "Safari" )]
+            Safari,
+
+            [Description( "Opera" )]
+            Opera,
+
+            [Description( "Opera Mini" )]
+            OperaMini,
+
+            [Description( "Edge" )]
+            Edge,
+
+            [Description( "IE" )]
+            IE,
+
+            [Description( "Other" )]
+            Other
+        }
     }
 }

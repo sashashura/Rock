@@ -31,6 +31,7 @@ using Rock.Personalization.SegmentFilters;
 using Rock.Reporting;
 using Rock.Web.Cache;
 using Rock.Web.UI.Controls;
+using static Rock.Personalization.BrowserRequestFilter;
 using static Rock.Personalization.DeviceTypeRequestFilter;
 using static Rock.Personalization.PreviousActivityRequestFilter;
 
@@ -105,7 +106,10 @@ namespace RockWeb.Blocks.Cms
             gInteractionFilters.Actions.AddClick += gInteractionFilters_AddClick;
 
             gIPAddress.Actions.ShowAdd = true;
+            gIPAddress.Actions.AddClick += gIpAddress_AddClick;
+
             gBrowser.Actions.ShowAdd = true;
+            gBrowser.Actions.AddClick += gBrowser_AddClick;
 
             gCookie.Actions.ShowAdd = true;
             gCookie.Actions.AddClick += gCookie_AddClick;
@@ -119,12 +123,11 @@ namespace RockWeb.Blocks.Cms
         {
             ShowQueryStringFilterDialog( null );
         }
-
         /// <summary>
-        /// Handles the EditClick event of the gInteractionFilters control.
+        /// The Edit Click event of the gQueryStringFilter
         /// </summary>
-        /// <param name="sender">The source of the event.</param>
-        /// <param name="e">The <see cref="Rock.Web.UI.Controls.RowEventArgs"/> instance containing the event data.</param>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         protected void gQueryStringFilter_EditClick( object sender, Rock.Web.UI.Controls.RowEventArgs e )
         {
             var queryStringFilterGuid = ( Guid ) e.RowKeyValue;
@@ -222,7 +225,7 @@ namespace RockWeb.Blocks.Cms
         }
 
         /// <summary>
-        /// Handles the EditClick event of the gInteractionFilters control.
+        /// Handles the EditClick event of the gCookie control.
         /// </summary>
         /// <param name="sender">The source of the event.</param>
         /// <param name="e">The <see cref="Rock.Web.UI.Controls.RowEventArgs"/> instance containing the event data.</param>
@@ -234,7 +237,7 @@ namespace RockWeb.Blocks.Cms
         }
 
         /// <summary>
-        /// Shows the query filter string dialog.
+        /// Shows the Cookie Filter dialog.
         /// </summary>
         /// <param name="pageViewFilterSegmentFilter">The interaction filter segment filter.</param>
         private void ShowCookieDialog( Rock.Personalization.SegmentFilters.InteractionSegmentFilter interactionSegmentFilter )
@@ -315,6 +318,205 @@ namespace RockWeb.Blocks.Cms
         }
 
         #endregion Cookie Filter
+
+        #region Browser Filter
+        private void gBrowser_AddClick( object sender, EventArgs e )
+        {
+            ShowBrowserDialog( null );
+        }
+
+        /// <summary>
+        /// Handles the EditClick event of the gCookie control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="Rock.Web.UI.Controls.RowEventArgs"/> instance containing the event data.</param>
+        protected void gBrowser_EditClick( object sender, Rock.Web.UI.Controls.RowEventArgs e )
+        {
+            var browserGuid = ( Guid ) e.RowKeyValue;
+            var browser = this.AdditionalFilterConfiguration.InteractionSegmentFilters.Where( a => a.Guid == browserGuid ).FirstOrDefault();
+            ShowBrowserDialog( browser );
+        }
+
+        /// <summary>
+        /// Shows the Cookie Filter dialog.
+        /// </summary>
+        /// <param name="pageViewFilterSegmentFilter">The interaction filter segment filter.</param>
+        private void ShowBrowserDialog( Rock.Personalization.SegmentFilters.InteractionSegmentFilter interactionSegmentFilter )
+        {
+            if ( interactionSegmentFilter == null )
+            {
+                interactionSegmentFilter = new InteractionSegmentFilter();
+                interactionSegmentFilter.Guid = Guid.NewGuid();
+                mdBrowser.Title = "Add Browser Filter";
+            }
+            else
+            {
+                mdBrowser.Title = "Edit Browser Filter";
+            }
+
+            ddlBrowserFamily.BindToEnum<BrowserFamilyEnum>();
+            ddlBrowserMatchOptions.BindToEnum( ignoreTypes: new ComparisonType[]
+            { ComparisonType.GreaterThan, ComparisonType.GreaterThanOrEqualTo, ComparisonType.LessThan, ComparisonType.LessThanOrEqualTo, ComparisonType.Between, ComparisonType.RegularExpression } );
+
+
+            hfInteractionFilterGuid.Value = interactionSegmentFilter.Guid.ToString();
+
+            ComparisonHelper.PopulateComparisonControl( ddlInteractionFilterComparisonType, ComparisonHelper.NumericFilterComparisonTypes, true );
+            ddlInteractionFilterComparisonType.SetValue( interactionSegmentFilter.ComparisonType.ConvertToInt() );
+            nbInteractionFilterCompareValue.Text = interactionSegmentFilter.ComparisonValue.ToString();
+
+            var interactionChannelId = InteractionChannelCache.GetId( interactionSegmentFilter.InteractionChannelGuid );
+
+            pInteractionFilterInteractionChannel.SetValue( interactionChannelId );
+            pInteractionFilterInteractionComponent.InteractionChannelId = interactionChannelId;
+
+            var interactionComponentId = interactionSegmentFilter.InteractionComponentGuid.HasValue ? InteractionComponentCache.GetId( interactionSegmentFilter.InteractionComponentGuid.Value ) : null;
+            pInteractionFilterInteractionComponent.SetValue( interactionComponentId );
+            tbInteractionFilterOperation.Text = interactionSegmentFilter.Operation;
+
+            drpInteractionFilterSlidingDateRange.DelimitedValues = interactionSegmentFilter.SlidingDateRangeDelimitedValues;
+
+            mdBrowser.Show();
+        }
+        protected void mdBrowser_SaveClick( object sender, EventArgs e )
+        {
+            var browserGuid = hfQueryStringFilter.Value.AsGuid();
+            var browserFilter = this.AdditionalFilterConfiguration.InteractionSegmentFilters
+                .Where( a => a.Guid == browserGuid )
+                .FirstOrDefault();
+
+            if ( browserFilter == null )
+            {
+                browserFilter = new InteractionSegmentFilter();
+                browserFilter.Guid = hfBrowser.Value.AsGuid();
+                this.AdditionalFilterConfiguration.InteractionSegmentFilters.Add( browserFilter );
+            }
+
+            var interactionChannelId = pInteractionFilterInteractionChannel.SelectedValueAsId();
+            if ( interactionChannelId == null )
+            {
+                return;
+            }
+
+            browserFilter.ComparisonType = ddlInteractionFilterComparisonType
+                    .SelectedValueAsEnumOrNull<ComparisonType>() ?? ComparisonType.GreaterThanOrEqualTo;
+            browserFilter.ComparisonValue = nbInteractionFilterCompareValue.Text.AsInteger();
+            browserFilter.InteractionChannelGuid = InteractionChannelCache.Get( interactionChannelId.Value ).Guid;
+
+            var interactionComponentId = pInteractionFilterInteractionComponent.SelectedValueAsId();
+            if ( interactionComponentId.HasValue )
+            {
+                browserFilter.InteractionComponentGuid = InteractionComponentCache.Get( interactionComponentId.Value )?.Guid;
+            }
+            else
+            {
+                browserFilter.InteractionComponentGuid = null;
+            }
+
+            browserFilter.SlidingDateRangeDelimitedValues = drpInteractionFilterSlidingDateRange.DelimitedValues;
+            browserFilter.Operation = tbInteractionFilterOperation.Text;
+            mdBrowser.Hide();
+            BindInteractionFiltersGrid();
+        }
+
+        #endregion Browser Filter
+
+        #region IP Address Filter
+        private void gIpAddress_AddClick( object sender, EventArgs e )
+        {
+            ShowIPAddressDialog( null );
+        }
+
+        /// <summary>
+        /// Handles the EditClick event of the gCookie control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="Rock.Web.UI.Controls.RowEventArgs"/> instance containing the event data.</param>
+        protected void gIpAddress_EditClick( object sender, Rock.Web.UI.Controls.RowEventArgs e )
+        {
+            var ipAddressGuid = ( Guid ) e.RowKeyValue;
+            var ipAddress = this.AdditionalFilterConfiguration.InteractionSegmentFilters.Where( a => a.Guid == ipAddressGuid ).FirstOrDefault();
+            ShowIPAddressDialog( ipAddress );
+        }
+
+        /// <summary>
+        /// Shows the Cookie Filter dialog.
+        /// </summary>
+        /// <param name="pageViewFilterSegmentFilter">The interaction filter segment filter.</param>
+        private void ShowIPAddressDialog( Rock.Personalization.SegmentFilters.InteractionSegmentFilter interactionSegmentFilter )
+        {
+            if ( interactionSegmentFilter == null )
+            {
+                interactionSegmentFilter = new InteractionSegmentFilter();
+                interactionSegmentFilter.Guid = Guid.NewGuid();
+                mdBrowser.Title = "Add IP Address Filter";
+            }
+            else
+            {
+                mdBrowser.Title = "Edit IP Address Filter";
+            }
+
+            hfInteractionFilterGuid.Value = interactionSegmentFilter.Guid.ToString();
+
+            ComparisonHelper.PopulateComparisonControl( ddlInteractionFilterComparisonType, ComparisonHelper.NumericFilterComparisonTypes, true );
+            ddlInteractionFilterComparisonType.SetValue( interactionSegmentFilter.ComparisonType.ConvertToInt() );
+            nbInteractionFilterCompareValue.Text = interactionSegmentFilter.ComparisonValue.ToString();
+
+            var interactionChannelId = InteractionChannelCache.GetId( interactionSegmentFilter.InteractionChannelGuid );
+
+            pInteractionFilterInteractionChannel.SetValue( interactionChannelId );
+            pInteractionFilterInteractionComponent.InteractionChannelId = interactionChannelId;
+
+            var interactionComponentId = interactionSegmentFilter.InteractionComponentGuid.HasValue ? InteractionComponentCache.GetId( interactionSegmentFilter.InteractionComponentGuid.Value ) : null;
+            pInteractionFilterInteractionComponent.SetValue( interactionComponentId );
+            tbInteractionFilterOperation.Text = interactionSegmentFilter.Operation;
+
+            drpInteractionFilterSlidingDateRange.DelimitedValues = interactionSegmentFilter.SlidingDateRangeDelimitedValues;
+
+            mdIPAddress.Show();
+        }
+        protected void mdIpAddress_SaveClick( object sender, EventArgs e )
+        {
+            var ipAddressGuid = hfQueryStringFilter.Value.AsGuid();
+            var ipAddressFilter = this.AdditionalFilterConfiguration.InteractionSegmentFilters
+                .Where( a => a.Guid == ipAddressGuid )
+                .FirstOrDefault();
+
+            if ( ipAddressFilter == null )
+            {
+                ipAddressFilter = new InteractionSegmentFilter();
+                ipAddressFilter.Guid = hfBrowser.Value.AsGuid();
+                this.AdditionalFilterConfiguration.InteractionSegmentFilters.Add( ipAddressFilter );
+            }
+
+            var interactionChannelId = pInteractionFilterInteractionChannel.SelectedValueAsId();
+            if ( interactionChannelId == null )
+            {
+                return;
+            }
+
+            ipAddressFilter.ComparisonType = ddlInteractionFilterComparisonType
+                    .SelectedValueAsEnumOrNull<ComparisonType>() ?? ComparisonType.GreaterThanOrEqualTo;
+            ipAddressFilter.ComparisonValue = nbInteractionFilterCompareValue.Text.AsInteger();
+            ipAddressFilter.InteractionChannelGuid = InteractionChannelCache.Get( interactionChannelId.Value ).Guid;
+
+            var interactionComponentId = pInteractionFilterInteractionComponent.SelectedValueAsId();
+            if ( interactionComponentId.HasValue )
+            {
+                ipAddressFilter.InteractionComponentGuid = InteractionComponentCache.Get( interactionComponentId.Value )?.Guid;
+            }
+            else
+            {
+                ipAddressFilter.InteractionComponentGuid = null;
+            }
+
+            ipAddressFilter.SlidingDateRangeDelimitedValues = drpInteractionFilterSlidingDateRange.DelimitedValues;
+            ipAddressFilter.Operation = tbInteractionFilterOperation.Text;
+            mdIPAddress.Hide();
+            BindInteractionFiltersGrid();
+        }
+
+        #endregion IP Address Filter
 
         /// <summary>
         /// Raises the <see cref="E:System.Web.UI.Control.Load" /> event.

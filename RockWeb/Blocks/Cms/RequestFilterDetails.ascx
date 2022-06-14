@@ -255,7 +255,7 @@
                     <div class="panel-body">
                         <asp:HiddenField ID="hfCookie" runat="server" />
 
-                        <asp:ValidationSummary ID="vgCookie" runat="server" HeaderText="Please correct the following:" CssClass="alert alert-validation" ValidationGroup="vgCookie" />
+                        <asp:ValidationSummary ID="vsCookie" runat="server" HeaderText="Please correct the following:" CssClass="alert alert-validation" ValidationGroup="vgCookie" />
 
                         <div class="container">
                             <div class="row">
@@ -270,6 +270,52 @@
                         
                         <Rock:RockTextBox ID="tbCookieValue" runat="server" />
 
+                    </div>
+
+
+                </Content>
+            </Rock:ModalDialog>
+
+            <%-- Modal for Browser Filter --%>
+            <Rock:ModalDialog ID="mdBrowser" runat="server" OnSaveClick="mdBrowser_SaveClick" ValidationGroup="vgBrowser">
+                <Content>
+                    <div class="panel-body">
+                        <asp:HiddenField ID="hfBrowser" runat="server" />
+
+                        <asp:ValidationSummary ID="vsBrowser" runat="server" HeaderText="Please correct the following:" CssClass="alert alert-validation" ValidationGroup="vgBrowser" />
+
+                        <div class="container">
+                            <div class="row">
+                                <span class="col-sm-2">Where </span>
+                                <Rock:RockDropDownList ID="ddlBrowserFamily" runat="server" CssClass="col-sm-2" />
+                                <span class="col-sm-2"> version is </span>
+                                <Rock:RockDropDownList ID="ddlBrowserMatchOptions" runat="server" CssClass="col-sm-2" />
+                                <Rock:RockTextBox ID="tbBrowserVersion" runat="server" CssClass="col-sm-4"/>
+                            </div>
+                        </div>
+                    </div>
+
+
+                </Content>
+            </Rock:ModalDialog>
+
+            <%-- Modal for IP Address Filter --%>
+            <Rock:ModalDialog ID="mdIPAddress" runat="server" OnSaveClick="mdIpAddress_SaveClick" ValidationGroup="vgIPAddress">
+                <Content>
+                    <div class="panel-body">
+                        <asp:HiddenField ID="hfIPAddress" runat="server" />
+
+                        <asp:ValidationSummary ID="vsIPAddress" runat="server" HeaderText="Please correct the following:" CssClass="alert alert-validation" ValidationGroup="vgIPAddress" />
+
+                        <div class="container">
+                            <div class="row">
+                                <span class="col-sm-2">Where the client IP is </span>
+                                <Rock:Toggle ID="tglIPAddressRange" runat="server" OnText="In Range" OffText="Not in Range"
+                                    ActiveButtonCssClass="btn-info" ButtonSizeCssClass="btn-xs" />
+                                <Rock:RockTextBox ID="tbIPAddressStartRange" runat="server" CssClass="col-sm-4"/>
+                                <Rock:RockTextBox ID="tbIPAddressEndRange" runat="server" CssClass="col-sm-4"/>
+                            </div>
+                        </div>
                     </div>
 
 
