@@ -41,14 +41,14 @@ namespace Rock.Personalization
         public enum DeviceType
         {
             [Description( "Desktop" )]
-            Desktop,
+            Desktop = 0,
 
             [Description( "Tablet" )]
-            Tablet,
+            Tablet = 1,
 
             // #TODO# Display as Phone or Mobile?
             [Description( "Phone" )]
-            Mobile
+            Mobile = 2
         }
     }
 }

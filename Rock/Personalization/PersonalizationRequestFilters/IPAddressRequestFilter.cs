@@ -65,11 +65,11 @@ namespace Rock.Personalization
             /// <summary>
             /// The in range
             /// </summary>
-            InRange,
+            InRange = 0,
             /// <summary>
             /// The not in range
             /// </summary>
-            NotInRange
+            NotInRange = 1
         }
     }
 }
