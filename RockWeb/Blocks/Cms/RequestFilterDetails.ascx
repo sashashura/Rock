@@ -89,10 +89,10 @@
                         <Rock:Grid ID="gQueryStringFilter" runat="server" DisplayType="Light" RowItemText="Query String Filter">
                             <Columns>
                                 <Rock:RockBoundField DataField="Key" HeaderText="Key" />
-                                <Rock:RockBoundField DataField="MatchType" HeaderText="Match Type"  />
-                                <Rock:RockBoundField DataField="Value" HeaderText="Value"  />
+                                <Rock:RockBoundField DataField="ComparisonType" HeaderText="Match Type"  />
+                                <Rock:RockBoundField DataField="ComparisonValue" HeaderText="Value"  />
                                 <Rock:EditField OnClick="gQueryStringFilter_EditClick" />
-                                <Rock:DeleteField OnClick="gQueryStringFilter_EditClick" />
+                                <Rock:DeleteField OnClick="gQueryStringFilter_DeleteClick" />
                             </Columns>
                         </Rock:Grid>
                     </div>
@@ -111,10 +111,10 @@
                         <Rock:Grid ID="gCookie" runat="server" DisplayType="Light" RowItemText="Cookie">
                             <Columns>
                                 <Rock:RockBoundField DataField="Key" HeaderText="Key" />
-                                <Rock:RockBoundField DataField="MatchType" HeaderText="Match Type"  />
-                                <Rock:RockBoundField DataField="Value" HeaderText="Value"  />
+                                <Rock:RockBoundField DataField="ComparisonType" HeaderText="Match Type"  />
+                                <Rock:RockBoundField DataField="ComparisonValue" HeaderText="Value"  />
                                 <Rock:EditField OnClick="gCookie_EditClick" />
-                                <Rock:DeleteField OnClick="gCookie_EditClick" />
+                                <Rock:DeleteField OnClick="gCookie_DeleteClick" />
                             </Columns>
                         </Rock:Grid>
                     </div>
@@ -131,10 +131,10 @@
                         <Rock:Grid ID="gBrowser" runat="server" DisplayType="Light" RowItemText="Browser">
                             <Columns>
                                 <Rock:RockBoundField DataField="BrowserFamily" HeaderText="Browser Family" />
-                                <Rock:RockBoundField DataField="MatchType" HeaderText="Match Type"  />
+                                <Rock:RockBoundField DataField="VersionComparisonType" HeaderText="Match Type"  />
                                 <Rock:RockBoundField DataField="MajorVersion" HeaderText="Major Version"  />
                                 <Rock:EditField OnClick="gBrowser_EditClick" />
-                                <Rock:DeleteField OnClick="gBrowser_EditClick" />
+                                <Rock:DeleteField OnClick="gBrowser_DeleteClick" />
                             </Columns>
                         </Rock:Grid>
                     </div>
@@ -150,11 +150,11 @@
                     <div class="panel-body">
                         <Rock:Grid ID="gIPAddress" runat="server" DisplayType="Light" RowItemText="IP Address">
                             <Columns>
-                                <Rock:RockBoundField DataField="BeginningAddress" HeaderText="Beginning Address" />
-                                <Rock:RockBoundField DataField="EndingAddress" HeaderText="Ending Address" />
+                                <Rock:RockBoundField DataField="BeginningIPAddress" HeaderText="Beginning Address" />
+                                <Rock:RockBoundField DataField="EndingIPAddress" HeaderText="Ending Address" />
                                 <Rock:RockBoundField DataField="MatchType" HeaderText="Match Type"  />
                                 <Rock:EditField OnClick="gIpAddress_EditClick" />
-                                <Rock:DeleteField OnClick="gIpAddress_EditClick" />
+                                <Rock:DeleteField OnClick="gIpAddress_DeleteClick" />
                             </Columns>
                         </Rock:Grid>
                     </div>
@@ -197,7 +197,7 @@
             <Rock:ModalDialog ID="mdCookie" runat="server" OnSaveClick="mdCookie_SaveClick" ValidationGroup="vgCookie">
                 <Content>
                     <div class="panel-body">
-                        <asp:HiddenField ID="hfCookie" runat="server" />
+                        <asp:HiddenField ID="hfCookieFilterGuid" runat="server" />
 
                         <asp:ValidationSummary ID="vsCookie" runat="server" HeaderText="Please correct the following:" CssClass="alert alert-validation" ValidationGroup="vgCookie" />
 
@@ -220,11 +220,11 @@
                 </Content>
             </Rock:ModalDialog>
 
-            <%-- Modal for Browser Filter --%>
+            <%-- Modal  for Browser Filter --%>
             <Rock:ModalDialog ID="mdBrowser" runat="server" OnSaveClick="mdBrowser_SaveClick" ValidationGroup="vgBrowser">
                 <Content>
                     <div class="panel-body">
-                        <asp:HiddenField ID="hfBrowser" runat="server" />
+                        <asp:HiddenField ID="hfBrowserFilterGuid" runat="server" />
 
                         <asp:ValidationSummary ID="vsBrowser" runat="server" HeaderText="Please correct the following:" CssClass="alert alert-validation" ValidationGroup="vgBrowser" />
 
@@ -247,14 +247,14 @@
             <Rock:ModalDialog ID="mdIPAddress" runat="server" OnSaveClick="mdIpAddress_SaveClick" ValidationGroup="vgIPAddress">
                 <Content>
                     <div class="panel-body">
-                        <asp:HiddenField ID="hfIPAddress" runat="server" />
+                        <asp:HiddenField ID="hfIPAddressFilterGuid" runat="server" />
 
                         <asp:ValidationSummary ID="vsIPAddress" runat="server" HeaderText="Please correct the following:" CssClass="alert alert-validation" ValidationGroup="vgIPAddress" />
 
                         <div class="container">
                             <div class="row">
                                 <span class="col-sm-2">Where the client IP is </span>
-                                <Rock:Toggle ID="tglIPAddressRange" runat="server" OnText="In Range" OffText="Not in Range"
+                                <Rock:Toggle ID="tglIPAddressRange" runat="server" OnText="Not in Range" OffText="In Range"
                                     ActiveButtonCssClass="btn-info" ButtonSizeCssClass="btn-xs" />
                                 <Rock:RockTextBox ID="tbIPAddressStartRange" runat="server" CssClass="col-sm-4"/>
                                 <Rock:RockTextBox ID="tbIPAddressEndRange" runat="server" CssClass="col-sm-4"/>

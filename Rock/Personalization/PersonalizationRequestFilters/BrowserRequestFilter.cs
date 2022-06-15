@@ -24,7 +24,7 @@ namespace Rock.Personalization
         /// Gets or sets the browser family. Configured UI should only present browsers from <seealso cref="SupportedBrowserFamilyOptions"/>.
         /// </summary>
         /// <value>The browser family.</value>
-        public string BrowserFamily { get; set; }
+        public BrowserFamilyEnum BrowserFamily { get; set; }
 
         /// <summary>
         /// Gets or sets the type of the version comparison.
@@ -35,7 +35,7 @@ namespace Rock.Personalization
         /// <summary>
         /// The major version
         /// </summary>
-        public int MajorVersion;
+        public int MajorVersion { get; set; }
 
         /// <summary>
         /// Gets or sets the unique identifier.
@@ -55,7 +55,9 @@ namespace Rock.Personalization
             var ua = uaParser.ParseUserAgent( httpRequest.UserAgent );
             var detectedFamily = ua.Family;
 
-            if ( !detectedFamily.Equals( BrowserFamily, StringComparison.OrdinalIgnoreCase ) && BrowserFamily != "Other" )
+            var filteredBrowserFamily = this.BrowserFamily.ConvertToString(); 
+
+            if ( !detectedFamily.Equals( filteredBrowserFamily, StringComparison.OrdinalIgnoreCase ) )
             {
                 // If the detected family doesn't match the BrowserFamily for this filter,
                 // and the selected BrowerFamily is not Other, then
@@ -81,7 +83,7 @@ namespace Rock.Personalization
             Chrome,
 
             [Description( "Chrome Mobile" )]
-            ChromeMobie,
+            ChromeMobile,
                 
             [Description( "Firefox" )]
             Firefox,
