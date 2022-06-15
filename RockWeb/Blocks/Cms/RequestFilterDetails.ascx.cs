@@ -23,15 +23,13 @@ using System.Web.UI;
 using System.Web.UI.WebControls;
 
 using Rock;
-using Rock.Attribute;
 using Rock.Constants;
 using Rock.Data;
 using Rock.Model;
 using Rock.Personalization;
 using Rock.Personalization.SegmentFilters;
-using Rock.Reporting;
 using Rock.Web.Cache;
-using Rock.Web.UI.Controls;
+
 using static Rock.Personalization.BrowserRequestFilter;
 using static Rock.Personalization.DeviceTypeRequestFilter;
 using static Rock.Personalization.PreviousActivityRequestFilter;
@@ -93,18 +91,6 @@ namespace RockWeb.Blocks.Cms
             // This event gets fired after block settings are updated. It's nice to repaint the screen if these settings would alter it.
             this.BlockUpdated += Block_BlockUpdated;
             this.AddConfigurationUpdateTrigger( upnlContent );
-
-            //gSessionCountFilters.DataKeyNames = new string[] { "Guid" };
-            //gSessionCountFilters.Actions.ShowAdd = true;
-            //gSessionCountFilters.Actions.AddClick += gSessionCountFilters_AddClick;
-
-            //gPageViewFilters.DataKeyNames = new string[] { "Guid" };
-            //gPageViewFilters.Actions.ShowAdd = true;
-            //gPageViewFilters.Actions.AddClick += gPageViewFilters_AddClick;
-
-            //gInteractionFilters.DataKeyNames = new string[] { "Guid" };
-            //gInteractionFilters.Actions.ShowAdd = true;
-            //gInteractionFilters.Actions.AddClick += gInteractionFilters_AddClick;
 
             gIPAddress.Actions.ShowAdd = true;
             gIPAddress.Actions.AddClick += gIpAddress_AddClick;
@@ -196,25 +182,9 @@ namespace RockWeb.Blocks.Cms
             //tbSegmentKey.Text = requestFilter.SiteId;
             hlInactive.Visible = !requestFilter.IsActive;
             cbIsActive.Checked = requestFilter.IsActive;
-            //hfExistingSegmentKeyNames.Value = requestFilterService.Queryable().Where( a => a.Id != requestFilter.Id ).Select( a => a.SegmentKey ).ToList().ToJson();
+
 
             this.AdditionalFilterConfiguration = requestFilter.FilterConfiguration ?? new Rock.Personalization.PersonalizationRequestFilterConfiguration();
-
-            //// Person Filters
-            //dvpFilterDataView.SetValue( requestFilter.FilterDataViewId );
-            //ShowDataViewWarningIfInvalid( requestFilter.FilterDataViewId );
-
-            //// Session Filters
-            //tglSessionCountFiltersAllAny.Checked = AdditionalFilterConfiguration.SessionFilterExpressionType == FilterExpressionType.GroupAll;
-            //BindSessionCountFiltersGrid();
-
-            //// Page View Filters
-            //tglPageViewFiltersAllAny.Checked = AdditionalFilterConfiguration.PageViewFilterExpressionType == FilterExpressionType.GroupAll;
-            //BindPageViewFiltersGrid();
-
-            //// Interaction Filters
-            ////tglInteractionFiltersAllAny.Checked = AdditionalFilterConfiguration.InteractionFilterExpressionType == FilterExpressionType.GroupAll;
-            //BindInteractionFiltersGrid();
 
             gIPAddress.DataBind();
             gBrowser.DataBind();
@@ -315,48 +285,13 @@ namespace RockWeb.Blocks.Cms
             requestFilter.Name = tbName.Text;
             requestFilter.IsActive = cbIsActive.Checked;
 
-            AdditionalFilterConfiguration.PreviousActivityRequestFilter = new PreviousActivityRequestFilter();
             AdditionalFilterConfiguration.PreviousActivityRequestFilter.PreviousActivityTypes = cblPreviousActivity.SelectedValues
                 .Select( v => v.ConvertToEnum<PreviousActivityType>() )
                 .ToArray();
 
-            AdditionalFilterConfiguration.DeviceTypeRequestFilter = new DeviceTypeRequestFilter();
             AdditionalFilterConfiguration.DeviceTypeRequestFilter.DeviceTypes = cblDeviceTypes.SelectedValues
                 .Select( v => v.ConvertToEnum<DeviceType>() )
                 .ToArray();
-
-
-            //requestFilter.SegmentKey = tbSegmentKey.Text;
-            //requestFilter.FilterDataViewId = dvpFilterDataView.SelectedValueAsId();
-
-            //if ( tglSessionCountFiltersAllAny.Checked )
-            //{
-            //    AdditionalFilterConfiguration.SessionFilterExpressionType = FilterExpressionType.GroupAll;
-            //}
-            //else
-            //{
-            //    AdditionalFilterConfiguration.SessionFilterExpressionType = FilterExpressionType.GroupAny;
-            //}
-
-            //if ( tglPageViewFiltersAllAny.Checked )
-            //{
-            //    AdditionalFilterConfiguration.PageViewFilterExpressionType = FilterExpressionType.GroupAll;
-            //}
-            //else
-            //{
-            //    AdditionalFilterConfiguration.PageViewFilterExpressionType = FilterExpressionType.GroupAny;
-            //}
-
-            //if ( tglInteractionFiltersAllAny.Checked )
-            //{
-            //    AdditionalFilterConfiguration.InteractionFilterExpressionType = FilterExpressionType.GroupAll;
-            //}
-            //else
-            //{
-            //    AdditionalFilterConfiguration.InteractionFilterExpressionType = FilterExpressionType.GroupAny;
-            //}
-
-            //requestFilter.AdditionalFilterConfiguration = this.AdditionalFilterConfiguration;
 
             requestFilter.FilterConfiguration = AdditionalFilterConfiguration;
 
@@ -376,419 +311,6 @@ namespace RockWeb.Blocks.Cms
 
         #endregion
 
-        //#region Session Filters Related
-
-        ///// <summary>
-        ///// Binds the session count filters grid.
-        ///// </summary>
-        //private void BindSessionCountFiltersGrid()
-        //{
-        //    var sessionCountFilters = this.AdditionalFilterConfiguration.SessionSegmentFilters;
-        //    gSessionCountFilters.DataSource = sessionCountFilters.OrderBy( a => a.GetDescription() );
-        //    gSessionCountFilters.DataBind();
-        //}
-
-        ///// <summary>
-        ///// Handles the AddClick event of the gSessionCountFilters control.
-        ///// </summary>
-        ///// <param name="sender">The source of the event.</param>
-        ///// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
-        //private void gSessionCountFilters_AddClick( object sender, EventArgs e )
-        //{
-        //    ShowSessionCountFilterDialog( null );
-        //}
-
-        ///// <summary>
-        ///// Handles the EditClick event of the gSessionCountFilters control.
-        ///// </summary>
-        ///// <param name="sender">The source of the event.</param>
-        ///// <param name="e">The <see cref="Rock.Web.UI.Controls.RowEventArgs"/> instance containing the event data.</param>
-        //protected void gSessionCountFilters_EditClick( object sender, Rock.Web.UI.Controls.RowEventArgs e )
-        //{
-        //    var sessionSegmentFilterGuid = ( Guid ) e.RowKeyValue;
-        //    var sessionSegmentFilter = this.AdditionalFilterConfiguration.SessionSegmentFilters.FirstOrDefault( a => a.Guid == sessionSegmentFilterGuid );
-        //    ShowSessionCountFilterDialog( sessionSegmentFilter );
-        //}
-
-        ///// <summary>
-        ///// Shows the session count filter dialog.
-        ///// </summary>
-        ///// <param name="sessionCountSegmentFilter">The session count segment filter.</param>
-        //private void ShowSessionCountFilterDialog( Rock.Personalization.SegmentFilters.SessionCountSegmentFilter sessionCountSegmentFilter )
-        //{
-        //    if ( sessionCountSegmentFilter == null )
-        //    {
-        //        sessionCountSegmentFilter = new SessionCountSegmentFilter();
-        //        sessionCountSegmentFilter.Guid = Guid.NewGuid();
-        //        mdSessionCountFilterConfiguration.Title = "Add Session Filter";
-        //    }
-        //    else
-        //    {
-        //        mdSessionCountFilterConfiguration.Title = "Edit Session Filter";
-        //    }
-
-        //    hfSessionCountFilterGuid.Value = sessionCountSegmentFilter.Guid.ToString();
-
-        //    lstSessionCountFilterWebSites.Items.Clear();
-        //    foreach ( var site in SiteCache.All().Where( a => a.IsActive ) )
-        //    {
-        //        lstSessionCountFilterWebSites.Items.Add( new ListItem( site.Name, site.Guid.ToString() ) );
-        //    }
-
-        //    ComparisonHelper.PopulateComparisonControl( ddlSessionCountFilterComparisonType, ComparisonHelper.NumericFilterComparisonTypes, true );
-        //    ddlSessionCountFilterComparisonType.SetValue( sessionCountSegmentFilter.ComparisonType.ConvertToInt() );
-        //    nbSessionCountFilterCompareValue.Text = sessionCountSegmentFilter.ComparisonValue.ToString();
-        //    drpSessionCountFilterSlidingDateRange.DelimitedValues = sessionCountSegmentFilter.SlidingDateRangeDelimitedValues;
-        //    lstSessionCountFilterWebSites.SetValues( sessionCountSegmentFilter.SiteGuids );
-
-        //    mdSessionCountFilterConfiguration.Show();
-        //}
-
-        ///// <summary>
-        ///// Handles the SaveClick event of the mdSessionCountFilterConfiguration control.
-        ///// </summary>
-        ///// <param name="sender">The source of the event.</param>
-        ///// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
-        //protected void mdSessionCountFilterConfiguration_SaveClick( object sender, EventArgs e )
-        //{
-        //    var sessionSegmentFilterGuid = hfSessionCountFilterGuid.Value.AsGuid();
-        //    var sessionSegmentFilter = this.AdditionalFilterConfiguration.SessionSegmentFilters.Where( a => a.Guid == sessionSegmentFilterGuid ).FirstOrDefault();
-        //    if ( sessionSegmentFilter == null )
-        //    {
-        //        sessionSegmentFilter = new SessionCountSegmentFilter();
-        //        sessionSegmentFilter.Guid = hfSessionCountFilterGuid.Value.AsGuid();
-        //        this.AdditionalFilterConfiguration.SessionSegmentFilters.Add( sessionSegmentFilter );
-        //    }
-
-        //    sessionSegmentFilter.ComparisonType = ddlSessionCountFilterComparisonType.SelectedValueAsEnumOrNull<ComparisonType>() ?? ComparisonType.GreaterThanOrEqualTo;
-        //    sessionSegmentFilter.ComparisonValue = nbSessionCountFilterCompareValue.Text.AsInteger();
-        //    sessionSegmentFilter.SiteGuids = lstSessionCountFilterWebSites.SelectedValuesAsGuid;
-
-        //    sessionSegmentFilter.SlidingDateRangeDelimitedValues = drpSessionCountFilterSlidingDateRange.DelimitedValues;
-        //    mdSessionCountFilterConfiguration.Hide();
-        //    BindSessionCountFiltersGrid();
-        //}
-
-        ///// <summary>
-        ///// Handles the DeleteClick event of the gSessionCountFilters control.
-        ///// </summary>
-        ///// <param name="sender">The source of the event.</param>
-        ///// <param name="e">The <see cref="Rock.Web.UI.Controls.RowEventArgs"/> instance containing the event data.</param>
-        //protected void gSessionCountFilters_DeleteClick( object sender, Rock.Web.UI.Controls.RowEventArgs e )
-        //{
-        //    var sessionSegmentFilterGuid = ( Guid ) e.RowKeyValue;
-        //    var sessionSegmentFilter = this.AdditionalFilterConfiguration.SessionSegmentFilters.Where( a => a.Guid == sessionSegmentFilterGuid ).FirstOrDefault();
-        //    if ( sessionSegmentFilter != null )
-        //    {
-        //        this.AdditionalFilterConfiguration.SessionSegmentFilters.Remove( sessionSegmentFilter );
-        //    }
-
-        //    BindSessionCountFiltersGrid();
-        //}
-
-        ///// <summary>
-        ///// Handles the DataBound event of the lSessionCountFilterDescription control.
-        ///// </summary>
-        ///// <param name="sender">The source of the event.</param>
-        ///// <param name="e">The <see cref="Rock.Web.UI.Controls.RowEventArgs"/> instance containing the event data.</param>
-        //protected void lSessionCountFilterDescription_DataBound( object sender, Rock.Web.UI.Controls.RowEventArgs e )
-        //{
-        //    SessionCountSegmentFilter sessionCountSegmentFilter = e.Row.DataItem as SessionCountSegmentFilter;
-        //    var lSessionCountFilter = sender as Literal;
-        //    if ( sessionCountSegmentFilter == null || lSessionCountFilter == null )
-        //    {
-        //        return;
-        //    }
-
-        //    lSessionCountFilter.Text = sessionCountSegmentFilter.GetDescription();
-        //}
-
-        //#endregion Session Filters Related
-
-        //#region Page View Filters Related
-
-        ///// <summary>
-        ///// Binds the page views filters grid.
-        ///// </summary>
-        //private void BindPageViewFiltersGrid()
-        //{
-        //    var pageViewFilters = this.AdditionalFilterConfiguration.PageViewSegmentFilters;
-        //    gPageViewFilters.DataSource = pageViewFilters.OrderBy( a => a.GetDescription() );
-        //    gPageViewFilters.DataBind();
-        //}
-
-        ///// <summary>
-        ///// Handles the AddClick event of the gPageViewFilters control.
-        ///// </summary>
-        ///// <param name="sender">The source of the event.</param>
-        ///// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
-        //private void gPageViewFilters_AddClick( object sender, EventArgs e )
-        //{
-        //    ShowPageViewFilterDialog( null );
-        //}
-
-        ///// <summary>
-        ///// Handles the EditClick event of the gPageViewFilters control.
-        ///// </summary>
-        ///// <param name="sender">The source of the event.</param>
-        ///// <param name="e">The <see cref="Rock.Web.UI.Controls.RowEventArgs"/> instance containing the event data.</param>
-        //protected void gPageViewFilters_EditClick( object sender, Rock.Web.UI.Controls.RowEventArgs e )
-        //{
-        //    var pageViewFilterGuid = ( Guid ) e.RowKeyValue;
-        //    var pageViewFilter = this.AdditionalFilterConfiguration.PageViewSegmentFilters.Where( a => a.Guid == pageViewFilterGuid ).FirstOrDefault();
-        //    ShowPageViewFilterDialog( pageViewFilter );
-        //}
-
-        ///// <summary>
-        ///// Shows the page view filter dialog.
-        ///// </summary>
-        ///// <param name="pageViewFilterSegmentFilter">The page view filter segment filter.</param>
-        //private void ShowPageViewFilterDialog( Rock.Personalization.SegmentFilters.PageViewSegmentFilter pageViewFilterSegmentFilter )
-        //{
-        //    if ( pageViewFilterSegmentFilter == null )
-        //    {
-        //        pageViewFilterSegmentFilter = new PageViewSegmentFilter();
-        //        pageViewFilterSegmentFilter.Guid = Guid.NewGuid();
-        //        mdPageViewFilterConfiguration.Title = "Add Page View Filter";
-        //    }
-        //    else
-        //    {
-        //        mdPageViewFilterConfiguration.Title = "Edit Page View Filter";
-        //    }
-
-        //    hfPageViewFilterGuid.Value = pageViewFilterSegmentFilter.Guid.ToString();
-
-        //    lstPageViewFilterWebSites.Items.Clear();
-        //    foreach ( var site in SiteCache.All().Where( a => a.IsActive ) )
-        //    {
-        //        lstPageViewFilterWebSites.Items.Add( new ListItem( site.Name, site.Guid.ToString() ) );
-        //    }
-
-        //    ComparisonHelper.PopulateComparisonControl( ddlPageViewFilterComparisonType, ComparisonHelper.NumericFilterComparisonTypes, true );
-        //    ddlPageViewFilterComparisonType.SetValue( pageViewFilterSegmentFilter.ComparisonType.ConvertToInt() );
-        //    nbPageViewFilterCompareValue.Text = pageViewFilterSegmentFilter.ComparisonValue.ToString();
-        //    drpPageViewFilterSlidingDateRange.DelimitedValues = pageViewFilterSegmentFilter.SlidingDateRangeDelimitedValues;
-        //    lstPageViewFilterWebSites.SetValues( pageViewFilterSegmentFilter.SiteGuids );
-
-        //    ppPageViewFilterPages.SetValues( pageViewFilterSegmentFilter.GetSelectedPages().Select( a => a.Id ) );
-
-        //    mdPageViewFilterConfiguration.Show();
-        //}
-
-        ///// <summary>
-        ///// Handles the SaveClick event of the mdPageViewFilterConfiguration control.
-        ///// </summary>
-        ///// <param name="sender">The source of the event.</param>
-        ///// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
-        //protected void mdPageViewFilterConfiguration_SaveClick( object sender, EventArgs e )
-        //{
-        //    var pageViewFilterGuid = hfPageViewFilterGuid.Value.AsGuid();
-        //    var pageViewFilter = this.AdditionalFilterConfiguration.PageViewSegmentFilters.Where( a => a.Guid == pageViewFilterGuid ).FirstOrDefault();
-        //    if ( pageViewFilter == null )
-        //    {
-        //        pageViewFilter = new PageViewSegmentFilter();
-        //        pageViewFilter.Guid = hfPageViewFilterGuid.Value.AsGuid();
-        //        this.AdditionalFilterConfiguration.PageViewSegmentFilters.Add( pageViewFilter );
-        //    }
-
-        //    pageViewFilter.ComparisonType = ddlPageViewFilterComparisonType.SelectedValueAsEnumOrNull<ComparisonType>() ?? ComparisonType.GreaterThanOrEqualTo;
-        //    pageViewFilter.ComparisonValue = nbPageViewFilterCompareValue.Text.AsInteger();
-        //    pageViewFilter.SiteGuids = lstPageViewFilterWebSites.SelectedValuesAsGuid;
-        //    pageViewFilter.PageGuids = ppPageViewFilterPages.SelectedIds.Select( a => PageCache.Get( a )?.Guid ).Where( a => a.HasValue ).Select( a => a.Value ).ToList();
-
-        //    pageViewFilter.SlidingDateRangeDelimitedValues = drpPageViewFilterSlidingDateRange.DelimitedValues;
-        //    mdPageViewFilterConfiguration.Hide();
-        //    BindPageViewFiltersGrid();
-        //}
-
-        ///// <summary>
-        ///// Handles the DeleteClick event of the gPageViewFilters control.
-        ///// </summary>
-        ///// <param name="sender">The source of the event.</param>
-        ///// <param name="e">The <see cref="Rock.Web.UI.Controls.RowEventArgs"/> instance containing the event data.</param>
-        //protected void gPageViewFilters_DeleteClick( object sender, Rock.Web.UI.Controls.RowEventArgs e )
-        //{
-        //    var pageViewFilterGuid = ( Guid ) e.RowKeyValue;
-        //    var pageViewFilter = this.AdditionalFilterConfiguration.PageViewSegmentFilters.Where( a => a.Guid == pageViewFilterGuid ).FirstOrDefault();
-        //    if ( pageViewFilter != null )
-        //    {
-        //        this.AdditionalFilterConfiguration.PageViewSegmentFilters.Remove( pageViewFilter );
-        //    }
-
-        //    BindPageViewFiltersGrid();
-        //}
-
-        ///// <summary>
-        ///// Handles the DataBound event of the lPageViewFilterDescription control.
-        ///// </summary>
-        ///// <param name="sender">The source of the event.</param>
-        ///// <param name="e">The <see cref="Rock.Web.UI.Controls.RowEventArgs"/> instance containing the event data.</param>
-        //protected void lPageViewFilterDescription_DataBound( object sender, Rock.Web.UI.Controls.RowEventArgs e )
-        //{
-        //    var pageViewFilterSegmentFilter = e.Row.DataItem as PageViewSegmentFilter;
-        //    var lPageViewFilter = sender as Literal;
-        //    if ( pageViewFilterSegmentFilter == null || lPageViewFilter == null )
-        //    {
-        //        return;
-        //    }
-
-        //    lPageViewFilter.Text = pageViewFilterSegmentFilter.GetDescription();
-        //}
-
-        //#endregion Page View Filters Related
-
-        //#region Interaction Filter Related
-
-        ///// <summary>
-        ///// Binds the interactions views filters grid.
-        ///// </summary>
-        //private void BindInteractionFiltersGrid()
-        //{
-        //    var interactionSegmentFilters = this.AdditionalFilterConfiguration.InteractionSegmentFilters;
-        //    var interactionSegmentDataSource = interactionSegmentFilters.Select( a => new
-        //    {
-        //        a.Guid,
-        //        InteractionChannelName = InteractionChannelCache.Get( a.InteractionChannelGuid )?.Name,
-        //        InteractionComponentName = a.InteractionComponentGuid.HasValue ? InteractionComponentCache.Get( a.InteractionComponentGuid.Value )?.Name : "*",
-        //        Operation = a.Operation.IfEmpty( "*" ),
-        //        ComparisonText = $"{a.ComparisonType.ConvertToString()} {a.ComparisonValue}",
-        //        DateRangeText = SlidingDateRangePicker.FormatDelimitedValues( a.SlidingDateRangeDelimitedValues )
-        //    } );
-
-        //    gInteractionFilters.DataSource = interactionSegmentDataSource.OrderBy( a => a.InteractionChannelName ).ThenBy( a => a.InteractionComponentName ).ToList();
-        //    gInteractionFilters.DataBind();
-        //}
-
-        ///// <summary>
-        ///// Handles the AddClick event of the gInteractionFilters control.
-        ///// </summary>
-        ///// <param name="sender">The source of the event.</param>
-        ///// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
-        //private void gInteractionFilters_AddClick( object sender, EventArgs e )
-        //{
-        //    ShowInteractionFilterDialog( null );
-        //}
-
-        ///// <summary>
-        ///// Handles the EditClick event of the gInteractionFilters control.
-        ///// </summary>
-        ///// <param name="sender">The source of the event.</param>
-        ///// <param name="e">The <see cref="Rock.Web.UI.Controls.RowEventArgs"/> instance containing the event data.</param>
-        //protected void gInteractionFilters_EditClick( object sender, Rock.Web.UI.Controls.RowEventArgs e )
-        //{
-        //    var interactionSegmentFilterGuid = ( Guid ) e.RowKeyValue;
-        //    var interactionSegmentFilter = this.AdditionalFilterConfiguration.InteractionSegmentFilters.Where( a => a.Guid == interactionSegmentFilterGuid ).FirstOrDefault();
-        //    ShowInteractionFilterDialog( interactionSegmentFilter );
-        //}
-
-        ///// <summary>
-        ///// Shows the interactionfilter dialog.
-        ///// </summary>
-        ///// <param name="pageViewFilterSegmentFilter">The interaction filter segment filter.</param>
-        //private void ShowInteractionFilterDialog( Rock.Personalization.SegmentFilters.InteractionSegmentFilter interactionSegmentFilter )
-        //{
-        //    if ( interactionSegmentFilter == null )
-        //    {
-        //        interactionSegmentFilter = new InteractionSegmentFilter();
-        //        interactionSegmentFilter.Guid = Guid.NewGuid();
-        //        mdInteractionFilterConfiguration.Title = "Add Interaction Filter";
-        //    }
-        //    else
-        //    {
-        //        mdInteractionFilterConfiguration.Title = "Edit Interaction Filter";
-        //    }
-
-        //    hfInteractionFilterGuid.Value = interactionSegmentFilter.Guid.ToString();
-
-        //    ComparisonHelper.PopulateComparisonControl( ddlInteractionFilterComparisonType, ComparisonHelper.NumericFilterComparisonTypes, true );
-        //    ddlInteractionFilterComparisonType.SetValue( interactionSegmentFilter.ComparisonType.ConvertToInt() );
-        //    nbInteractionFilterCompareValue.Text = interactionSegmentFilter.ComparisonValue.ToString();
-
-        //    var interactionChannelId = InteractionChannelCache.GetId( interactionSegmentFilter.InteractionChannelGuid );
-
-        //    pInteractionFilterInteractionChannel.SetValue( interactionChannelId );
-        //    pInteractionFilterInteractionComponent.InteractionChannelId = interactionChannelId;
-
-        //    var interactionComponentId = interactionSegmentFilter.InteractionComponentGuid.HasValue ? InteractionComponentCache.GetId( interactionSegmentFilter.InteractionComponentGuid.Value ) : null;
-        //    pInteractionFilterInteractionComponent.SetValue( interactionComponentId );
-        //    tbInteractionFilterOperation.Text = interactionSegmentFilter.Operation;
-
-        //    drpInteractionFilterSlidingDateRange.DelimitedValues = interactionSegmentFilter.SlidingDateRangeDelimitedValues;
-
-        //    mdInteractionFilterConfiguration.Show();
-        //}
-
-        ///// <summary>
-        ///// Handles the SaveClick event of the mdInteractionFilterConfiguration control.
-        ///// </summary>
-        ///// <param name="sender">The source of the event.</param>
-        ///// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
-        //protected void mdInteractionFilterConfiguration_SaveClick( object sender, EventArgs e )
-        //{
-        //    var interactionFilterGuid = hfInteractionFilterGuid.Value.AsGuid();
-        //    var interactionFilter = this.AdditionalFilterConfiguration.InteractionSegmentFilters.Where( a => a.Guid == interactionFilterGuid ).FirstOrDefault();
-        //    if ( interactionFilter == null )
-        //    {
-        //        interactionFilter = new InteractionSegmentFilter();
-        //        interactionFilter.Guid = hfInteractionFilterGuid.Value.AsGuid();
-        //        this.AdditionalFilterConfiguration.InteractionSegmentFilters.Add( interactionFilter );
-        //    }
-
-        //    var interactionChannelId = pInteractionFilterInteractionChannel.SelectedValueAsId();
-        //    if ( interactionChannelId == null )
-        //    {
-        //        return;
-        //    }
-
-        //    interactionFilter.ComparisonType = ddlInteractionFilterComparisonType.SelectedValueAsEnumOrNull<ComparisonType>() ?? ComparisonType.GreaterThanOrEqualTo;
-        //    interactionFilter.ComparisonValue = nbInteractionFilterCompareValue.Text.AsInteger();
-        //    interactionFilter.InteractionChannelGuid = InteractionChannelCache.Get( interactionChannelId.Value ).Guid;
-
-        //    var interactionComponentId = pInteractionFilterInteractionComponent.SelectedValueAsId();
-        //    if ( interactionComponentId.HasValue )
-        //    {
-        //        interactionFilter.InteractionComponentGuid = InteractionComponentCache.Get( interactionComponentId.Value )?.Guid;
-        //    }
-        //    else
-        //    {
-        //        interactionFilter.InteractionComponentGuid = null;
-        //    }
-
-        //    interactionFilter.SlidingDateRangeDelimitedValues = drpInteractionFilterSlidingDateRange.DelimitedValues;
-        //    interactionFilter.Operation = tbInteractionFilterOperation.Text;
-        //    mdInteractionFilterConfiguration.Hide();
-        //    BindInteractionFiltersGrid();
-        //}
-
-        ///// <summary>
-        ///// Handles the DeleteClick event of the gInteractionFilters control.
-        ///// </summary>
-        ///// <param name="sender">The source of the event.</param>
-        ///// <param name="e">The <see cref="Rock.Web.UI.Controls.RowEventArgs"/> instance containing the event data.</param>
-        //protected void gInteractionFilters_DeleteClick( object sender, Rock.Web.UI.Controls.RowEventArgs e )
-        //{
-        //    var interactionFilterGuid = ( Guid ) e.RowKeyValue;
-        //    var interactionFilter = this.AdditionalFilterConfiguration.InteractionSegmentFilters.FirstOrDefault( a => a.Guid == interactionFilterGuid );
-        //    if ( interactionFilter != null )
-        //    {
-        //        this.AdditionalFilterConfiguration.InteractionSegmentFilters.Remove( interactionFilter );
-        //    }
-
-        //    BindInteractionFiltersGrid();
-        //}
-
-        ///// <summary>
-        ///// Handles the SelectedIndexChanged event of the pInteractionFilterInteractionChannel control.
-        ///// </summary>
-        ///// <param name="sender">The source of the event.</param>
-        ///// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
-        //protected void pInteractionFilterInteractionChannel_SelectedIndexChanged( object sender, EventArgs e )
-        //{
-        //    pInteractionFilterInteractionComponent.InteractionChannelId = pInteractionFilterInteractionChannel.SelectedValueAsId();
-        //}
-
-        //#endregion Interaction Filter Related
-
         #region Query String Filter
         private void gQueryStringFilter_AddClick( object sender, EventArgs e )
         {
@@ -801,21 +323,26 @@ namespace RockWeb.Blocks.Cms
         /// <param name="e"></param>
         protected void gQueryStringFilter_EditClick( object sender, Rock.Web.UI.Controls.RowEventArgs e )
         {
-            //var queryStringFilterGuid = ( Guid ) e.RowKeyValue;
-            //var queryStringFilter = this.AdditionalFilterConfiguration.InteractionSegmentFilters.Where( a => a.Guid == queryStringFilterGuid ).FirstOrDefault();
-            //ShowQueryStringFilterDialog( queryStringFilter );
+            var queryStringFilterGuid = ( Guid ) e.RowKeyValue;
+            var queryStringFilter = AdditionalFilterConfiguration.QueryStringRequestFilters
+                .Where( a => a.Guid == queryStringFilterGuid )
+                .FirstOrDefault();
+
+            ShowQueryStringFilterDialog( queryStringFilter );
         }
 
         /// <summary>
         /// Shows the query filter string dialog.
         /// </summary>
         /// <param name="pageViewFilterSegmentFilter">The interaction filter segment filter.</param>
-        private void ShowQueryStringFilterDialog( Rock.Personalization.SegmentFilters.InteractionSegmentFilter interactionSegmentFilter )
+        private void ShowQueryStringFilterDialog( QueryStringRequestFilter queryStringRequestFilter )
         {
-            if ( interactionSegmentFilter == null )
+            if ( queryStringRequestFilter == null )
             {
-                interactionSegmentFilter = new InteractionSegmentFilter();
-                interactionSegmentFilter.Guid = Guid.NewGuid();
+                queryStringRequestFilter = new QueryStringRequestFilter
+                {
+                    Guid = Guid.NewGuid()
+                };
                 mdQueryStringFilter.Title = "Add Query String Filter";
             }
             else
@@ -823,67 +350,55 @@ namespace RockWeb.Blocks.Cms
                 mdQueryStringFilter.Title = "Edit Query String Filter";
             }
 
-            ddlQueryStringFilterMatchOptions.BindToEnum<ComparisonType>( ignoreTypes: new ComparisonType[]
-            { ComparisonType.GreaterThan, ComparisonType.GreaterThanOrEqualTo, ComparisonType.LessThan, ComparisonType.LessThanOrEqualTo, ComparisonType.Between, ComparisonType.RegularExpression } );
+            hfQueryStringFilterGuid.Value = queryStringRequestFilter.Guid.ToString();
 
+            ComparisonType[] ignoreTypes = new ComparisonType[] { ComparisonType.GreaterThan,
+                ComparisonType.GreaterThanOrEqualTo,
+                ComparisonType.LessThan,
+                ComparisonType.LessThanOrEqualTo,
+                ComparisonType.Between,
+                ComparisonType.RegularExpression
+            };
 
-            //hfInteractionFilterGuid.Value = interactionSegmentFilter.Guid.ToString();
+            ddlQueryStringFilterMatchOptions.BindToEnum( ignoreTypes: ignoreTypes );
 
-            //ComparisonHelper.PopulateComparisonControl( ddlInteractionFilterComparisonType, ComparisonHelper.NumericFilterComparisonTypes, true );
-            //ddlInteractionFilterComparisonType.SetValue( interactionSegmentFilter.ComparisonType.ConvertToInt() );
-            //nbInteractionFilterCompareValue.Text = interactionSegmentFilter.ComparisonValue.ToString();
-
-            //var interactionChannelId = InteractionChannelCache.GetId( interactionSegmentFilter.InteractionChannelGuid );
-
-            //pInteractionFilterInteractionChannel.SetValue( interactionChannelId );
-            //pInteractionFilterInteractionComponent.InteractionChannelId = interactionChannelId;
-
-            //var interactionComponentId = interactionSegmentFilter.InteractionComponentGuid.HasValue ? InteractionComponentCache.GetId( interactionSegmentFilter.InteractionComponentGuid.Value ) : null;
-            //pInteractionFilterInteractionComponent.SetValue( interactionComponentId );
-            //tbInteractionFilterOperation.Text = interactionSegmentFilter.Operation;
-
-            //drpInteractionFilterSlidingDateRange.DelimitedValues = interactionSegmentFilter.SlidingDateRangeDelimitedValues;
+            // populate the modal
+            tbQueryStringFilterParameter.Text = queryStringRequestFilter.Key;
+            ddlQueryStringFilterMatchOptions.SetValue( queryStringRequestFilter.ComparisonType.ConvertToInt() );
+            tbQueryStringFilterValue.Text = queryStringRequestFilter.ComparisonValue;
 
             mdQueryStringFilter.Show();
         }
 
         protected void mdQueryStringFilter_SaveClick( object sender, EventArgs e )
         {
-            //var queryStringFilterGuid = hfQueryStringFilter.Value.AsGuid();
-            //var queryStringFilter = this.AdditionalFilterConfiguration.InteractionSegmentFilters
-            //    .Where( a => a.Guid == queryStringFilterGuid )
-            //    .FirstOrDefault();
+            var queryStringFilterGuid = hfQueryStringFilterGuid.Value.AsGuid();
 
-            //if ( queryStringFilter == null )
-            //{
-            //    queryStringFilter = new InteractionSegmentFilter();
-            //    queryStringFilter.Guid = hfInteractionFilterGuid.Value.AsGuid();
-            //    this.AdditionalFilterConfiguration.InteractionSegmentFilters.Add( queryStringFilter );
-            //}
+            var queryStringFilter = this.AdditionalFilterConfiguration.QueryStringRequestFilters
+                .Where( a => a.Guid == queryStringFilterGuid )
+                .FirstOrDefault();
 
-            //var interactionChannelId = pInteractionFilterInteractionChannel.SelectedValueAsId();
-            //if ( interactionChannelId == null )
-            //{
-            //    return;
-            //}
+            if ( queryStringFilter == null )
+            {
+                queryStringFilter = new QueryStringRequestFilter
+                {
+                    Guid = hfQueryStringFilterGuid.Value.AsGuid()
+                };
+                this.AdditionalFilterConfiguration.QueryStringRequestFilters.Add( queryStringFilter );
+            }
 
-            //queryStringFilter.ComparisonType = ddlInteractionFilterComparisonType.SelectedValueAsEnumOrNull<ComparisonType>() ?? ComparisonType.GreaterThanOrEqualTo;
-            //queryStringFilter.ComparisonValue = nbInteractionFilterCompareValue.Text.AsInteger();
-            //queryStringFilter.InteractionChannelGuid = InteractionChannelCache.Get( interactionChannelId.Value ).Guid;
+            queryStringFilter.Key = tbQueryStringFilterParameter.Text;
+            queryStringFilter.ComparisonType = ddlQueryStringFilterMatchOptions.SelectedValue.ConvertToEnum<ComparisonType>();
+            queryStringFilter.ComparisonValue = tbQueryStringFilterValue.Text;
 
-            //var interactionComponentId = pInteractionFilterInteractionComponent.SelectedValueAsId();
-            //if ( interactionComponentId.HasValue )
-            //{
-            //    queryStringFilter.InteractionComponentGuid = InteractionComponentCache.Get( interactionComponentId.Value )?.Guid;
-            //}
-            //else
-            //{
-            //    queryStringFilter.InteractionComponentGuid = null;
-            //}
-
-            //queryStringFilter.SlidingDateRangeDelimitedValues = drpInteractionFilterSlidingDateRange.DelimitedValues;
-            //queryStringFilter.Operation = tbInteractionFilterOperation.Text;
             mdQueryStringFilter.Hide();
+            BindQueryStringFilterToGrid();
+        }
+
+        private void BindQueryStringFilterToGrid()
+        {
+            var queryStringFilter = this.AdditionalFilterConfiguration.QueryStringRequestFilters;
+            gQueryStringFilter.DataSource = queryStringFilter.OrderBy( q => q.Key );
         }
 
         #endregion Query String Filter
@@ -901,21 +416,24 @@ namespace RockWeb.Blocks.Cms
         /// <param name="e">The <see cref="Rock.Web.UI.Controls.RowEventArgs"/> instance containing the event data.</param>
         protected void gCookie_EditClick( object sender, Rock.Web.UI.Controls.RowEventArgs e )
         {
-            //var cookieGuid = ( Guid ) e.RowKeyValue;
-            //var cookie = this.AdditionalFilterConfiguration.InteractionSegmentFilters.Where( a => a.Guid == cookieGuid ).FirstOrDefault();
-            //ShowCookieDialog( cookie );
+            var cookieGuid = ( Guid ) e.RowKeyValue;
+            var cookie = this.AdditionalFilterConfiguration.CookieRequestFilters
+                .Where( a => a.Guid == cookieGuid )
+                .FirstOrDefault();
+
+            ShowCookieDialog( cookie );
         }
 
         /// <summary>
         /// Shows the Cookie Filter dialog.
         /// </summary>
         /// <param name="pageViewFilterSegmentFilter">The interaction filter segment filter.</param>
-        private void ShowCookieDialog( Rock.Personalization.SegmentFilters.InteractionSegmentFilter interactionSegmentFilter )
+        private void ShowCookieDialog( Rock.Personalization.CookieRequestFilter cookieRequestFilter )
         {
-            if ( interactionSegmentFilter == null )
+            if ( cookieRequestFilter == null )
             {
-                interactionSegmentFilter = new InteractionSegmentFilter();
-                interactionSegmentFilter.Guid = Guid.NewGuid();
+                cookieRequestFilter = new CookieRequestFilter();
+                cookieRequestFilter.Guid = Guid.NewGuid();
                 mdCookie.Title = "Add Cookie Filter";
             }
             else
@@ -923,32 +441,25 @@ namespace RockWeb.Blocks.Cms
                 mdCookie.Title = "Edit Cookie Filter";
             }
 
-            ddlCookieMatchOptions.BindToEnum<ComparisonType>( ignoreTypes: new ComparisonType[]
-            { ComparisonType.GreaterThan, ComparisonType.GreaterThanOrEqualTo, ComparisonType.LessThan, ComparisonType.LessThanOrEqualTo, ComparisonType.Between, ComparisonType.RegularExpression } );
+            ComparisonType[] ignoreTypes = new ComparisonType[] { ComparisonType.GreaterThan,
+                ComparisonType.GreaterThanOrEqualTo,
+                ComparisonType.LessThan,
+                ComparisonType.LessThanOrEqualTo,
+                ComparisonType.Between,
+                ComparisonType.RegularExpression
+            };
 
+            ddlCookieMatchOptions.BindToEnum<ComparisonType>( ignoreTypes: ignoreTypes );
 
-            //hfInteractionFilterGuid.Value = interactionSegmentFilter.Guid.ToString();
-
-            //ComparisonHelper.PopulateComparisonControl( ddlInteractionFilterComparisonType, ComparisonHelper.NumericFilterComparisonTypes, true );
-            //ddlInteractionFilterComparisonType.SetValue( interactionSegmentFilter.ComparisonType.ConvertToInt() );
-            //nbInteractionFilterCompareValue.Text = interactionSegmentFilter.ComparisonValue.ToString();
-
-            //var interactionChannelId = InteractionChannelCache.GetId( interactionSegmentFilter.InteractionChannelGuid );
-
-            //pInteractionFilterInteractionChannel.SetValue( interactionChannelId );
-            //pInteractionFilterInteractionComponent.InteractionChannelId = interactionChannelId;
-
-            //var interactionComponentId = interactionSegmentFilter.InteractionComponentGuid.HasValue ? InteractionComponentCache.GetId( interactionSegmentFilter.InteractionComponentGuid.Value ) : null;
-            //pInteractionFilterInteractionComponent.SetValue( interactionComponentId );
-            //tbInteractionFilterOperation.Text = interactionSegmentFilter.Operation;
-
-            //drpInteractionFilterSlidingDateRange.DelimitedValues = interactionSegmentFilter.SlidingDateRangeDelimitedValues;
+            tbCookieParameter.Text = cookieRequestFilter.Key;
+            ddlCookieMatchOptions.SetValue( cookieRequestFilter.ComparisonType.ConvertToInt() );
+            tbCookieValue.Text = cookieRequestFilter.ComparisonValue;
 
             mdCookie.Show();
         }
         protected void mdCookie_SaveClick( object sender, EventArgs e )
         {
-            var cookieGuid = hfQueryStringFilter.Value.AsGuid();
+            var cookieGuid = hfQueryStringFilterGuid.Value.AsGuid();
             var cookieFilter = this.AdditionalFilterConfiguration.CookieRequestFilters
                 .Where( a => a.Guid == cookieGuid )
                 .FirstOrDefault();
@@ -960,30 +471,18 @@ namespace RockWeb.Blocks.Cms
                 this.AdditionalFilterConfiguration.CookieRequestFilters.Add( cookieFilter );
             }
 
-            //var interactionChannelId = pInteractionFilterInteractionChannel.SelectedValueAsId();
-            //if ( interactionChannelId == null )
-            //{
-            //    return;
-            //}
+            cookieFilter.Key = tbCookieParameter.Text;
+            cookieFilter.ComparisonType = ddlCookieMatchOptions.SelectedValue.ConvertToEnum<ComparisonType>();
+            cookieFilter.ComparisonValue = tbCookieValue.Text;
 
-            //cookieFilter.ComparisonType = ddlInteractionFilterComparisonType
-            //        .SelectedValueAsEnumOrNull<ComparisonType>() ?? ComparisonType.GreaterThanOrEqualTo;
-            //cookieFilter.ComparisonValue = nbInteractionFilterCompareValue.Text.AsInteger();
-            //cookieFilter.InteractionChannelGuid = InteractionChannelCache.Get( interactionChannelId.Value ).Guid;
-
-            //var interactionComponentId = pInteractionFilterInteractionComponent.SelectedValueAsId();
-            //if ( interactionComponentId.HasValue )
-            //{
-            //    cookieFilter.InteractionComponentGuid = InteractionComponentCache.Get( interactionComponentId.Value )?.Guid;
-            //}
-            //else
-            //{
-            //    cookieFilter.InteractionComponentGuid = null;
-            //}
-
-            //cookieFilter.SlidingDateRangeDelimitedValues = drpInteractionFilterSlidingDateRange.DelimitedValues;
-            //cookieFilter.Operation = tbInteractionFilterOperation.Text;
             mdCookie.Hide();
+            BindCookieFilterToGrid();
+        }
+
+        private void BindCookieFilterToGrid()
+        {
+            var cookieFilter = this.AdditionalFilterConfiguration.CookieRequestFilters;
+            gQueryStringFilter.DataSource = cookieFilter.OrderBy( c => c.Key );
         }
 
         #endregion Cookie Filter
@@ -1051,7 +550,7 @@ namespace RockWeb.Blocks.Cms
         }
         protected void mdBrowser_SaveClick( object sender, EventArgs e )
         {
-            var browserGuid = hfQueryStringFilter.Value.AsGuid();
+            var browserGuid = hfQueryStringFilterGuid.Value.AsGuid();
             var browserFilter = this.AdditionalFilterConfiguration.BrowserRequestFilters
                 .Where( a => a.Guid == browserGuid )
                 .FirstOrDefault();
@@ -1151,7 +650,7 @@ namespace RockWeb.Blocks.Cms
         }
         protected void mdIpAddress_SaveClick( object sender, EventArgs e )
         {
-            var ipAddressGuid = hfQueryStringFilter.Value.AsGuid();
+            var ipAddressGuid = hfQueryStringFilterGuid.Value.AsGuid();
             var ipAddressFilter = this.AdditionalFilterConfiguration.IPAddressRequestFilters
                 .Where( a => a.Guid == ipAddressGuid )
                 .FirstOrDefault();

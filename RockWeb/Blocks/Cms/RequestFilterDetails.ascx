@@ -170,7 +170,7 @@
             <Rock:ModalDialog ID="mdQueryStringFilter" runat="server" OnSaveClick="mdQueryStringFilter_SaveClick" ValidationGroup="vgQueryStringFilter">
                 <Content>
                     <div class="panel-body">
-                        <asp:HiddenField ID="hfQueryStringFilter" runat="server" />
+                        <asp:HiddenField ID="hfQueryStringFilterGuid" runat="server" />
 
                         <asp:ValidationSummary ID="vsQueryFilterString" runat="server" HeaderText="Please correct the following:" CssClass="alert alert-validation" ValidationGroup="vgQueryFilterString" />
 
