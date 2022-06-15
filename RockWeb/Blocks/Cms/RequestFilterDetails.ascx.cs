@@ -87,8 +87,6 @@ namespace RockWeb.Blocks.Cms
         {
             base.OnInit( e );
 
-            //dvpFilterDataView.EntityTypeId = EntityTypeCache.GetId( Rock.SystemGuid.EntityType.PERSON.AsGuid() );
-
             // This event gets fired after block settings are updated. It's nice to repaint the screen if these settings would alter it.
             this.BlockUpdated += Block_BlockUpdated;
             this.AddConfigurationUpdateTrigger( upnlContent );
@@ -154,7 +152,7 @@ namespace RockWeb.Blocks.Cms
         /// <summary>
         /// Shows the detail.
         /// </summary>
-        /// <param name="requestFilterId">The segment identifier.</param>
+        /// <param name="requestFilterId">The request Filter identifier.</param>
         public void ShowDetail( int requestFilterId )
         {
             var rockContext = new RockContext();
@@ -296,6 +294,12 @@ namespace RockWeb.Blocks.Cms
             AdditionalFilterConfiguration.DeviceTypeRequestFilter.DeviceTypes = cblDeviceTypes.SelectedValues
                 .Select( v => v.ConvertToEnum<DeviceType>() )
                 .ToArray();
+
+            AdditionalFilterConfiguration.QueryStringRequestFilterExpressionType =
+                tglQueryStringFiltersAllAny.Checked ? FilterExpressionType.GroupAll : FilterExpressionType.GroupAny;
+
+            AdditionalFilterConfiguration.CookieRequestFilterExpressionType =
+                tglCookiesAllAny.Checked ? FilterExpressionType.GroupAll : FilterExpressionType.GroupAny;
 
             requestFilter.FilterConfiguration = AdditionalFilterConfiguration;
 
