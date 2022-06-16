@@ -46,8 +46,7 @@ namespace Rock.Personalization
             [Description( "Tablet" )]
             Tablet = 1,
 
-            // #TODO# Display as Phone or Mobile?
-            [Description( "Phone" )]
+            [Description( "Mobile" )]
             Mobile = 2
         }
     }
