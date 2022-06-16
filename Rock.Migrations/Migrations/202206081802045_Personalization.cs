@@ -116,6 +116,7 @@ namespace Rock.Migrations
             AddColumn( "dbo.ContentChannel", "EnablePersonalization", c => c.Boolean( nullable: false ) );
             AddColumn( "dbo.Site", "EnableVisitorTracking", c => c.Boolean( nullable: false ) );
             AddColumn( "dbo.Site", "EnablePersonalization", c => c.Boolean( nullable: false ) );
+            
             Sql( @"
                WITH CTE AS
                 (SELECT
@@ -132,7 +133,35 @@ namespace Rock.Migrations
 
             AddAnonymousVisitor_Up();
 
+            UpdatePersonAliasAliasPersonIdIndex_Up();
+
             Sql( MigrationSQL._202206081802045_Personalization_spCrm_PersonMerge );
+        }
+
+        private void UpdatePersonAliasAliasPersonIdIndex_Up()
+        {
+            // Delete this index because it a unique constraint that includes the NULL value, so only one NULL allowed */
+            RockMigrationHelper.DropIndexIfExists( "PersonAlias", "IX_AliasPersonId" );
+            Sql( @"
+/* This is a 'filtered' unique constraint that excludes NULL value, so we can have as many nulls as we want.*/
+CREATE UNIQUE NONCLUSTERED INDEX[IX_AliasPersonId] ON[dbo].[PersonAlias]
+(
+
+    [AliasPersonId] ASC
+) WHERE[AliasPersonId] IS NOT NULL" );
+        }
+
+        private void UpdatePersonAliasAliasPersonIdIndex_Down()
+        {
+            // Recreate index as it was before this migration
+            RockMigrationHelper.DropIndexIfExists( "PersonAlias", "IX_AliasPersonId" );
+            Sql( @"
+/* This is a 'filtered' unique constraint that excludes NULL value, so we can have as many nulls as we want.*/
+CREATE UNIQUE NONCLUSTERED INDEX[IX_AliasPersonId] ON[dbo].[PersonAlias]
+(
+
+    [AliasPersonId] ASC
+)" );
         }
 
         private void AddAnonymousVisitor_Up()
@@ -349,12 +378,13 @@ VALUES (
             DropTable( "dbo.RequestFilter" );
             DropTable( "dbo.PersonalizedEntity" );
             DropTable( "dbo.PersonAliasPersonalization" );
-        }
 
+            UpdatePersonAliasAliasPersonIdIndex_Down();
+            AddAnonymousVisitor_Down();
+        }
+        
         private void AddAnonymousVisitor_Down()
         {
-            AddAnonymousVisitor_Down();
-
             Sql( $@"UPDATE Person
 SET PrimaryFamilyId = NULL
 WHERE [Guid] = '{SystemGuid.Person.ANONYMOUS_VISITOR}'

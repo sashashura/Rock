@@ -865,7 +865,7 @@ namespace Rock.Web.UI
             Page.Trace.Warn( "Getting CurrentUser" );
             Rock.Model.UserLogin user = CurrentUser;
 
-            ProcessCurrentVisitor();
+            
 
             if ( _showDebugTimings )
             {
@@ -1035,6 +1035,20 @@ namespace Rock.Web.UI
                 }
                 else
                 {
+                    /* At this point, we know the Person (or NULL person) is authorized to View the page */
+
+                    // 
+                    if ( Site.EnableVisitorTracking  )
+                    {
+                        bool isLoggingIn = this.PageId == Site.LoginPageId;
+
+                        // Check if this is the Login page. If so, don't do Visitor logic
+                        if ( !isLoggingIn )
+                        {
+                            ProcessCurrentVisitor( this.CurrentPersonAlias );
+                        }
+                    }
+
                     // Set current models (context)
                     Page.Trace.Warn( "Checking for Context" );
                     try
@@ -1690,7 +1704,7 @@ Obsidian.init({{ debug: true, fingerprint: ""v={_obsidianFingerprint}"" }});
         /// If <see cref="SiteCache.EnableVisitorTracking"/>, this will determine the <see cref="CurrentVisitor"/>
         /// and do any additional processing needed to verify and validate the CurrentVisitor.
         /// </summary>
-        private void ProcessCurrentVisitor()
+        private void ProcessCurrentVisitor( PersonAlias currentPersonAlias )
         {
             if ( !Site.EnableVisitorTracking )
             {
@@ -1698,21 +1712,17 @@ Obsidian.init({{ debug: true, fingerprint: ""v={_obsidianFingerprint}"" }});
                 return;
             }
 
+            DebugHelper.LimitToSessionId();
+            DebugHelper.SQLLoggingStart();
+
+            var currentPerson = CurrentPersonAlias?.Person;
+            var currentPersonId = currentPersonAlias?.PersonId;
+
             var rockContext = new RockContext();
-            rockContext.SqlLogging( true );
 
             var ghostVisitorPersonGuid = Rock.SystemGuid.Person.ANONYMOUS_VISITOR.AsGuid();
-            /*var ghostPersonId = new PersonService( rockContext ).GetId( ghostVisitorPersonGuid );
-            if ( !ghostPersonId.HasValue )
-            {
-                // ## TODO can we prevent this from happening? https://app.asana.com/0/0/1202438729153510/f
-
-                // Somehow the Person record for ANONYMOUS_VISITOR is gone!
-                // I guess we can't do Visitor tracking. So just exit.
-                return;
-            }*/
-
-            var visitorKeyCookie = this.Request.Cookies.Get( Rock.Personalization.RequestCookieKey.ROCK_VISITOR_KEY );
+            var visitorKeyCookie = GetCookie( Rock.Personalization.RequestCookieKey.ROCK_VISITOR_KEY );
+            PersonAlias currentVisitorCookiePersonAlias = null;
             if ( visitorKeyCookie != null )
             {
                 var visitorKeyPersonAliasIDKey = visitorKeyCookie.Value;
@@ -1721,11 +1731,16 @@ Obsidian.init({{ debug: true, fingerprint: ""v={_obsidianFingerprint}"" }});
                     // There is a ROCK_VISITOR_KEY key, but it doesn't have a value, so invalid visitor key. 
                     visitorKeyCookie = null;
                 }
-                else if ( !new PersonAliasService( rockContext ).GetQueryableByKey( visitorKeyPersonAliasIDKey ).Any() )
+                else
                 {
-                    // There is a ROCK_VISITOR_KEY key with an IDKey, but that PersonAlias record
-                    // isn't in the database, so it isn't a valid ROCK_VISITOR_KEY
-                    visitorKeyCookie = null;
+                    var visitorPersonAliasIDKey = visitorKeyCookie.Value;
+                    currentVisitorCookiePersonAlias = new PersonAliasService( rockContext ).GetNoTracking( visitorPersonAliasIDKey );
+                    if ( currentVisitorCookiePersonAlias == null )
+                    {
+                        // There is a ROCK_VISITOR_KEY key with an IDKey, but that PersonAlias record
+                        // isn't in the database, so it isn't a valid ROCK_VISITOR_KEY
+                        visitorKeyCookie = null;
+                    }
                 }
             }
 
@@ -1735,34 +1750,24 @@ Obsidian.init({{ debug: true, fingerprint: ""v={_obsidianFingerprint}"" }});
             var persistedCookieExpiration = currentUTCDateTime.AddYears( 1 );
 
             // Set the Session Start DateTime cookie if it hasn't been set yet
-            var rockSessionStartDatetimeCookie = this.Request.Cookies.Get( Rock.Personalization.RequestCookieKey.ROCK_SESSION_START_DATETIME );
+            var rockSessionStartDatetimeCookie = GetCookie( Rock.Personalization.RequestCookieKey.ROCK_SESSION_START_DATETIME );
             if ( rockSessionStartDatetimeCookie == null || rockSessionStartDatetimeCookie.Value.IsNullOrWhiteSpace() )
             {
-                RockPage.AddOrUpdateCookie( new HttpCookie( Rock.Personalization.RequestCookieKey.ROCK_SESSION_START_DATETIME, currentUTCDateTime.ToISO8601DateString() ) );
+                rockSessionStartDatetimeCookie = new HttpCookie( Rock.Personalization.RequestCookieKey.ROCK_SESSION_START_DATETIME, currentUTCDateTime.ToISO8601DateString() )
+                {
+                    Expires = DateTime.Now.AddDays( -1 )
+                };
+                RockPage.AddOrUpdateCookie( rockSessionStartDatetimeCookie );
             }
+
+            PersonAlias calculatedCurrentVisitor;
 
             if ( visitorKeyCookie == null )
             {
-                if ( CurrentPersonAlias == null )
+                if ( currentPersonAlias == null )
                 {
                     // ROCK_VISITOR_KEY does not exist and nobody is logged in, create a new PersonAlias and new Visitor Cookie tied to the GhostPersonId.
-                    var ghostPersonId = new PersonService( rockContext ).GetId( ghostVisitorPersonGuid );
-                    if ( ghostPersonId == null )
-                    {
-                        // ## TODO can we prevent this from happening? https://app.asana.com/0/0/1202438729153510/f
-
-                        // Somehow the Person record for ANONYMOUS_VISITOR is gone!
-                        // I guess we can't do Visitor tracking. So just exit.
-                        return;
-                    }
-
-                    var personAliasService = new PersonAliasService( rockContext );
-                    var visitorPersonAlias = new PersonAlias();
-                    visitorPersonAlias.PersonId = ghostPersonId.Value;
-                    visitorPersonAlias.AliasPersonId = ghostPersonId;
-                    visitorPersonAlias.AliasPersonGuid = ghostVisitorPersonGuid;
-                    personAliasService.Add( visitorPersonAlias );
-                    rockContext.SaveChanges();
+                    var visitorPersonAlias = PersonAliasService.CreateAnonymousVisitorAlias();
 
                     var visitorPersonAliasIDKey = visitorPersonAlias.IdKey;
                     visitorKeyCookie = new System.Web.HttpCookie( Rock.Personalization.RequestCookieKey.ROCK_VISITOR_KEY, visitorPersonAliasIDKey )
@@ -1773,36 +1778,33 @@ Obsidian.init({{ debug: true, fingerprint: ""v={_obsidianFingerprint}"" }});
 
                     RockPage.AddOrUpdateCookie( visitorKeyCookie );
                     RockPage.AddOrUpdateCookie( Rock.Personalization.RequestCookieKey.ROCK_VISITOR_CREATED_DATETIME, currentUTCDateTime.ToISO8601DateString(), persistedCookieExpiration );
+
+                    // Visitor Cookie is new, and nobody is logged in. So set this a person's first visit.
                     RockPage.AddOrUpdateCookie( new HttpCookie( Rock.Personalization.RequestCookieKey.ROCK_FIRSTTIME_VISITOR, true.ToString() ) );
 
-                    CurrentVisitor = visitorPersonAlias;
+                    calculatedCurrentVisitor = visitorPersonAlias;
                 }
                 else
                 {
                     // If ROCK_VISITOR_KEY does not exist and person *is* logged in, create a new ROCK_VISITOR_KEY cookie using the CurrentPersonAlias's IDKey
-                    var visitorPersonAliasIDKey = CurrentPersonAlias.IdKey;
+                    var visitorPersonAliasIDKey = currentPersonAlias.IdKey;
                     visitorKeyCookie = new System.Web.HttpCookie( Rock.Personalization.RequestCookieKey.ROCK_VISITOR_KEY, visitorPersonAliasIDKey )
                     {
                         Expires = persistedCookieExpiration
                     };
 
                     RockPage.AddOrUpdateCookie( visitorKeyCookie );
-                }
 
-                // TODO: Is this where we want to do this?
-                RockPage.AddOrUpdateCookie( new HttpCookie( Rock.Personalization.RequestCookieKey.ROCK_SESSION_START_DATETIME, currentUTCDateTime.ToISO8601DateString() ) );
+                    calculatedCurrentVisitor = currentPersonAlias;
+                }
             }
             else
             {
                 // ROCK_VISITOR_KEY exists
-                var personAliasService = new PersonAliasService( rockContext );
-                var visitorPersonAliasIDKey = visitorKeyCookie.Value;
-                var currentVisitorCookiePersonAlias = personAliasService.GetNoTracking( visitorPersonAliasIDKey );
-
-                if ( CurrentPersonAlias == null )
+                if ( currentPersonAlias == null )
                 {
                     // ROCK_VISITOR_KEY exists, but nobody is logged in
-                    CurrentVisitor = currentVisitorCookiePersonAlias;
+                    calculatedCurrentVisitor = currentVisitorCookiePersonAlias;
 
                     // renew, extend cookie
                     visitorKeyCookie.Expires = persistedCookieExpiration;
@@ -1810,10 +1812,8 @@ Obsidian.init({{ debug: true, fingerprint: ""v={_obsidianFingerprint}"" }});
                 }
                 else
                 {
-                    /* Verify and update the CurrentVisitor Cookie */
-
                     // ROCK_VISITOR_KEY exists, and somebody is logged in
-                    if ( currentVisitorCookiePersonAlias.PersonId == CurrentPersonId.Value )
+                    if ( currentVisitorCookiePersonAlias.PersonId == currentPersonId )
                     {
                         // Our visitor person alias is already associated with the current person,
                         // so we are good. Extend expiration.
@@ -1824,7 +1824,6 @@ Obsidian.init({{ debug: true, fingerprint: ""v={_obsidianFingerprint}"" }});
                     {
                         // Visitor Person Alias is either for the core Anonymous Person ( GhostPerson ) or
                         // for some other person that has previously logged into rock with this browser
-
                         var ghostPersonId = new PersonService( rockContext ).GetId( ghostVisitorPersonGuid );
                         if ( ghostPersonId == null )
                         {
@@ -1840,35 +1839,43 @@ Obsidian.init({{ debug: true, fingerprint: ""v={_obsidianFingerprint}"" }});
                         {
                             // Our current visitor cookie was associated with GhostPerson, but now we have a current person,
                             // so convert the GhostVisitor PersonAlias to a PersonAlias of the CurrentPerson.
+                            // NOTE: This needs to be done synchronously because we'll need to know if this PersonAlias is
+                            if ( new PersonAliasService( rockContext ).MigrateAnonymousVisitorAliasToRealPerson( currentVisitorCookiePersonAlias, currentPerson ) )
+                            {
+                                rockContext.SaveChanges();
 
-                            // #TODO Merge Task or background thread?
-                            // What if this takes too long as a background task?
-
-                            // Completely disassociate person alias from Anonymous (Ghost) visitor person
-                            currentVisitorCookiePersonAlias.PersonId = CurrentPersonId.Value;
-                            currentVisitorCookiePersonAlias.AliasPersonId = CurrentPersonId.Value;
-                            currentVisitorCookiePersonAlias.AliasPersonGuid = CurrentPerson.Guid;
-
-                            rockContext.SaveChanges();
+                                // We might have set FirstTime visitor as true in this session, but then merged with a real person that has been here before
+                                //RockPage.AddOrUpdateCookie( new HttpCookie( Rock.Personalization.RequestCookieKey.ROCK_FIRSTTIME_VISITOR, false.ToString() ) );
+                            }
                         }
                         else
                         {
                             // Our visitor person alias is for some other person that has previously logged into rock with this browser
                             // So update the cookie to the current person's PersonAlias
-                            visitorKeyCookie.Value = CurrentPersonAlias.IdKey;
+                            visitorKeyCookie.Value = currentPersonAlias.IdKey;
                             visitorKeyCookie.Expires = persistedCookieExpiration;
 
                             RockPage.AddOrUpdateCookie( visitorKeyCookie );
                         }
                     }
 
-                    CurrentVisitor = CurrentPersonAlias;
+                    calculatedCurrentVisitor = currentPersonAlias;
                 }
             }
 
+            CurrentVisitor = calculatedCurrentVisitor;
+
             RockPage.AddOrUpdateCookie( Rock.Personalization.RequestCookieKey.ROCK_VISITOR_LASTSEEN, currentUTCDateTime.ToISO8601DateString(), persistedCookieExpiration );
 
-            rockContext.SqlLogging( false );
+            var message = new UpdatePersonAliasLastVisitDateTime.Message
+            {
+                PersonAliasId = CurrentVisitor.Id,
+                LastVisitDateTime = RockDateTime.Now,
+            };
+
+            message.SendIfNeeded();
+
+            DebugHelper.SQLLoggingStop();
         }
 
         /// <summary>
