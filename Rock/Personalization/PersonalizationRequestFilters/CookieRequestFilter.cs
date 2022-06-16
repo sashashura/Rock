@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Web;
 
 using Rock.Model;
@@ -47,7 +48,18 @@ namespace Rock.Personalization
         /// <returns><c>true</c> if the specified HTTP request is match; otherwise, <c>false</c>.</returns>
         public override bool IsMatch( HttpRequest httpRequest )
         {
-            var cookieValue = httpRequest.Cookies.Get( this.Key )?.Value ?? string.Empty;
+            // Note that httpRequest.Cookies.Get will create the cookie if it doesn't exist, so make sure to check if it exists first.
+            var cookieExists = httpRequest.Cookies.AllKeys.Contains( this.Key );
+            string cookieValue;
+            if ( cookieExists )
+            {
+                cookieValue = httpRequest.Cookies.Get( this.Key )?.Value ?? string.Empty;
+            }
+            else
+            {
+                cookieValue = string.Empty;
+            } 
+
             var comparisonValue = ComparisonValue ?? string.Empty;
 
             return cookieValue.CompareTo( comparisonValue, ComparisonType );
