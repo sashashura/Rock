@@ -82,7 +82,7 @@ namespace Rock.Personalization
             [Description( "Other" )]
             Other = 0,
 
-            [Description( "Chrome" )]z
+            [Description( "Chrome" )]
             Chrome = 1,
 
             [Description( "Chrome Mobile" )]

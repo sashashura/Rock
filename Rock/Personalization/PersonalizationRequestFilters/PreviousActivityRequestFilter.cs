@@ -59,12 +59,12 @@ namespace Rock.Personalization
             /// <summary>
             /// The new
             /// </summary>
-            New,
+            New = 0,
 
             /// <summary>
             /// The returning
             /// </summary>
-            Returning
+            Returning = 1
         }
     }
 }

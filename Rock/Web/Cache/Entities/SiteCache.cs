@@ -759,6 +759,16 @@ namespace Rock.Web.Cache
             return null;
         }
 
+        /// <summary>
+        /// Returns an iterator over all the active sites in the site cache.
+        /// The iterator may be further acted upon and collected to any collections as required by the caller.
+        /// </summary>
+        public static IEnumerable<SiteCache> GetAllActiveSites()
+        {
+            return All()
+                .Where( site => site.IsActive );
+        }
+
         #endregion
     }
 }

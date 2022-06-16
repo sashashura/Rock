@@ -182,10 +182,16 @@ namespace RockWeb.Blocks.Cms
             /* Name, etc */
             hfRequestFilterId.Value = requestFilter.Id.ToString();
             tbName.Text = requestFilter.Name;
-            //tbSegmentKey.Text = requestFilter.SiteId;
+            ddlSiteKey.SetValue( requestFilter.SiteId );
             hlInactive.Visible = !requestFilter.IsActive;
             cbIsActive.Checked = requestFilter.IsActive;
 
+            ddlSiteKey.Items.Clear();
+            ListItem[] sites = SiteCache.GetAllActiveSites()
+                .Select( site => new ListItem( site.Name, site.Id.ToString() ) )
+                .ToArray();
+
+            ddlSiteKey.Items.AddRange( sites );
 
             this.AdditionalFilterConfiguration = requestFilter.FilterConfiguration ?? new Rock.Personalization.PersonalizationRequestFilterConfiguration();
 
@@ -285,6 +291,7 @@ namespace RockWeb.Blocks.Cms
             }
 
             requestFilter.Name = tbName.Text;
+            requestFilter.SiteId = ddlSiteKey.SelectedValue.AsInteger();
             requestFilter.IsActive = cbIsActive.Checked;
 
             AdditionalFilterConfiguration.PreviousActivityRequestFilter.PreviousActivityTypes = cblPreviousActivity.SelectedValues
