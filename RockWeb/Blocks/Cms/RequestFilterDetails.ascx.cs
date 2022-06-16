@@ -186,11 +186,13 @@ namespace RockWeb.Blocks.Cms
             hlInactive.Visible = !requestFilter.IsActive;
             cbIsActive.Checked = requestFilter.IsActive;
 
+            // insert values to the site drop-down
             ddlSiteKey.Items.Clear();
+            ListItem siteNotListedOption = new ListItem();
+            ddlSiteKey.Items.Add( siteNotListedOption ); // add the option of site not listed to the start of the drop-down
             ListItem[] sites = SiteCache.GetAllActiveSites()
                 .Select( site => new ListItem( site.Name, site.Id.ToString() ) )
                 .ToArray();
-
             ddlSiteKey.Items.AddRange( sites );
 
             this.AdditionalFilterConfiguration = requestFilter.FilterConfiguration ?? new Rock.Personalization.PersonalizationRequestFilterConfiguration();
@@ -219,41 +221,6 @@ namespace RockWeb.Blocks.Cms
         }
 
         /// <summary>
-        /// Handles the SelectItem event of the dvpFilterDataView control.
-        /// </summary>
-        /// <param name="sender">The source of the event.</param>
-        /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
-        protected void dvpFilterDataView_SelectItem( object sender, EventArgs e )
-        {
-            var selectedDataViewId = dvpFilterDataView.SelectedValueAsId();
-            ShowDataViewWarningIfInvalid( selectedDataViewId );
-        }
-
-        /// <summary>
-        /// Shows the data view warning if invalid.
-        /// </summary>
-        /// <param name="selectedDataViewId">The selected data view identifier.</param>
-        private void ShowDataViewWarningIfInvalid( int? selectedDataViewId )
-        {
-            nbFilterDataViewWarning.Visible = false;
-            DataView selectedDataView;
-            var rockContext = new RockContext();
-            if ( selectedDataViewId != null )
-            {
-                selectedDataView = new DataViewService( rockContext ).Get( selectedDataViewId.Value );
-                if ( selectedDataView == null )
-                {
-                    return;
-                }
-
-                if ( !selectedDataView.IsPersisted() )
-                {
-                    nbFilterDataViewWarning.Visible = true;
-                }
-            }
-        }
-
-        /// <summary>
         /// Handles the Click event of the btnSave control.
         /// </summary>
         /// <param name="sender">The source of the event.</param>
@@ -261,17 +228,8 @@ namespace RockWeb.Blocks.Cms
         protected void btnSave_Click( object sender, EventArgs e )
         {
             var rockContext = new RockContext();
-
-            var filterDataViewId = dvpFilterDataView.SelectedValueAsId();
-            ShowDataViewWarningIfInvalid( filterDataViewId );
-            if ( nbFilterDataViewWarning.Visible )
-            {
-                return;
-            }
-
             var requestFilterService = new RequestFilterService( rockContext );
             RequestFilter requestFilter;
-
             var requestFilterId = hfRequestFilterId.Value.AsInteger();
 
             if ( requestFilterId == 0 )
@@ -291,7 +249,7 @@ namespace RockWeb.Blocks.Cms
             }
 
             requestFilter.Name = tbName.Text;
-            requestFilter.SiteId = ddlSiteKey.SelectedValue.AsInteger();
+            requestFilter.SiteId = ddlSiteKey.SelectedValue?.AsIntegerOrNull();
             requestFilter.IsActive = cbIsActive.Checked;
 
             AdditionalFilterConfiguration.PreviousActivityRequestFilter.PreviousActivityTypes = cblPreviousActivity.SelectedValues

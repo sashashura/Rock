@@ -34,26 +34,6 @@
                         <Rock:RockCheckBox ID="cbIsActive" runat="server" Label="Active" />
                     </div>
                 </div>
-
-                <%-- Person Filters --%>
-                <asp:Panel ID="pnlPersonFilters" runat="server" CssClass="panel panel-section" Visible="false">
-                    <div class="panel-heading">
-                        <h1 class="panel-title">Previous Activity</h1>
-                    </div>
-                    <div class="panel-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <Rock:DataViewItemPicker ID="dvpFilterDataView" runat="server" Label="Filter Data View" OnSelectItem="dvpFilterDataView_SelectItem" />
-                                <Rock:NotificationBox ID="nbFilterDataViewWarning" runat="server" NotificationBoxType="Danger"
-                                    Text="Segments only support data views that have been configured to persist. Please update the configuration of the selected dataview." />
-                            </div>
-
-                            <div class="col-md-6">
-                                Adding a data view to the segment will exclude anonymous visitors.
-                            </div>
-                        </div>
-                    </div>
-                </asp:Panel>
                 
                 <%-- Previous Activity --%>
                 <asp:Panel ID="pnlPreviousActivity" runat="server" CssClass="panel panel-section">
