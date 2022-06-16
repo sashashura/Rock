@@ -158,15 +158,15 @@
                         <div class="container">
                             <div class="row">
                                 <span class="col-sm-2">Where the parameter </span>
-                                <Rock:RockTextBox ID="tbQueryStringFilterParameter" runat="server" CssClass="col-sm-4"/>
-                                <Rock:RockDropDownList ID="ddlQueryStringFilterMatchOptions" runat="server" CssClass="col-sm-2" />
+                                <Rock:RockTextBox ID="tbQueryStringFilterParameter" runat="server" CssClass="col-sm-4" ValidationGroup="vgQueryStringFilter" />
+                                <Rock:RockDropDownList ID="ddlQueryStringFilterMatchOptions" runat="server" CssClass="col-sm-2" ValidationGroup="vgQueryStringFilter" />
                             </div>
                         </div>
 
 
                         <span>the value</span>
                         
-                        <Rock:RockTextBox ID="tbQueryStringFilterValue" runat="server" />
+                        <Rock:RockTextBox ID="tbQueryStringFilterValue" runat="server" ValidationGroup="vgQueryStringFilter" />
 
                     </div>
 
@@ -185,15 +185,15 @@
                         <div class="container">
                             <div class="row">
                                 <span class="col-sm-2">Where the parameter </span>
-                                <Rock:RockTextBox ID="tbCookieParameter" runat="server" CssClass="col-sm-4"/>
-                                <Rock:RockDropDownList ID="ddlCookieMatchOptions" runat="server" CssClass="col-sm-2" />
+                                <Rock:RockTextBox ID="tbCookieParameter" runat="server" CssClass="col-sm-4" ValidationGroup="vgCookie" />
+                                <Rock:RockDropDownList ID="ddlCookieMatchOptions" runat="server" CssClass="col-sm-2" ValidationGroup="vgCookie" />
                             </div>
                         </div>
 
 
                         <span>the value</span>
                         
-                        <Rock:RockTextBox ID="tbCookieValue" runat="server" />
+                        <Rock:RockTextBox ID="tbCookieValue" runat="server" ValidationGroup="vgCookie" />
 
                     </div>
 
@@ -212,10 +212,10 @@
                         <div class="container">
                             <div class="row">
                                 <span class="col-sm-2">Where </span>
-                                <Rock:RockDropDownList ID="ddlBrowserFamily" runat="server" CssClass="col-sm-2" />
+                                <Rock:RockDropDownList ID="ddlBrowserFamily" runat="server" CssClass="col-sm-2" ValidationGroup="vgBrowser" />
                                 <span class="col-sm-2"> version is </span>
-                                <Rock:RockDropDownList ID="ddlBrowserMatchOptions" runat="server" CssClass="col-sm-2" />
-                                <Rock:RockTextBox ID="tbBrowserVersion" runat="server" CssClass="col-sm-4"/>
+                                <Rock:RockDropDownList ID="ddlBrowserMatchOptions" runat="server" CssClass="col-sm-2" ValidationGroup="vgBrowser" />
+                                <Rock:RockTextBox ID="tbBrowserVersion" runat="server" CssClass="col-sm-4" ValidationGroup="vgBrowser" />
                             </div>
                         </div>
                     </div>
@@ -236,9 +236,9 @@
                             <div class="row">
                                 <span class="col-sm-2">Where the client IP is </span>
                                 <Rock:Toggle ID="tglIPAddressRange" runat="server" OnText="Not in Range" OffText="In Range"
-                                    ActiveButtonCssClass="btn-info" ButtonSizeCssClass="btn-xs" />
-                                <Rock:RockTextBox ID="tbIPAddressStartRange" runat="server" CssClass="col-sm-4"/>
-                                <Rock:RockTextBox ID="tbIPAddressEndRange" runat="server" CssClass="col-sm-4"/>
+                                    ActiveButtonCssClass="btn-info" ButtonSizeCssClass="btn-xs" ValidationGroup="vgIPAddress" />
+                                <Rock:RockTextBox ID="tbIPAddressStartRange" runat="server" CssClass="col-sm-4" ValidationGroup="vgIPAddress" />
+                                <Rock:RockTextBox ID="tbIPAddressEndRange" runat="server" CssClass="col-sm-4" ValidationGroup="vgIPAddress" />
                             </div>
                         </div>
                     </div>

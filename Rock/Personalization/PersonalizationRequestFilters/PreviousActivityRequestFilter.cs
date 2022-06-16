@@ -47,7 +47,7 @@ namespace Rock.Personalization
             }
             else
             {
-                return PreviousActivityTypes.Contains( PreviousActivityType.Returning );
+                return PreviousActivityTypes.Contains( PreviousActivityType.Return );
             }
         }
 
@@ -64,7 +64,7 @@ namespace Rock.Personalization
             /// <summary>
             /// The returning
             /// </summary>
-            Returning = 1
+            Return = 1
         }
     }
 }
