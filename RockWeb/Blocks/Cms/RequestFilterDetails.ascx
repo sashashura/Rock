@@ -215,7 +215,7 @@
                                 <Rock:RockDropDownList ID="ddlBrowserFamily" runat="server" CssClass="col-sm-2" ValidationGroup="vgBrowser" />
                                 <span class="col-sm-2"> version is </span>
                                 <Rock:RockDropDownList ID="ddlBrowserMatchOptions" runat="server" CssClass="col-sm-2" ValidationGroup="vgBrowser" />
-                                <Rock:RockTextBox ID="tbBrowserVersion" runat="server" CssClass="col-sm-4" ValidationGroup="vgBrowser" />
+                                <Rock:NumberBox ID="tbBrowserVersion" runat="server" CssClass="col-sm-4" ValidationGroup="vgBrowser" />
                             </div>
                         </div>
                     </div>
