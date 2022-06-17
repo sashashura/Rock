@@ -27,6 +27,7 @@ using Rock.Common.Mobile;
 using Rock.Data;
 using Rock.Mobile;
 using Rock.Model;
+using Rock.Web.Cache;
 
 namespace Rock.Web.HttpModules
 {
@@ -83,6 +84,17 @@ namespace Rock.Web.HttpModules
 
             // TODO: Cache the deep links. These are dummy deep links, but we need to fetch all the mobile sites that have deep linking enabled \
             // and if the path prefix is the same as the beginning segment of the URL.
+
+
+            // deep_link_routes_{prefix}
+            //   \- list of deep link routes (poco)
+            // deep_link_apple_payload: apple payload (string)
+            // deep_link_android_payload: android payload (string)
+
+
+
+            //var deepLinks = DeepLinkCache.GetDeepLinksForPrefix( segments[0] );
+            //var (route, dynamicParams) = FindRouteWithParams( deepLinks, segments );
 
             DeepLinkRoute matchedRoute = null;
 
