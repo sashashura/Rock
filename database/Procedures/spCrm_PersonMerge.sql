@@ -304,8 +304,7 @@ BEGIN
 
 		-- Update the Person Alias pointer
 		UPDATE [PersonAlias]
-		SET [PersonId] = @NewId,
-			[IsPrimaryAlias] = 0
+		SET [PersonId] = @NewId
 		WHERE [PersonId] = @OldId
 
 		-- Delete any duplicate previous names

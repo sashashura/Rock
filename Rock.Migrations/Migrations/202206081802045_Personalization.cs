@@ -116,26 +116,12 @@ namespace Rock.Migrations
             AddColumn( "dbo.ContentChannel", "EnablePersonalization", c => c.Boolean( nullable: false ) );
             AddColumn( "dbo.Site", "EnableVisitorTracking", c => c.Boolean( nullable: false ) );
             AddColumn( "dbo.Site", "EnablePersonalization", c => c.Boolean( nullable: false ) );
-            
-            Sql( @"
-               WITH CTE AS
-                (SELECT
-	                    [Id], [IsPrimaryAlias], ROW_NUMBER() OVER (PARTITION BY [PersonId] ORDER BY [Id], case when AliasPersonId = PersonId then 0 else 1 end) as RecordNumber 
-                    FROM 
-	                [PersonAlias] )
-
-                UPDATE CTE
-                SET [IsPrimaryAlias] = 1
-                WHERE RecordNumber = 1
-                " );
 
             RockMigrationHelper.UpdateDefinedValue( "26BE73A6-A9C5-4E94-AE00-3AFDCF8C9275", "Anonymous Visitor", "An Anonymous Visitor", "80007453-30A7-453C-BF0B-C82AAFE2BA12", true );
 
             AddAnonymousVisitor_Up();
 
             UpdatePersonAliasAliasPersonIdIndex_Up();
-
-            Sql( MigrationSQL._202206081802045_Personalization_spCrm_PersonMerge );
         }
 
         private void UpdatePersonAliasAliasPersonIdIndex_Up()

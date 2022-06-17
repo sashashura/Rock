@@ -68,6 +68,10 @@
     <Compile Include="Migrations\202206081802045_Personalization.designer.cs">
       <DependentUpon>202206081802045_Personalization.cs</DependentUpon>
     </Compile>
+    <Compile Include="Migrations\202206170029362_Personalization02.cs" />
+    <Compile Include="Migrations\202206170029362_Personalization02.designer.cs">
+      <DependentUpon>202206170029362_Personalization02.cs</DependentUpon>
+    </Compile>
     <Compile Include="Migrations\Version 13.0\Version 1.13.3\202203101710039_AddFormBuilderBlocksAndPages.cs" />
     <Compile Include="Migrations\Version 13.0\Version 1.13.3\202203101710039_AddFormBuilderBlocksAndPages.Designer.cs">
       <DependentUpon>202203101710039_AddFormBuilderBlocksAndPages.cs</DependentUpon>
@@ -1137,6 +1141,9 @@
     <EmbeddedResource Include="Migrations\202206081802045_Personalization.resx">
       <DependentUpon>202206081802045_Personalization.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\202206170029362_Personalization02.resx">
+      <DependentUpon>202206170029362_Personalization02.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Migrations\Version 13.0\Version 1.13.3\202203101710039_AddFormBuilderBlocksAndPages.resx">
       <DependentUpon>202203101710039_AddFormBuilderBlocksAndPages.cs</DependentUpon>
     </EmbeddedResource>
@@ -1950,7 +1957,6 @@
       <Link>SqlServerTypes\x86\SqlServerSpatial110.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Migrations\202206081802045_Personalization_spCrm_PersonMerge.sql" />
     <Content Include="Migrations\Version 13.0\Version 1.13.3\202203152204281_Rollup_20220315_update-chartjs.sql">
       <DependentUpon>202203152204281_Rollup_20220315.cs</DependentUpon>
     </Content>

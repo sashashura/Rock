@@ -496,10 +496,12 @@ namespace Rock.CodeGeneration.Pages
 
                     if ( hasWarnings )
                     {
+                        new Dialogs.MessageDialog().Show();
                         MessageBox.Show( "Files have been generated with warnings", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning );
                     }
                     else
                     {
+                        new Dialogs.MessageDialog().Show();
                         MessageBox.Show( "Files have been generated" );
                     }
                 } );

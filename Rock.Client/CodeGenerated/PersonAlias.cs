@@ -50,9 +50,6 @@ namespace Rock.Client
         public string ForeignKey { get; set; }
 
         /// <summary />
-        public bool IsPrimaryAlias { get; set; }
-
-        /// <summary />
         public DateTime? LastVisitDateTime { get; set; }
 
         /// <summary />
@@ -79,7 +76,6 @@ namespace Rock.Client
             this.AliasPersonId = source.AliasPersonId;
             this.ForeignGuid = source.ForeignGuid;
             this.ForeignKey = source.ForeignKey;
-            this.IsPrimaryAlias = source.IsPrimaryAlias;
             this.LastVisitDateTime = source.LastVisitDateTime;
             this.Name = source.Name;
             this.PersonId = source.PersonId;

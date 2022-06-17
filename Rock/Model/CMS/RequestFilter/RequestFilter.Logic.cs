@@ -53,7 +53,7 @@ namespace Rock.Model
         /// </summary>
         /// <value>The configuration.</value>
         [NotMapped]
-        public PersonalizationRequestFilterConfiguration FilterConfiguration
+        public virtual PersonalizationRequestFilterConfiguration FilterConfiguration
         {
             get
             {

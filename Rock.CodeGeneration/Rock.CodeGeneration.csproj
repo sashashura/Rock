@@ -94,6 +94,9 @@
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Dialogs\MessageDialog.xaml.cs">
+      <DependentUpon>MessageDialog.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Utility\CodeGenHelpers.cs" />
     <Compile Include="Controls\Alert.xaml.cs">
       <DependentUpon>Alert.xaml</DependentUpon>
@@ -220,6 +223,10 @@
     <Page Include="Controls\NavigationFrame.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Dialogs\MessageDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Dialogs\SelectEntityDialog.xaml">
       <Generator>MSBuild:Compile</Generator>

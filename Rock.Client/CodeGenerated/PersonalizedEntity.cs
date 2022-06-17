@@ -50,6 +50,9 @@ namespace Rock.Client
         public int EntityId { get; set; }
 
         /// <summary />
+        public EntityType EntityType { get; set; }
+
+        /// <summary />
         public int EntityTypeId { get; set; }
 
         /// <summary />

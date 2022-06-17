@@ -85,15 +85,6 @@ namespace Rock.Model
         public Guid? AliasPersonGuid { get; set; }
 
         /// <summary>
-        /// Gets or sets a value indicating whether this instance is primary alias.
-        /// </summary>
-        /// <value>
-        ///   <c>true</c> if this instance is primary alias; otherwise, <c>false</c>.
-        /// </value>
-        [DataMember]
-        public bool IsPrimaryAlias { get; set; }
-
-        /// <summary>
         /// Gets or sets the aliased date time.
         /// </summary>
         /// <value>
