@@ -41,16 +41,19 @@ namespace Rock.Model
             {
                 base.PostSave();
 
-                var transactionCompletedTask = DbContext.WrappedTransactionCompletedTask;
-
-                Task.Run( async () =>
+                if ( Entity.SiteType == SiteType.Mobile )
                 {
-                    // Wait for save task to complete, then flush the cache.
-                    if ( await transactionCompletedTask )
+                    var transactionCompletedTask = DbContext.WrappedTransactionCompletedTask;
+
+                    Task.Run( async () =>
                     {
-                        DeepLinkCache.Flush();
-                    }
-                } );
+                        // Wait for save task to complete, then flush the cache.
+                        if ( await transactionCompletedTask )
+                        {
+                            DeepLinkCache.Flush();
+                        }
+                    } );
+                }
             }
         }
     }

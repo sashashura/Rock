@@ -73,55 +73,32 @@ namespace Rock.Web.HttpModules
             string path = HttpContext.Current.Request.Url.AbsolutePath;
 
             // Early outs in case the requested link isn't in regards to deep linking.
-            if ( path.StartsWith( "/.well-known/" ) )
+            if ( path.StartsWith( "/.", StringComparison.OrdinalIgnoreCase ) && path.StartsWith( "/.well-known/", StringComparison.OrdinalIgnoreCase ) )
             {
                 ProcessWellKnownRequest( context, path );
                 return;
             }
 
             var segments = path.SplitDelimitedValues( "/" ).ToList();
+
+            if ( segments.Count < 2 )
+            {
+                return;
+            }
+
+            // Remove the empty string caused by the first '/'. 
             segments.RemoveAt( 0 );
 
-            // TODO: Cache the deep links. These are dummy deep links, but we need to fetch all the mobile sites that have deep linking enabled \
-            // and if the path prefix is the same as the beginning segment of the URL.
-
-
-            // deep_link_routes_{prefix}
-            //   \- list of deep link routes (poco)
-            // deep_link_apple_payload: apple payload (string)
-            // deep_link_android_payload: android payload (string)
-
-
-
-            //var deepLinks = DeepLinkCache.GetDeepLinksForPrefix( segments[0] );
-            //var (route, dynamicParams) = FindRouteWithParams( deepLinks, segments );
-
-            DeepLinkRoute matchedRoute = null;
-
-            var dynamicParameters = new Dictionary<string, string>();
-            using ( var rockContext = new RockContext() )
+            var deepLinks = DeepLinkCache.GetDeepLinksForPrefix( segments[0] );
+            if ( deepLinks == null )
             {
-                var siteService = new SiteService( rockContext );
-                var sites = siteService.Queryable().AsEnumerable().Where( x =>
-                x.AdditionalSettings?.FromJsonOrNull<AdditionalSiteSettings>().IsDeepLinkingEnabled == true
-                );
-
-                foreach ( var site in sites )
-                {
-                    if ( path.StartsWith( $"/{site.AdditionalSettings.FromJsonOrNull<AdditionalSiteSettings>().DeepLinkPathPrefix}/" ) )
-                    {
-                        var (route, dynamicParams) = FindRouteWithParams( site, path );
-                        matchedRoute = route;
-
-                        if ( dynamicParams != null )
-                        {
-                            dynamicParameters = dynamicParams;
-                        }
-
-                        break;
-                    }
-                }
+                return;
             }
+
+            // Removing the deep link path prefix. (e.g. /u/).
+            segments.RemoveAt( 0 );
+
+            var (matchedRoute, dynamicParams) = FindRouteWithParams( deepLinks, segments );
 
             if ( matchedRoute == null )
             {
@@ -131,24 +108,15 @@ namespace Rock.Web.HttpModules
             string query = HttpContext.Current.Request.Url.Query;
 
             Dictionary<string, string> parameters = new Dictionary<string, string>();
-            if(query.IsNotNullOrWhiteSpace())
+            if ( query.IsNotNullOrWhiteSpace() )
             {
                 query = query.Remove( 0, 1 );
                 parameters = QuerystringToParms( query );
             }
 
-            if ( dynamicParameters.Count() > 0 )
+            if ( dynamicParams.Count() > 0 )
             {
-                try
-                {
-                    dynamicParameters.ToList().ForEach( q => parameters.Add( q.Key, q.Value ) );
-                }
-                catch ( ArgumentException ex )
-                {
-                    System.Diagnostics.Debug.WriteLine( "Please make sure you do not have duplicate query parameters." );
-                    System.Diagnostics.Debug.WriteLine( $"{ex.InnerException?.ToStringSafe() ?? string.Empty}" );
-                    throw;
-                }
+                dynamicParams.ToList().ForEach( q => parameters.AddOrIgnore( q.Key, q.Value ) );
             }
 
             // If the route uses a Url as a fallback, we will redirect them as such.
@@ -178,7 +146,7 @@ namespace Rock.Web.HttpModules
                     var routeUrl = pageReference.BuildUrl();
 
                     HttpContext.Current.Response.StatusCode = 301;
-                    HttpContext.Current.Response.Redirect( $"{routeUrl}" );
+                    HttpContext.Current.Response.Redirect( routeUrl );
                     HttpContext.Current.Response.End();
                 }
             }
@@ -217,35 +185,32 @@ namespace Rock.Web.HttpModules
         /// <summary>
         /// Finds the route with parameters.
         /// </summary>
-        /// <param name="site">The site to cross reference the routes from.</param>
-        /// <param name="path">The path.</param>
+        /// <param name="routes"></param>
+        /// <param name="pathSegments"></param>
         /// <returns>&lt;DeepLinkRoute, Dictionary&lt;string, string&gt;&gt;.</returns>
-        public (DeepLinkRoute route, Dictionary<string, string> dynamicParams) FindRouteWithParams( Site site, string path )
+        public (DeepLinkRoute route, Dictionary<string, string> dynamicParams) FindRouteWithParams( List<DeepLinkRoute> routes, List<string> pathSegments )
         {
             var dynamicParameters = new Dictionary<string, string>();
-            var routes = site.AdditionalSettings.FromJsonOrNull<AdditionalSiteSettings>().DeepLinkRoutes;
 
+            // There are a couple of reasons why we are using a 'for' loops here instead of 'foreach' loops. Being that:
+            // 1. Since this is an HTTP module, we are trying to squeeze every ounce of performance, and for is a tad faster.
+            // 2. In the second loop (about 10 lines down), we use the same index for comparison between two string arrays, because we know they are the same length.
             for ( int routeIndex = 0; routeIndex < routes.Count(); routeIndex++ )
             {
                 var route = routes[routeIndex];
                 var absoluteRoute = route.Route;
-
                 var routeSegments = absoluteRoute.Split( '/' ).ToList();
-                var pathSegments = path.Split( '/' ).ToList();
 
-                pathSegments.RemoveAt( 0 );
-                pathSegments.RemoveAt( 0 );
-
-                if( pathSegments.Count() != routeSegments.Count() )
+                if ( pathSegments.Count != routeSegments.Count )
                 {
                     continue;
                 }
 
-                for ( int routeSegmentIndex = 0; routeSegmentIndex <= routeSegments.Count(); routeSegmentIndex++ )
+                for ( int routeSegmentIndex = 0; routeSegmentIndex <= routeSegments.Count; routeSegmentIndex++ )
                 {
                     var pathSegmentIndex = routeSegmentIndex;
 
-                    if ( routeSegmentIndex == routeSegments.Count() )
+                    if ( routeSegmentIndex == routeSegments.Count )
                     {
                         return (route, dynamicParameters);
                     }
@@ -294,198 +259,9 @@ namespace Rock.Web.HttpModules
             context.Response.Headers.Set( "content-type", "application/json" );
 
             // Get either the AASA or the AssetLinks response, and write it.
-            var response = shouldGetAASA ? GenerateAASAResponse() : GenerateAssetLinksResponse();
+            var response = shouldGetAASA ? DeepLinkCache.GetApplePayload() : DeepLinkCache.GetAndroidPayload();
             context.Response.Write( response );
             HttpContext.Current.Response.End();
-        }
-
-        /// <summary>
-        /// Generates the AASA response.
-        /// </summary>
-        /// <returns>A JSON string containing the app link data.</returns>
-        /// <seealso href="https://developer.apple.com/documentation/xcode/supporting-associated-domains"/>
-        private string GenerateAASAResponse()
-        {
-            // Fetching all of our mobile sites.
-            var mobileSites = GetDeepLinkSites();
-
-
-            // In this area, we are mostly working on constructing our data in a way that easily converts into the
-            // required format of the AASA file. See: https://gist.github.com/mat/e35393e9dfd9d7fb0972
-            var appLinks = new AASAResponse();
-            var detailsList = new List<AASADeepLinkDetails>();
-
-            // We're going to loop through each site and do a couple of things.
-            // 1. Construct the AppId and Path for each application, if unclear please refer to link above.
-            // 2. Add to parent list of details.
-            foreach ( var site in mobileSites )
-            {
-                var additionalSettings = site.AdditionalSettings.FromJsonOrNull<AdditionalSiteSettings>();
-
-                var appDetails = new AASADeepLinkDetails
-                {
-                    AppId = $"{additionalSettings.TeamIdentifier}.{additionalSettings.BundleIdentifier}",
-                    Paths = new List<string> { $"/{additionalSettings.DeepLinkPathPrefix}/*" }
-                };
-
-                detailsList.Add( appDetails );
-            }
-
-            appLinks.DetailsList = detailsList;
-
-            // Setting the parent key as 'applinks'.
-            var aasaResponse = new Dictionary<string, object>
-            {
-                ["applinks"] = appLinks
-            };
-
-            return JsonConvert.SerializeObject( aasaResponse, Formatting.Indented );
-        }
-
-        /// <summary>
-        /// Generates the asset links response.
-        /// </summary>
-        /// <returns>A JSON string containing the asset links data.</returns>
-        /// <seealso href="https://developer.android.com/training/app-links"/>
-        private string GenerateAssetLinksResponse()
-        {
-            // Fetching all of our mobile sites.
-            var mobileSites = GetDeepLinkSites();
-            using ( var context = new RockContext() )
-            {
-                var siteService = new SiteService( context );
-                var qry = siteService.Queryable();
-                mobileSites = qry.Where( x => x.SiteType == SiteType.Mobile ).ToList();
-            }
-
-            // In this area, we are focusing on constructing our data to easily convert to the assetlinks.json file that is
-            // required for deep linking. See: https://developer.android.com/training/app-links/verify-site-associations#web-assoc.
-            var assetLinks = new List<object>();
-
-            foreach ( var site in mobileSites )
-            {
-                var additionalSettings = site.AdditionalSettings.FromJsonOrNull<AdditionalSiteSettings>();
-
-                if ( !additionalSettings.IsDeepLinkingEnabled )
-                {
-                    continue;
-                }
-
-                var appDetails = new AssetLinksTargetDetails
-                {
-                    PackageName = additionalSettings.PackageName,
-                    CertificateFingerprint = additionalSettings.CertificateFingerprint
-                };
-
-                var linkData = new Dictionary<string, object>
-                {
-                    ["relation"] = new List<string> { "delegate_permission/common.handle_all_urls" },
-                    ["target"] = appDetails
-                };
-
-                assetLinks.Add( linkData );
-            }
-
-            return JsonConvert.SerializeObject( assetLinks, Formatting.Indented );
-        }
-
-        /// <summary>
-        /// Gets a list of mobile sites with deep linking enabled.
-        /// </summary>
-        /// <returns></returns>
-        private List<Site> GetDeepLinkSites()
-        {
-            using ( var context = new RockContext() )
-            {
-                var siteService = new SiteService( context );
-                var qry = siteService.Queryable();
-                return qry.Where( x =>
-                            x.SiteType == SiteType.Mobile )
-                    .AsEnumerable()
-                    .Where( x => x.AdditionalSettings.FromJsonOrNull<AdditionalSiteSettings>().IsDeepLinkingEnabled == true )
-                    .ToList();
-            }
-        }
-
-        /// <summary>
-        /// POCO for the entire AASA response information.
-        /// </summary>
-        private class AASAResponse
-        {
-            /// <summary>
-            /// Gets or sets the apps identifier, in our use case, we leave this list empty. 
-            /// </summary>
-            /// <value>
-            /// The apps.
-            /// </value>
-            [JsonProperty( "apps" )]
-            public List<string> Apps { get; set; } = new List<string>();
-
-            /// <summary>
-            /// Gets or sets the deep link details list.
-            /// </summary>
-            /// <value>
-            /// The deep link details list.
-            /// </value>
-            [JsonProperty( "details" )]
-            public List<AASADeepLinkDetails> DetailsList { get; set; }
-        }
-
-        /// <summary>
-        /// POCO for the deep link details information. 
-        /// </summary>
-        private class AASADeepLinkDetails
-        {
-            /// <summary>
-            /// Gets or sets the application identifier.
-            /// </summary>
-            /// <value>
-            /// The application identifier.
-            /// </value>
-            [JsonProperty( "appID" )]
-            public string AppId { get; set; }
-
-            /// <summary>
-            /// Gets or sets the paths.
-            /// </summary>
-            /// <value>
-            /// The paths.
-            /// </value>
-            [JsonProperty( "paths" )]
-            public List<string> Paths { get; set; }
-        }
-
-        /// <summary>
-        /// POCO for the deep link details information.
-        /// </summary>
-        private class AssetLinksTargetDetails
-        {
-            /// <summary>
-            /// Gets or sets the namespace.
-            /// </summary>
-            /// <value>
-            /// The namespace.
-            /// </value>
-            [JsonProperty( "namespace" )]
-            public string Namespace { get; set; } = "android_app";
-
-            /// <summary>
-            /// Gets or sets the name of the package.
-            /// </summary>
-            /// <value>
-            /// The name of the package.
-            /// </value>
-            [JsonProperty( "package_name" )]
-            public string PackageName { get; set; }
-
-            /// <summary>
-            /// Gets or sets the certificate fingerprint.
-            /// </summary>
-            /// <value>
-            /// The certificate fingerprint.
-            /// </value>
-            [JsonProperty( "sha256_cert_fingerprints" )]
-            public string CertificateFingerprint { get; set; }
         }
     }
 }

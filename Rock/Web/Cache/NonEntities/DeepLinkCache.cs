@@ -16,8 +16,13 @@
 //
 
 using System.Collections.Generic;
+using System.Linq;
+
+using Newtonsoft.Json;
 
 using Rock.Common.Mobile;
+using Rock.Mobile;
+using Rock.Model;
 
 namespace Rock.Web.Cache
 {
@@ -44,10 +49,12 @@ namespace Rock.Web.Cache
 
         public static string GetApplePayload()
         {
+            return RockCache.GetOrAddExisting( ApplePayloadCacheKey, BuildAASA ) as string;
         }
 
         public static string GetAndroidPayload()
         {
+            return RockCache.GetOrAddExisting( AndroidPayloadCacheKey, BuildAssetLinks ) as string;
         }
 
         public static void Flush()
@@ -57,8 +64,202 @@ namespace Rock.Web.Cache
             RockCache.Remove( AndroidPayloadCacheKey );
         }
 
+
         private static Dictionary<string, List<DeepLinkRoute>> BuildDeepLinkRoutes()
         {
+            var sites = SiteCache.All()
+                .Where( x => x.SiteType == SiteType.Mobile );
+
+            var routes = new Dictionary<string, List<DeepLinkRoute>>();
+            foreach ( var site in sites )
+            {
+                var additionalSettings = site.AdditionalSettings.FromJsonOrNull<AdditionalSiteSettings>();
+
+                if ( additionalSettings == null || !additionalSettings.IsDeepLinkingEnabled || additionalSettings.DeepLinkPathPrefix.IsNullOrWhiteSpace() || additionalSettings.DeepLinkRoutes == null)
+                {
+                    continue;
+                }
+
+                routes.AddOrIgnore( additionalSettings.DeepLinkPathPrefix, additionalSettings.DeepLinkRoutes );
+            }
+
+            return routes;
+        }
+
+        /// <summary>
+        /// Builds the aasa.
+        /// </summary>
+        /// <returns>System.String.</returns>
+        private static string BuildAASA()
+        {
+            // Fetching all of our mobile sites.
+            var mobileSites = GetDeepLinkSites();
+
+
+            // In this area, we are mostly working on constructing our data in a way that easily converts into the
+            // required format of the AASA file. See: https://gist.github.com/mat/e35393e9dfd9d7fb0972
+            var appLinks = new AASAResponse();
+            var detailsList = new List<AASADeepLinkDetails>();
+
+            // We're going to loop through each site and do a couple of things.
+            // 1. Construct the AppId and Path for each application, if unclear please refer to link above.
+            // 2. Add to parent list of details.
+            foreach ( var site in mobileSites )
+            {
+                var additionalSettings = site.AdditionalSettings.FromJsonOrNull<AdditionalSiteSettings>();
+
+                var appDetails = new AASADeepLinkDetails
+                {
+                    AppId = $"{additionalSettings.TeamIdentifier}.{additionalSettings.BundleIdentifier}",
+                    Paths = new List<string> { $"/{additionalSettings.DeepLinkPathPrefix}/*" }
+                };
+
+                detailsList.Add( appDetails );
+            }
+
+            appLinks.DetailsList = detailsList;
+
+            // Setting the parent key as 'applinks'.
+            var aasaResponse = new Dictionary<string, object>
+            {
+                ["applinks"] = appLinks
+            };
+
+            return aasaResponse.ToJson();
+        }
+
+        /// <summary>
+        /// Gets a list of mobile sites with deep linking enabled.
+        /// </summary>
+        /// <returns></returns>
+        private static List<SiteCache> GetDeepLinkSites()
+        {
+            return SiteCache.All()
+                .Where( x => x.SiteType == SiteType.Mobile )
+                .Where( x => x.AdditionalSettings.FromJsonOrNull<AdditionalSiteSettings>().IsDeepLinkingEnabled == true )
+                .ToList();
+        }
+
+        /// <summary>
+        /// Generates the asset links response.
+        /// </summary>
+        /// <returns>A JSON string containing the asset links data.</returns>
+        /// <seealso href="https://developer.android.com/training/app-links"/>
+        private static string BuildAssetLinks()
+        {
+            // Fetching all of our mobile sites.
+            var mobileSites = GetDeepLinkSites();
+
+            // In this area, we are focusing on constructing our data to easily convert to the assetlinks.json file that is
+            // required for deep linking. See: https://developer.android.com/training/app-links/verify-site-associations#web-assoc.
+            var assetLinks = new List<object>();
+
+            foreach ( var site in mobileSites )
+            {
+                var additionalSettings = site.AdditionalSettings.FromJsonOrNull<AdditionalSiteSettings>();
+
+                if ( !additionalSettings.IsDeepLinkingEnabled )
+                {
+                    continue;
+                }
+
+                var appDetails = new AssetLinksTargetDetails
+                {
+                    PackageName = additionalSettings.PackageName,
+                    CertificateFingerprint = additionalSettings.CertificateFingerprint
+                };
+
+                var linkData = new Dictionary<string, object>
+                {
+                    ["relation"] = new List<string> { "delegate_permission/common.handle_all_urls" },
+                    ["target"] = appDetails
+                };
+
+                assetLinks.Add( linkData );
+            }
+
+            return assetLinks.ToJson();
+        }
+
+        /// <summary>
+        /// POCO for the entire AASA response information.
+        /// </summary>
+        private class AASAResponse
+        {
+            /// <summary>
+            /// Gets or sets the apps identifier, in our use case, we leave this list empty. 
+            /// </summary>
+            /// <value>
+            /// The apps.
+            /// </value>
+            [JsonProperty( "apps" )]
+            public List<string> Apps { get; set; } = new List<string>();
+
+            /// <summary>
+            /// Gets or sets the deep link details list.
+            /// </summary>
+            /// <value>
+            /// The deep link details list.
+            /// </value>
+            [JsonProperty( "details" )]
+            public List<AASADeepLinkDetails> DetailsList { get; set; }
+        }
+
+        /// <summary>
+        /// POCO for the deep link details information. 
+        /// </summary>
+        private class AASADeepLinkDetails
+        {
+            /// <summary>
+            /// Gets or sets the application identifier.
+            /// </summary>
+            /// <value>
+            /// The application identifier.
+            /// </value>
+            [JsonProperty( "appID" )]
+            public string AppId { get; set; }
+
+            /// <summary>
+            /// Gets or sets the paths.
+            /// </summary>
+            /// <value>
+            /// The paths.
+            /// </value>
+            [JsonProperty( "paths" )]
+            public List<string> Paths { get; set; }
+        }
+
+        /// <summary>
+        /// POCO for the deep link details information.
+        /// </summary>
+        private class AssetLinksTargetDetails
+        {
+            /// <summary>
+            /// Gets or sets the namespace.
+            /// </summary>
+            /// <value>
+            /// The namespace.
+            /// </value>
+            [JsonProperty( "namespace" )]
+            public string Namespace { get; set; } = "android_app";
+
+            /// <summary>
+            /// Gets or sets the name of the package.
+            /// </summary>
+            /// <value>
+            /// The name of the package.
+            /// </value>
+            [JsonProperty( "package_name" )]
+            public string PackageName { get; set; }
+
+            /// <summary>
+            /// Gets or sets the certificate fingerprint.
+            /// </summary>
+            /// <value>
+            /// The certificate fingerprint.
+            /// </value>
+            [JsonProperty( "sha256_cert_fingerprints" )]
+            public string CertificateFingerprint { get; set; }
         }
     }
 }

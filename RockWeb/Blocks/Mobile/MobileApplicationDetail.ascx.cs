@@ -1,4 +1,4 @@
-// <copyright>
+﻿// <copyright>
 // Copyright by the Spark Development Network
 //
 // Licensed under the Rock Community License (the "License");
@@ -900,10 +900,12 @@ namespace RockWeb.Blocks.Mobile
             // Save the deep link settings, if enabled.
             if ( additionalSettings.IsDeepLinkingEnabled )
             {
+                var deepLinkPrefix = tbDeepLinkPathPrefix.Text.Trim( '/' );
+
                 // If there is a conflict between our deep link prefix and conflicting route.
                 var deepLinkPrefixTaken = new PageRouteService( rockContext ).Queryable()
                     .AsEnumerable()
-                    .Where( r => r.Route.StartsWith( $"{tbDeepLinkPathPrefix.Text}/" ) || r.Route == tbDeepLinkPathPrefix.Text)
+                    .Where( r => r.Route.StartsWith( $"{deepLinkPrefix}/" ) || r.Route == deepLinkPrefix )
                     .Any();
 
                 if ( deepLinkPrefixTaken )
@@ -917,7 +919,7 @@ namespace RockWeb.Blocks.Mobile
                 additionalSettings.TeamIdentifier = tbTeamId.Text;
                 additionalSettings.PackageName = tbPackageName.Text;
                 additionalSettings.CertificateFingerprint = tbCertificateFingerprint.Text;
-                additionalSettings.DeepLinkPathPrefix = tbDeepLinkPathPrefix.Text;
+                additionalSettings.DeepLinkPathPrefix = deepLinkPrefix;
                 additionalSettings.TargetDomain = tbSiteDomains.Text;
             }
 
