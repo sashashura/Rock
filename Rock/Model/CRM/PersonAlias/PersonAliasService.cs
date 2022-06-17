@@ -192,36 +192,39 @@ namespace Rock.Model
             return null;
         }
 
-        public static PersonAlias CreateAnonymousVisitorAlias()
+        /// <summary>
+        /// Creates a new anonymous visitor alias associated with the core <seealso cref=" Rock.SystemGuid.Person.ANONYMOUS_VISITOR">ANONYMOUS_VISITOR</seealso> person record.
+        /// Make sure to call RockContext.SaveChanges to save the new PersonAlias to the database.
+        /// </summary>
+        /// <returns>PersonAlias.</returns>
+        internal PersonAlias CreateAnonymousVisitorAlias()
         {
             var ghostVisitorPersonGuid = Rock.SystemGuid.Person.ANONYMOUS_VISITOR.AsGuid();
-            using ( var rockContext = new RockContext() )
+            var rockContext = this.Context as RockContext;
+
+            var ghostPersonId = new PersonService( rockContext ).GetId( ghostVisitorPersonGuid );
+            if ( ghostPersonId == null )
             {
-                var ghostPersonId = new PersonService( rockContext ).GetId( ghostVisitorPersonGuid );
-                if ( ghostPersonId == null )
-                {
-                    // ## TODO can we prevent this from happening? https://app.asana.com/0/0/1202438729153510/f
+                // ## TODO can we prevent this from happening? https://app.asana.com/0/0/1202438729153510/f
 
-                    // Somehow the Person record for ANONYMOUS_VISITOR is gone!
-                    // I guess we can't do Visitor tracking. So just exit.
-                    return null;
-                }
-
-                var personAliasService = new PersonAliasService( rockContext );
-                var visitorPersonAlias = new PersonAlias();
-                visitorPersonAlias.PersonId = ghostPersonId.Value;
-
-                // For an Anonymous Visitor alias, leave AliasPersonId and AliasPersonGuid null
-                // Since it isn't aliasing a real person, plus all GhostPersonAliases will have
-                // the same person id (the Anonymous Person Id ) and AliasPersonId has a uanique constraint.
-                visitorPersonAlias.AliasPersonId = null;
-                visitorPersonAlias.AliasPersonGuid = null;
-
-                personAliasService.Add( visitorPersonAlias );
-                rockContext.SaveChanges();
-
-                return visitorPersonAlias;
+                // Somehow the Person record for ANONYMOUS_VISITOR is gone!
+                // I guess we can't do Visitor tracking. So just exit.
+                return null;
             }
+
+            var personAliasService = this;
+            var visitorPersonAlias = new PersonAlias();
+            visitorPersonAlias.PersonId = ghostPersonId.Value;
+
+            // For an Anonymous Visitor alias, leave AliasPersonId and AliasPersonGuid null
+            // Since it isn't aliasing a real person, plus all GhostPersonAliases will have
+            // the same person id (the Anonymous Person Id ) and AliasPersonId has a uanique constraint.
+            visitorPersonAlias.AliasPersonId = null;
+            visitorPersonAlias.AliasPersonGuid = null;
+
+            personAliasService.Add( visitorPersonAlias );
+
+            return visitorPersonAlias;
         }
 
         /// <summary>
@@ -232,7 +235,7 @@ namespace Rock.Model
         /// <param name="anonymousPersonAlias">The anonymous person alias.</param>
         /// <param name="realPerson">The real person.</param>
         /// <returns><c>true</c> if XXXX, <c>false</c> otherwise.</returns>
-        public bool MigrateAnonymousVisitorAliasToRealPerson( PersonAlias anonymousPersonAlias, Person realPerson )
+        internal bool MigrateAnonymousVisitorAliasToRealPerson( PersonAlias anonymousPersonAlias, Person realPerson )
         {
             var ghostVisitorPersonGuid = Rock.SystemGuid.Person.ANONYMOUS_VISITOR.AsGuid();
             var rockContext = this.Context as RockContext;
@@ -245,7 +248,7 @@ namespace Rock.Model
             }
 
             anonymousPersonAlias.PersonId = realPerson.Id;
-            anonymousPersonAlias.Person = realPerson;
+            anonymousPersonAlias.Person = null;
 
             // We need to completely disassociate person alias from Anonymous (Ghost) visitor person.
             // So make sure AliasPersonId and AliasPersonGuid are null since Anonymous Visitor Alias would have

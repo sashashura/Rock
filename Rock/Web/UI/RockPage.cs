@@ -259,25 +259,11 @@ namespace Rock.Web.UI
         /// </value>
         public List<BreadCrumb> BreadCrumbs { get; private set; }
 
-        private Rock.Model.PersonAlias _CurrentVisitor;
-
-        public Rock.Model.PersonAlias CurrentVisitor
-        {
-            get
-            {
-                if ( _CurrentVisitor != null )
-                {
-                    return _CurrentVisitor;
-                }
-
-                return null;
-            }
-
-            private set
-            {
-                _CurrentVisitor = value;
-            }
-        }
+        /// <summary>
+        /// Gets the current visitor if <see cref="Site.EnableVisitorTracking"/> is enabled.
+        /// </summary>
+        /// <value>The current visitor.</value>
+        public Rock.Model.PersonAlias CurrentVisitor { get; private set; }
 
         /// <summary>
         /// Publicly gets and privately sets the currently logged in user.
@@ -865,8 +851,6 @@ namespace Rock.Web.UI
             Page.Trace.Warn( "Getting CurrentUser" );
             Rock.Model.UserLogin user = CurrentUser;
 
-            
-
             if ( _showDebugTimings )
             {
                 stopwatchInitEvents.Stop();
@@ -1037,15 +1021,18 @@ namespace Rock.Web.UI
                 {
                     /* At this point, we know the Person (or NULL person) is authorized to View the page */
 
-                    // 
-                    if ( Site.EnableVisitorTracking  )
+                    if ( Site.EnableVisitorTracking )
                     {
                         bool isLoggingIn = this.PageId == Site.LoginPageId;
 
-                        // Check if this is the Login page. If so, don't do Visitor logic
+                        // Check if this is the Login page. If so, we don't need do Visitor logic,
+                        // and we can avoid a situation where an un-needed Ghost alias could get created.
                         if ( !isLoggingIn )
                         {
-                            ProcessCurrentVisitor( this.CurrentPersonAlias );
+                            Page.Trace.Warn( "Processing Current Visitor" );
+
+                            // Visitor Tracking is enabled, and we aren't logging in so do the visitor logic.
+                            ProcessCurrentVisitor();
                         }
                     }
 
@@ -1701,10 +1688,10 @@ Obsidian.init({{ debug: true, fingerprint: ""v={_obsidianFingerprint}"" }});
         }
 
         /// <summary>
-        /// If <see cref="SiteCache.EnableVisitorTracking"/>, this will determine the <see cref="CurrentVisitor"/>
+        /// If <see cref="SiteCache.EnableVisitorTracking" />, this will determine the <see cref="CurrentVisitor" />
         /// and do any additional processing needed to verify and validate the CurrentVisitor.
         /// </summary>
-        private void ProcessCurrentVisitor( PersonAlias currentPersonAlias )
+        private void ProcessCurrentVisitor()
         {
             if ( !Site.EnableVisitorTracking )
             {
@@ -1712,10 +1699,9 @@ Obsidian.init({{ debug: true, fingerprint: ""v={_obsidianFingerprint}"" }});
                 return;
             }
 
-            DebugHelper.LimitToSessionId();
-            DebugHelper.SQLLoggingStart();
+            var currentPersonAlias = this.CurrentPersonAlias;
 
-            var currentPerson = CurrentPersonAlias?.Person;
+            var currentPerson = currentPersonAlias?.Person;
             var currentPersonId = currentPersonAlias?.PersonId;
 
             var rockContext = new RockContext();
@@ -1734,7 +1720,7 @@ Obsidian.init({{ debug: true, fingerprint: ""v={_obsidianFingerprint}"" }});
                 else
                 {
                     var visitorPersonAliasIDKey = visitorKeyCookie.Value;
-                    currentVisitorCookiePersonAlias = new PersonAliasService( rockContext ).GetNoTracking( visitorPersonAliasIDKey );
+                    currentVisitorCookiePersonAlias = new PersonAliasService( rockContext ).Get( visitorPersonAliasIDKey );
                     if ( currentVisitorCookiePersonAlias == null )
                     {
                         // There is a ROCK_VISITOR_KEY key with an IDKey, but that PersonAlias record
@@ -1753,10 +1739,7 @@ Obsidian.init({{ debug: true, fingerprint: ""v={_obsidianFingerprint}"" }});
             var rockSessionStartDatetimeCookie = GetCookie( Rock.Personalization.RequestCookieKey.ROCK_SESSION_START_DATETIME );
             if ( rockSessionStartDatetimeCookie == null || rockSessionStartDatetimeCookie.Value.IsNullOrWhiteSpace() )
             {
-                rockSessionStartDatetimeCookie = new HttpCookie( Rock.Personalization.RequestCookieKey.ROCK_SESSION_START_DATETIME, currentUTCDateTime.ToISO8601DateString() )
-                {
-                    Expires = DateTime.Now.AddDays( -1 )
-                };
+                rockSessionStartDatetimeCookie = new HttpCookie( Rock.Personalization.RequestCookieKey.ROCK_SESSION_START_DATETIME, currentUTCDateTime.ToISO8601DateString() );
                 RockPage.AddOrUpdateCookie( rockSessionStartDatetimeCookie );
             }
 
@@ -1767,12 +1750,12 @@ Obsidian.init({{ debug: true, fingerprint: ""v={_obsidianFingerprint}"" }});
                 if ( currentPersonAlias == null )
                 {
                     // ROCK_VISITOR_KEY does not exist and nobody is logged in, create a new PersonAlias and new Visitor Cookie tied to the GhostPersonId.
-                    var visitorPersonAlias = PersonAliasService.CreateAnonymousVisitorAlias();
+                    var visitorPersonAlias = new PersonAliasService( rockContext ).CreateAnonymousVisitorAlias();
+                    rockContext.SaveChanges();
 
                     var visitorPersonAliasIDKey = visitorPersonAlias.IdKey;
                     visitorKeyCookie = new System.Web.HttpCookie( Rock.Personalization.RequestCookieKey.ROCK_VISITOR_KEY, visitorPersonAliasIDKey )
                     {
-
                         Expires = persistedCookieExpiration
                     };
 
@@ -1844,8 +1827,12 @@ Obsidian.init({{ debug: true, fingerprint: ""v={_obsidianFingerprint}"" }});
                             {
                                 rockContext.SaveChanges();
 
-                                // We might have set FirstTime visitor as true in this session, but then merged with a real person that has been here before
-                                //RockPage.AddOrUpdateCookie( new HttpCookie( Rock.Personalization.RequestCookieKey.ROCK_FIRSTTIME_VISITOR, false.ToString() ) );
+                                /*  MP 06/16/2022
+
+                                At this point, we might have set FirstTime visitor as true in this session, but then merged with a real person that has been here before.
+                                This could mean a false-positive 'First Time Visitor' for the duration of the session, but that is OK.
+                                 
+                                */
                             }
                         }
                         else
@@ -1874,8 +1861,6 @@ Obsidian.init({{ debug: true, fingerprint: ""v={_obsidianFingerprint}"" }});
             };
 
             message.SendIfNeeded();
-
-            DebugHelper.SQLLoggingStop();
         }
 
         /// <summary>
@@ -2896,7 +2881,77 @@ Sys.Application.add_load(function () {
         /// <returns></returns>
         public HttpCookie GetCookie( string name )
         {
-            return Request.Cookies[name] ?? Response.Cookies[name] ?? null;
+            /* MP 06-16-2022 
+
+            Make sure the Cookies AllKeys contains a cookie with that name first,
+            otherwise it will automatically create the cookie. This avoids
+            an issue where a Request cookie could get removed if using GetCookie
+            to see if the cookie exists.
+             
+             */
+
+            if ( Request.Cookies.AllKeys.Contains( name ) )
+            {
+                return Request.Cookies[name];
+            }
+
+            if ( Response.Cookies.AllKeys.Contains( name ) )
+            {
+                return Response.Cookies[name];
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Gets the cookie value from request.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        /// <returns>System.String.</returns>
+        private string GetCookieValueFromRequest( string name )
+        {
+            if ( Request.Cookies.AllKeys.Contains( name ) )
+            {
+                return Request.Cookies[name]?.Value;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Gets the cookie value from response.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        /// <returns>System.String.</returns>
+        private string GetCookieValueFromResponse( string name )
+        {
+            if ( Response.Cookies.AllKeys.Contains( name ) )
+            {
+                return Request.Cookies[name]?.Value;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Gets the cookie value.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        /// <param name="preferResponseCookie">The prefer response cookie.</param>
+        /// <returns>string.</returns>
+        private string GetCookieValue( string name, bool preferResponseCookie )
+        {
+            string requestValue = GetCookieValueFromRequest( name );
+            string responseValue = GetCookieValueFromResponse( name );
+
+            if ( preferResponseCookie )
+            {
+                return responseValue ?? requestValue;
+            }
+            else
+            {
+                return requestValue ?? responseValue;
+            }
         }
 
         /// <summary>
