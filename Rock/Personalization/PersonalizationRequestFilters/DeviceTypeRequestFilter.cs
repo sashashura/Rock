@@ -38,14 +38,26 @@ namespace Rock.Personalization
             return DeviceTypeStrings.Contains( clientType, StringComparer.OrdinalIgnoreCase );
         }
 
+        /// <summary>
+        /// Enum DeviceType
+        /// </summary>
         public enum DeviceType
         {
+            /// <summary>
+            /// The desktop
+            /// </summary>
             [Description( "Desktop" )]
             Desktop = 0,
 
+            /// <summary>
+            /// The tablet
+            /// </summary>
             [Description( "Tablet" )]
             Tablet = 1,
 
+            /// <summary>
+            /// The mobile
+            /// </summary>
             [Description( "Mobile" )]
             Mobile = 2
         }

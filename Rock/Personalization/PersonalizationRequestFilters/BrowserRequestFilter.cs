@@ -79,33 +79,63 @@ namespace Rock.Personalization
         /// </summary>
         public enum BrowserFamilyEnum
         {
+            /// <summary>
+            /// Other Browser
+            /// </summary>
             [Description( "Other" )]
             Other = 0,
 
+            /// <summary>
+            /// Chrome Browser
+            /// </summary>
             [Description( "Chrome" )]
             Chrome = 1,
 
+            /// <summary>
+            /// Chrome Mobile Browser
+            /// </summary>
             [Description( "Chrome Mobile" )]
             ChromeMobile = 2,
-                
+
+            /// <summary>
+            /// Firefox Browser
+            /// </summary>
             [Description( "Firefox" )]
             Firefox = 3,
 
+            /// <summary>
+            /// Firefox Mobile Browser
+            /// </summary>
             [Description( "Firefox Mobile" )]
             FirefoxMobile = 4,
 
+            /// <summary>
+            /// Safari Browser
+            /// </summary>
             [Description( "Safari" )]
             Safari = 5,
 
+            /// <summary>
+            /// Opera Browser
+            /// </summary>
             [Description( "Opera" )]
             Opera = 6,
 
+            /// <summary>
+            /// Opera Mini Browser
+            /// </summary>
             [Description( "Opera Mini" )]
             OperaMini = 7,
 
+            /// <summary>
+            /// Edge Browser
+            /// </summary>
             [Description( "Edge" )]
             Edge = 8,
 
+            /// <summary>
+            /// Internet Explorer Browser
+            /// </summary>
             [Description( "IE" )]
             IE = 9
         }
