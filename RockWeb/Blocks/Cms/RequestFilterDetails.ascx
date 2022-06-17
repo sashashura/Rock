@@ -21,11 +21,12 @@
                 <Rock:NotificationBox ID="nbWarningMessage" runat="server" NotificationBoxType="Warning" />
                 <Rock:NotificationBox ID="nbEditModeMessage" runat="server" NotificationBoxType="Info" />
 
-                <%-- Segment Name --%>
+                <%-- Request Filter Name --%>
                 <div class="row">
                     <div class="col-md-6">
-                        <Rock:HiddenFieldWithClass ID="hfExistingSegmentKeyNames" runat="server" CssClass="js-existing-key-names" />
-                        <Rock:DataTextBox ID="tbName" runat="server" SourceTypeName="Rock.Model.RequestFilter, Rock" PropertyName="Name" />
+                        <Rock:HiddenFieldWithClass ID="hfExistingRequestFilterKeyNames" runat="server" CssClass="js-existing-key-names" />
+                        <Rock:DataTextBox ID="tbName" runat="server" SourceTypeName="Rock.Model.RequestFilter, Rock" PropertyName="Name" onblur="populateRequestFilterKey()"/>
+                        <Rock:DataTextBox ID="tbKey" runat="server" SourceTypeName="Rock.Model.RequestFilter, Rock" Required="true" PropertyName="RequestFilterKey" Label="Key" />
                         <Rock:RockDropDownList ID="ddlSiteKey" runat="server" SourceTypeName="Rock.Model.RequestFilter, Rock" PropertyName="SiteId"
                             Label="Site" Help="Site - Optional site to limit the request filter to."/>
                     </div>
@@ -243,10 +244,37 @@
                         </div>
                     </div>
 
-
                 </Content>
             </Rock:ModalDialog>
 
         </asp:Panel>
+
+         <script>
+            function populateRequestFilterKey() {
+                // if the request filter key hasn't been filled in yet, populate it with the segment name minus whitespace and special chars
+                var $keyControl = $('#<%=tbKey.ClientID%>');
+                var keyValue = $keyControl.val();
+
+                var reservedKeyJson = $('#<%=hfExistingRequestFilterKeyNames.ClientID%>')
+                    .val();
+                var reservedKeyNames = eval(`( ${reservedKeyJson} )`);
+
+                if ($keyControl.length && (keyValue == '')) {
+
+                    keyValue = $('#<%=tbName.ClientID%>')
+                        .val()
+                        .replace(/[^a-zA-Z0-9_.\-]/g, '');
+                    var newKeyValue = keyValue;
+
+                    var i = 1;
+                    while ($.inArray(newKeyValue, reservedKeyNames) >= 0) {
+                        newKeyValue = keyValue + i++;
+                    }
+
+                    $keyControl.val(newKeyValue);
+                }
+            }
+
+         </script>
     </ContentTemplate>
 </asp:UpdatePanel>

@@ -182,9 +182,13 @@ namespace RockWeb.Blocks.Cms
             /* Name, etc */
             hfRequestFilterId.Value = requestFilter.Id.ToString();
             tbName.Text = requestFilter.Name;
-            ddlSiteKey.SetValue( requestFilter.SiteId );
             hlInactive.Visible = !requestFilter.IsActive;
             cbIsActive.Checked = requestFilter.IsActive;
+            hfExistingRequestFilterKeyNames.Value = RequestFilterCache.All()
+                .Where( a => a.Id != requestFilter.Id )
+                .Select( a => a.RequestFilterKey )
+                .ToList()
+                .ToJson();
 
             // insert values to the site drop-down
             ddlSiteKey.Items.Clear();
@@ -194,6 +198,7 @@ namespace RockWeb.Blocks.Cms
                 .Select( site => new ListItem( site.Name, site.Id.ToString() ) )
                 .ToArray();
             ddlSiteKey.Items.AddRange( sites );
+            ddlSiteKey.SetValue( requestFilter.SiteId );
 
             this.AdditionalFilterConfiguration = requestFilter.FilterConfiguration ?? new Rock.Personalization.PersonalizationRequestFilterConfiguration();
 
@@ -250,6 +255,7 @@ namespace RockWeb.Blocks.Cms
 
             requestFilter.Name = tbName.Text;
             requestFilter.SiteId = ddlSiteKey.SelectedValue?.AsIntegerOrNull();
+            requestFilter.RequestFilterKey = tbKey.Text;
             requestFilter.IsActive = cbIsActive.Checked;
 
             AdditionalFilterConfiguration.PreviousActivityRequestFilter.PreviousActivityTypes = cblPreviousActivity.SelectedValues

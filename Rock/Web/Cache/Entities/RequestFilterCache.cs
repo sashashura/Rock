@@ -35,19 +35,19 @@ namespace Rock.Web.Cache
 
         /// <inheritdoc cref="RequestFilter.Name"/>
         [DataMember]
-        public string Name { get; set; }
+        public string Name { get; private set; }
 
         /// <inheritdoc cref="RequestFilter.RequestFilterKey"/>
         [DataMember]
-        public string RequestFilterKey { get; set; }
+        public string RequestFilterKey { get; private set; }
 
         /// <inheritdoc cref="RequestFilter.SiteId"/>
         [DataMember]
-        public int? SiteId { get; set; }
+        public int? SiteId { get; private set; }
 
         /// <inheritdoc cref="RequestFilter.IsActive"/>
         [DataMember]
-        public bool IsActive { get; set; }
+        public bool IsActive { get; private set; }
 
         /// <inheritdoc cref="RequestFilter.FilterJson"/>
         [DataMember]
