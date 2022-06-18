@@ -59,9 +59,8 @@ export default defineComponent({
         // #region Computed Values
 
         /**
-         * The actual items to make available to the picker. Because we do post
-         * processing of the items this allows us to be both lazy loaded as well
-         * as post-process the items once they are loaded.
+         * The actual items to make available to the picker. This allows us to do any
+         * post-processing, such as adding additional items, and still be lazy loaded as well.
          */
         const actualItems = computed((): ListItemBag[] | (() => Promise<ListItemBag[]>) => {
             return loadedItems.value ? postProcessItems(loadedItems.value) : loadOptions;
@@ -74,7 +73,7 @@ export default defineComponent({
         /**
          * Perform additional processing on the items based on our property
          * settings.
-         * 
+         *
          * @param items The items to be processed.
          *
          * @returns A new array of items that have been processed.

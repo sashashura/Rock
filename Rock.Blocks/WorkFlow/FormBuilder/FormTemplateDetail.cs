@@ -1,4 +1,4 @@
-﻿// <copyright>
+// <copyright>
 // Copyright by the Spark Development Network
 //
 // Licensed under the Rock Community License (the "License");
@@ -45,6 +45,7 @@ namespace Rock.Blocks.Workflow.FormBuilder
 
     #endregion
 
+    [Rock.SystemGuid.EntityTypeGuid( Rock.SystemGuid.EntityType.OBSIDIAN_FORM_TEMPLATE_DETAIL_BLOCK_TYPE )]
     public class FormTemplateDetail : RockObsidianBlockType
     {
         private static class PageParameterKey
@@ -159,7 +160,6 @@ namespace Rock.Blocks.Workflow.FormBuilder
 
             return new TemplateDetailViewModel
             {
-                AuditDetails = template.GetAuditDetailViewModel(),
                 Description = template.Description,
                 IsActive = template.IsActive,
                 Name = template.Name,
