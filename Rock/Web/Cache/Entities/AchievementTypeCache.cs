@@ -308,6 +308,18 @@ namespace Rock.Web.Cache
             CustomSummaryLavaTemplate = achievementType.CustomSummaryLavaTemplate;
         }
 
+        public static bool HasActiveAchievementTypesForEntityTypeId(int entityTypeId)
+        {
+            var sourceEntityTypeCache = EntityTypeCache.Get( entityTypeId );
+
+            if ( sourceEntityTypeCache == null || sourceEntityTypeCache.IsAchievementsEnabled == false )
+            {
+                return false;
+            }
+
+            return All().Where( at => at.SourceEntityTypeId == entityTypeId && at.IsActive ).Any();
+        }
+
         /// <summary>
         /// Gets the by source entity.
         /// </summary>
