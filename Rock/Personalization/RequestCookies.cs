@@ -30,7 +30,7 @@ namespace Rock.Personalization
         public static readonly string ROCK_VISITOR_CREATED_DATETIME = $".ROCK_VISITOR_CREATED_DATETIME";
 
         /// <summary>
-        /// The cookie ey for .ROCK_VISITOR_LASTSEEN.
+        /// The cookie key for .ROCK_VISITOR_LASTSEEN.
         /// Expires after X days
         ///  Tracks the last page load of the visitor. This is used to determine how long since they were last here.
         ///  On Session End, this will be used to update the <see cref="Rock.Model.PersonAlias.LastVisitDateTime" />
@@ -57,7 +57,7 @@ namespace Rock.Personalization
         /// <summary>
         /// The cookie key for .ROCK_SEGMENT_FILTERS. Cookie is only valid for session.
         /// <para>
-        /// A comma-delimited list of <seealso cref="Rock.Model.PersonalizationSegment">PersonalizationSegment</seealso> Ids that the current
+        /// A comma-delimited list of <seealso cref="Rock.Model.PersonalizationSegment">PersonalizationSegment</seealso> <see cref="Rock.Data.IEntity.IdKey">IdKeys</see> that the current
         /// person/visitor meets the filter for.
         /// </para>
         /// </summary>

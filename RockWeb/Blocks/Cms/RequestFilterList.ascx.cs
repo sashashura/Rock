@@ -220,6 +220,8 @@ namespace RockWeb.Blocks.Cms
 
             var anonymousVisitorPersonGuid = Rock.SystemGuid.Person.ANONYMOUS_VISITOR.AsGuid();
 
+            var personAliasPersonalizationsRequestFilterQry = personalizationSegmentService.GetPersonAliasPersonalizationQuery( PersonalizationType.RequestFilter );
+
             var personAliasPersonalizationsQry = rockContext.PersonAliasPersonalizations;
 
             var requestFilterQuery = requestFilterService.Queryable();

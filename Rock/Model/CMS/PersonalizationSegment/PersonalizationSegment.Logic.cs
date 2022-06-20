@@ -50,6 +50,8 @@ namespace Rock.Model
 
         #endregion ICacheable
 
+        #region PersonalizationSegmentAdditionalFilterConfiguration
+
         /// <summary>
         /// Configuration for the Additional Segment Filters
         /// </summary>
@@ -72,6 +74,8 @@ namespace Rock.Model
                 AdditionalFilterJson = value?.ToJson();
             }
         }
+
+        #endregion PersonalizationSegmentAdditionalFilterConfiguration
 
         #region Methods
 

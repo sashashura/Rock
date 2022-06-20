@@ -48,6 +48,8 @@ namespace Rock.Model
 
         #endregion ICacheable
 
+        #region PersonalizationRequestFilterConfiguration
+
         /// <summary>
         /// Gets or sets the configuration of the filters
         /// </summary>
@@ -70,5 +72,7 @@ namespace Rock.Model
                 FilterJson = value?.ToJson();
             }
         }
+
+        #endregion PersonalizationRequestFilterConfiguration
     }
 }

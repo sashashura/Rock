@@ -266,6 +266,20 @@ namespace Rock.Web.UI
         public Rock.Model.PersonAlias CurrentVisitor { get; private set; }
 
         /// <summary>
+        /// Gets the Ids of <see cref="PersonalizationSegmentCache">Personalization Segments</see> for the <see cref="CurrentVisitor"/>
+        /// or <see cref="CurrentPerson"/> if <see cref="Site.EnablePersonalization">personalization is enabled for the site</see>.
+        /// </summary>
+        /// <value>The personalization segment ids.</value>
+        public int[] PersonalizationSegmentIds { get; private set; }
+
+        /// <summary>
+        /// Gets the Ids of <see cref="RequestFilterCache">Personalization Request Filters</see> for the current <see cref="Page.Request"/>
+        /// if <see cref="Site.EnablePersonalization">personalization is enabled for the site</see>.
+        /// </summary>
+        /// <value>The personalization segment ids.</value>
+        public int[] PersonalizationRequestFilterIds { get; private set; }
+
+        /// <summary>
         /// Publicly gets and privately sets the currently logged in user.
         /// </summary>
         /// <value>
@@ -1036,6 +1050,13 @@ namespace Rock.Web.UI
                         }
                     }
 
+                    if ( Site.EnablePersonalization )
+                    {
+                        Page.Trace.Warn( "Loading Personalization Data" );
+                        LoadPersonalizationSegments();
+                        LoadPersonalizationRequestFilters();
+                    }
+
                     // Set current models (context)
                     Page.Trace.Warn( "Checking for Context" );
                     try
@@ -1706,7 +1727,6 @@ Obsidian.init({{ debug: true, fingerprint: ""v={_obsidianFingerprint}"" }});
 
             var rockContext = new RockContext();
 
-            var ghostVisitorPersonGuid = Rock.SystemGuid.Person.ANONYMOUS_VISITOR.AsGuid();
             var visitorKeyCookie = GetCookie( Rock.Personalization.RequestCookieKey.ROCK_VISITOR_KEY );
             PersonAlias currentVisitorCookiePersonAlias = null;
             if ( visitorKeyCookie != null )
@@ -1732,8 +1752,8 @@ Obsidian.init({{ debug: true, fingerprint: ""v={_obsidianFingerprint}"" }});
 
             var currentUTCDateTime = RockDateTime.Now.ToUniversalTime();
 
-            // TODO, what should this be?
-            var persistedCookieExpiration = currentUTCDateTime.AddYears( 1 );
+            var persistedCookieExpirationDays = SystemSettings.GetValue( Rock.SystemKey.SystemSetting.VISITOR_COOKIE_PERSISTENCE_DAYS ).AsIntegerOrNull() ?? 365;
+            var persistedCookieExpiration = currentUTCDateTime.AddDays( persistedCookieExpirationDays );
 
             // Set the Session Start DateTime cookie if it hasn't been set yet
             var rockSessionStartDatetimeCookie = GetCookie( Rock.Personalization.RequestCookieKey.ROCK_SESSION_START_DATETIME );
@@ -1807,15 +1827,7 @@ Obsidian.init({{ debug: true, fingerprint: ""v={_obsidianFingerprint}"" }});
                     {
                         // Visitor Person Alias is either for the core Anonymous Person ( GhostPerson ) or
                         // for some other person that has previously logged into rock with this browser
-                        var ghostPersonId = new PersonService( rockContext ).GetId( ghostVisitorPersonGuid );
-                        if ( ghostPersonId == null )
-                        {
-                            // ## TODO can we prevent this from happening? https://app.asana.com/0/0/1202438729153510/f
-
-                            // Somehow the Person record for ANONYMOUS_VISITOR is gone!
-                            // I guess we can't do Visitor tracking. So just exit.
-                            return;
-                        }
+                        var ghostPersonId = new PersonService( rockContext ).GetOrCreateAnonymousVisitorPersonId();
 
                         // ROCK_VISITOR_KEY exists, and somebody is logged in
                         if ( currentVisitorCookiePersonAlias.PersonId == ghostPersonId )
@@ -1861,6 +1873,75 @@ Obsidian.init({{ debug: true, fingerprint: ""v={_obsidianFingerprint}"" }});
             };
 
             message.SendIfNeeded();
+        }
+
+        /// <summary>
+        /// Loads the matching <see cref="PersonalizationSegmentIds"/> for the <see cref="CurrentPerson"/> or <see cref="CurrentVisitor"/>.
+        /// </summary>
+        private void LoadPersonalizationSegments()
+        {
+            if ( !Site.EnablePersonalization )
+            {
+                return;
+            }
+
+            var rockSegmentFiltersCookie = GetCookie( Rock.Personalization.RequestCookieKey.ROCK_SEGMENT_FILTERS );
+            var personalizationPersonAliasId = CurrentVisitor?.Id ?? CurrentPersonAliasId;
+            if ( !personalizationPersonAliasId.HasValue )
+            {
+                // no visitor or person logged in
+                return;
+            }
+
+            var cookieValueJson = rockSegmentFiltersCookie?.Value;
+            Personalization.SegmentFilterCookieData segmentFilterCookieData = null;
+            if ( cookieValueJson != null )
+            {
+                segmentFilterCookieData = cookieValueJson.FromJsonOrNull<Personalization.SegmentFilterCookieData>();
+                bool validCookieDataExists = false;
+                if ( segmentFilterCookieData != null )
+                {
+                    if ( segmentFilterCookieData.PersonAliasId == personalizationPersonAliasId.Value && segmentFilterCookieData.SegmentIdKeys != null )
+                    {
+                        validCookieDataExists = true;
+                    }
+                }
+
+                if ( !validCookieDataExists )
+                {
+                    segmentFilterCookieData = null;
+                }
+            }
+
+            if ( segmentFilterCookieData == null )
+            {
+                segmentFilterCookieData = new Personalization.SegmentFilterCookieData();
+                segmentFilterCookieData.PersonAliasId = personalizationPersonAliasId.Value;
+                var segmentIdKeys = new PersonalizationSegmentService( new RockContext() ).GetPersonalizationSegmentIdKeysForPersonAliasId( personalizationPersonAliasId.Value );
+                segmentFilterCookieData.SegmentIdKeys = segmentIdKeys;
+            }
+
+            AddOrUpdateCookie( new HttpCookie( Rock.Personalization.RequestCookieKey.ROCK_SEGMENT_FILTERS, segmentFilterCookieData.ToJson() ) );
+
+            this.PersonalizationSegmentIds = segmentFilterCookieData.SegmentIdKeys.Select( s => IdHasher.Instance.GetId( s ) ).Where( a => a.HasValue ).Select( s => s.Value ).ToArray();
+        }
+
+        /// <summary>
+        /// Loads the matching <see cref="PersonalizationRequestFilterIds"/> for the current <see cref="Page.Request"/>.
+        /// </summary>
+        private void LoadPersonalizationRequestFilters()
+        {
+            var requestFilters = RequestFilterCache.All().Where( a => a.IsActive );
+            var requestFilterIds = new List<int>();
+            foreach ( var requestFilter in requestFilters )
+            {
+                if ( requestFilter.RequestMeetsCriteria( this.Request ) )
+                {
+                    requestFilterIds.Add( requestFilter.Id );
+                }
+            }
+
+            this.PersonalizationRequestFilterIds = requestFilterIds.ToArray();
         }
 
         /// <summary>

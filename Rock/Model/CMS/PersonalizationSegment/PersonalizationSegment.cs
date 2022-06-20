@@ -103,7 +103,7 @@ namespace Rock.Model
     /// <summary>
     /// Segment Configuration Class
     /// </summary>
-    public partial class SegmentConfiguration : EntityTypeConfiguration<PersonalizationSegment>
+    public class SegmentConfiguration : EntityTypeConfiguration<PersonalizationSegment>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="PersonAliasConfiguration"/> class.

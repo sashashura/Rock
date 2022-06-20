@@ -23,6 +23,7 @@ using System.Data.Entity.Spatial;
 using System.Linq;
 using System.Text;
 using System.Web.UI.WebControls;
+
 using Rock;
 using Rock.BulkExport;
 using Rock.Data;
@@ -2488,8 +2489,8 @@ namespace Rock.Model
         /// <returns>Person.</returns>
         public Person GetCurrentPerson()
         {
-                var currentUser = new UserLoginService( (RockContext) this.Context ).GetByUserName( UserLogin.GetCurrentUserName() );
-                return currentUser != null ? currentUser.Person : null;
+            var currentUser = new UserLoginService( ( RockContext ) this.Context ).GetByUserName( UserLogin.GetCurrentUserName() );
+            return currentUser != null ? currentUser.Person : null;
         }
 
         /// <summary>
@@ -4683,6 +4684,22 @@ FROM (
         #endregion
 
         #region Anonymous Visitor
+
+        /// <summary>
+        /// Gets the AnonymousVisitorPersonId, and creates it if it doesn't exist.
+        /// <seealso cref="GetOrCreateAnonymousVisitorPerson"/>
+        /// </summary>
+        /// <returns>System.Int32.</returns>
+        public int GetOrCreateAnonymousVisitorPersonId()
+        {
+            var anonymousVisitorPersonId = GetId( SystemGuid.Person.ANONYMOUS_VISITOR.AsGuid() );
+            if ( !anonymousVisitorPersonId.HasValue )
+            {
+                anonymousVisitorPersonId = GetOrCreateAnonymousVisitorPerson().Id;
+            }
+
+            return anonymousVisitorPersonId.Value;
+        }
 
         /// <summary>
         /// Gets or creates the anonymous visitor person.

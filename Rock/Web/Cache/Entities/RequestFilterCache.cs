@@ -65,6 +65,16 @@ namespace Rock.Web.Cache
         #region Public Methods
 
         /// <summary>
+        /// Returns true if the HttpRequest meets the criteria defined in the FilterConfiguration.
+        /// </summary>
+        /// <param name="request">The request.</param>
+        /// <returns><c>true</c> if XXXX, <c>false</c> otherwise.</returns>
+        public bool RequestMeetsCriteria( System.Web.HttpRequest request)
+        {
+            return Rock.Model.RequestFilter.RequestMeetsCriteria( this.Id, request );
+        }
+
+        /// <summary>
         /// Set's the cached objects properties from the model/entities properties.
         /// </summary>
         /// <param name="entity">The entity.</param>

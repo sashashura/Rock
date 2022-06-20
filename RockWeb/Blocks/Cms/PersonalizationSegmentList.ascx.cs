@@ -219,7 +219,7 @@ namespace RockWeb.Blocks.Cms
             var rockContext = new RockContext();
             var personalizationSegmentService = new PersonalizationSegmentService( rockContext );
 
-            var personAliasPersonalizationsQry = rockContext.PersonAliasPersonalizations;
+            var personAliasPersonalizationsSegmentsQry = personalizationSegmentService.GetPersonAliasPersonalizationQuery( PersonalizationType.Segment );
 
             var segmentQuery = personalizationSegmentService.Queryable();
 
@@ -229,7 +229,7 @@ namespace RockWeb.Blocks.Cms
                 segmentQuery = segmentQuery.Where( x => x.Name.Contains( nameFilter ) );
             }
 
-            var anonymousVisitorPersonGuid = Rock.SystemGuid.Person.ANONYMOUS_VISITOR.AsGuid();
+            var anonymousVisitorPersonId = new PersonService( rockContext ).GetOrCreateAnonymousVisitorPersonId();
 
             var personalizationSegmentItemQuery = segmentQuery.Select( a => new PersonalizationSegmentItem
             {
@@ -238,19 +238,11 @@ namespace RockWeb.Blocks.Cms
                 FilterDataViewName = a.FilterDataViewId.HasValue ? a.FilterDataView.Name : null,
                 IsActive = a.IsActive,
                 AnonymousIndividualsCount =
-                     personAliasPersonalizationsQry
-                         .Where( p =>
-                              p.PersonalizationType == PersonalizationType.Segment
-                              && p.PersonalizationTypeId == a.Id
-                              && p.PersonAlias.Person.Guid == anonymousVisitorPersonGuid
-                         ).Count(),
+                     personAliasPersonalizationsSegmentsQry
+                         .Where( p => p.PersonalizationTypeId == a.Id && p.PersonAlias.PersonId == anonymousVisitorPersonId ).Count(),
                 KnownIndividualsCount =
-                     personAliasPersonalizationsQry
-                         .Where( p =>
-                              p.PersonalizationType == PersonalizationType.Segment
-                              && p.PersonalizationTypeId == a.Id
-                              && p.PersonAlias.Person.Guid != anonymousVisitorPersonGuid
-                         ).Count()
+                     personAliasPersonalizationsSegmentsQry
+                         .Where( p => p.PersonalizationTypeId == a.Id && p.PersonAlias.PersonId != anonymousVisitorPersonId ).Count()
             } );
 
             // sort the query based on the column that was selected to be sorted
