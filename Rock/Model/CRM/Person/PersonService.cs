@@ -4682,6 +4682,63 @@ FROM (
 
         #endregion
 
+        #region Anonymous Visitor
+
+        /// <summary>
+        /// Gets or creates the anonymous visitor person.
+        /// </summary>
+        /// <returns>A <see cref="Person"/> that matches the SystemGuid.Person.ANONYMOUS_VISITOR Guid value.</returns>
+        public Person GetOrCreateAnonymousVisitorPerson()
+        {
+            var anonymousVisitor = Get( SystemGuid.Person.ANONYMOUS_VISITOR.AsGuid() );
+            if ( anonymousVisitor == null )
+            {
+                CreateAnonymousVisitorPerson();
+                anonymousVisitor = Get( SystemGuid.Person.ANONYMOUS_VISITOR.AsGuid() );
+            }
+
+            return anonymousVisitor;
+        }
+
+        /// <summary>
+        /// Creates the anonymous visitor person.  Used by GetOrCreateAnonymousVisitorPerson().
+        /// </summary>
+        private void CreateAnonymousVisitorPerson()
+        {
+            using ( var anonymousVisitorPersonRockContext = new RockContext() )
+            {
+
+                var connectionStatusValueId = DefinedValueCache.GetId( Rock.SystemGuid.DefinedValue.PERSON_CONNECTION_STATUS_PARTICIPANT.AsGuid() );
+                var recordStatusValueId = DefinedValueCache.GetId( Rock.SystemGuid.DefinedValue.PERSON_RECORD_STATUS_ACTIVE.AsGuid() );
+                var recordTypeValueId = DefinedValueCache.GetId( Rock.SystemGuid.DefinedValue.PERSON_RECORD_TYPE_PERSON.AsGuid() );
+                var anonymousVisitor = new Person()
+                {
+                    IsSystem = true,
+                    RecordTypeValueId = recordTypeValueId,
+                    RecordStatusValueId = recordStatusValueId,
+                    ConnectionStatusValueId = connectionStatusValueId,
+                    IsDeceased = false,
+                    FirstName = "Anonymous",
+                    NickName = "Anonymous",
+                    LastName = "Visitor",
+                    Gender = Gender.Unknown,
+                    IsEmailActive = true,
+                    Guid = SystemGuid.Person.ANONYMOUS_VISITOR.AsGuid(),
+                    EmailPreference = EmailPreference.EmailAllowed,
+                    CommunicationPreference = CommunicationType.Email
+                };
+
+                new PersonService( anonymousVisitorPersonRockContext ).Add( anonymousVisitor );
+                if ( anonymousVisitor != null )
+                {
+                    PersonService.SaveNewPerson( anonymousVisitor, anonymousVisitorPersonRockContext, null, false );
+                }
+
+                anonymousVisitorPersonRockContext.SaveChanges();
+            }
+        }
+
+        #endregion
         #region Anonymous Giver
 
         /// <summary>
@@ -4696,6 +4753,7 @@ FROM (
                 CreateAnonymousGiverPerson();
                 anonymousGiver = Get( SystemGuid.Person.GIVER_ANONYMOUS.AsGuid() );
             }
+
             return anonymousGiver;
         }
 
@@ -4728,6 +4786,11 @@ FROM (
                 };
 
                 new PersonService( anonymousGiverPersonRockContext ).Add( anonymousGiver );
+                if ( anonymousGiver != null )
+                {
+                    PersonService.SaveNewPerson( anonymousGiver, anonymousGiverPersonRockContext, null, false );
+                }
+
                 anonymousGiverPersonRockContext.SaveChanges();
             }
         }

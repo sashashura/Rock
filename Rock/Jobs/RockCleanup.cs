@@ -229,6 +229,8 @@ namespace Rock.Jobs
 
             RunCleanupTask( "anonymous giver login", () => RemoveAnonymousGiverUserLogins() );
 
+            RunCleanupTask( "anonymous visitor login", () => RemoveAnonymousVisitorUserLogins() );
+
             RunCleanupTask( "temporary registration", () => CleanUpTemporaryRegistrations() );
 
             RunCleanupTask( "workflow log", () => CleanUpWorkflowLogs( dataMap ) );
@@ -726,6 +728,37 @@ namespace Rock.Jobs
                 }
 
                 var logins = userLoginService.Queryable().Where( l => l.PersonId == anonymousGiver.Id ).ToList();
+
+                loginCount = logins.Count();
+
+                if ( loginCount > 0 )
+                {
+                    userLoginService.DeleteRange( logins );
+                    rockContext.SaveChanges();
+                }
+            }
+
+            return loginCount;
+        }
+
+        /// <summary>
+        /// Removes any UserLogin records associated with the Anonymous Visitor.
+        /// </summary>
+        private int RemoveAnonymousVisitorUserLogins()
+        {
+            int loginCount = 0;
+
+            using ( var rockContext = new RockContext() )
+            {
+                rockContext.Database.CommandTimeout = commandTimeout;
+                var userLoginService = new UserLoginService( rockContext );
+                var anonymousVisitor = new PersonService( rockContext ).GetOrCreateAnonymousVisitorPerson();
+                if ( anonymousVisitor == null )
+                {
+                    return 0; // This shouldn't ever happen.
+                }
+
+                var logins = userLoginService.Queryable().Where( l => l.PersonId == anonymousVisitor.Id ).ToList();
 
                 loginCount = logins.Count();
 
