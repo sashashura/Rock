@@ -107,7 +107,7 @@ namespace Rock.Workflow.Action
 
     #endregion
 
-    [Rock.SystemGuid.EntityTypeGuid( "A2524538-F744-4357-A8E3-F3C9AFEA507F")]
+    [Rock.SystemGuid.EntityTypeGuid( "E2C38F27-67DD-4C64-9584-42A552660F7E")]
     public class CreateContributionStatement : ActionComponent
     {
         #region Attribute Keys
