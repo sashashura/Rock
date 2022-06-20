@@ -110,18 +110,55 @@ namespace Rock.Migrations
                 .Index( t => t.ModifiedByPersonAliasId )
                 .Index( t => t.Guid, unique: true );
 
-            AddColumn( "dbo.PersonAlias", "IsPrimaryAlias", c => c.Boolean( nullable: false ) );
             AddColumn( "dbo.PersonAlias", "AliasedDateTime", c => c.DateTime() );
             AddColumn( "dbo.PersonAlias", "LastVisitDateTime", c => c.DateTime() );
             AddColumn( "dbo.ContentChannel", "EnablePersonalization", c => c.Boolean( nullable: false ) );
             AddColumn( "dbo.Site", "EnableVisitorTracking", c => c.Boolean( nullable: false ) );
             AddColumn( "dbo.Site", "EnablePersonalization", c => c.Boolean( nullable: false ) );
 
+
             RockMigrationHelper.UpdateDefinedValue( "26BE73A6-A9C5-4E94-AE00-3AFDCF8C9275", "Anonymous Visitor", "An Anonymous Visitor", "80007453-30A7-453C-BF0B-C82AAFE2BA12", true );
 
             AddAnonymousVisitor_Up();
 
             UpdatePersonAliasAliasPersonIdIndex_Up();
+        }
+
+        /// <summary>
+        /// Operations to be performed during the downgrade process.
+        /// </summary>
+        public override void Down()
+        {
+            DropForeignKey( "dbo.PersonalizationSegment", "ModifiedByPersonAliasId", "dbo.PersonAlias" );
+            DropForeignKey( "dbo.PersonalizationSegment", "FilterDataViewId", "dbo.DataView" );
+            DropForeignKey( "dbo.PersonalizationSegment", "CreatedByPersonAliasId", "dbo.PersonAlias" );
+            DropForeignKey( "dbo.RequestFilter", "SiteId", "dbo.Site" );
+            DropForeignKey( "dbo.RequestFilter", "ModifiedByPersonAliasId", "dbo.PersonAlias" );
+            DropForeignKey( "dbo.RequestFilter", "CreatedByPersonAliasId", "dbo.PersonAlias" );
+            DropForeignKey( "dbo.PersonalizedEntity", "EntityTypeId", "dbo.EntityType" );
+            DropForeignKey( "dbo.PersonAliasPersonalization", "PersonAliasId", "dbo.PersonAlias" );
+            DropIndex( "dbo.PersonalizationSegment", new[] { "Guid" } );
+            DropIndex( "dbo.PersonalizationSegment", new[] { "ModifiedByPersonAliasId" } );
+            DropIndex( "dbo.PersonalizationSegment", new[] { "CreatedByPersonAliasId" } );
+            DropIndex( "dbo.PersonalizationSegment", new[] { "FilterDataViewId" } );
+            DropIndex( "dbo.RequestFilter", new[] { "Guid" } );
+            DropIndex( "dbo.RequestFilter", new[] { "ModifiedByPersonAliasId" } );
+            DropIndex( "dbo.RequestFilter", new[] { "CreatedByPersonAliasId" } );
+            DropIndex( "dbo.RequestFilter", new[] { "SiteId" } );
+            DropIndex( "dbo.PersonalizedEntity", new[] { "EntityTypeId" } );
+            DropIndex( "dbo.PersonAliasPersonalization", new[] { "PersonAliasId" } );
+            DropColumn( "dbo.Site", "EnablePersonalization" );
+            DropColumn( "dbo.Site", "EnableVisitorTracking" );
+            DropColumn( "dbo.ContentChannel", "EnablePersonalization" );
+            DropColumn( "dbo.PersonAlias", "LastVisitDateTime" );
+            DropColumn( "dbo.PersonAlias", "AliasedDateTime" );
+            DropTable( "dbo.PersonalizationSegment" );
+            DropTable( "dbo.RequestFilter" );
+            DropTable( "dbo.PersonalizedEntity" );
+            DropTable( "dbo.PersonAliasPersonalization" );
+
+            UpdatePersonAliasAliasPersonIdIndex_Down();
+            AddAnonymousVisitor_Down();
         }
 
         private void UpdatePersonAliasAliasPersonIdIndex_Up()
@@ -244,6 +281,7 @@ INSERT INTO [GroupMember] (
     ,[Guid]
     ,GroupMemberStatus
 	,DateTimeAdded
+    ,[GroupTypeId]
     )
 VALUES (
     0
@@ -253,8 +291,8 @@ VALUES (
     ,newid()
     ,1
 	,SYSDATETIME()
+    ,@familyGroupType
     )
-
 
 	UPDATE Person
         SET GivingId = (
@@ -331,44 +369,6 @@ VALUES (
 " );
         }
 
-        /// <summary>
-        /// Operations to be performed during the downgrade process.
-        /// </summary>
-        public override void Down()
-        {
-            DropForeignKey( "dbo.PersonalizationSegment", "ModifiedByPersonAliasId", "dbo.PersonAlias" );
-            DropForeignKey( "dbo.PersonalizationSegment", "FilterDataViewId", "dbo.DataView" );
-            DropForeignKey( "dbo.PersonalizationSegment", "CreatedByPersonAliasId", "dbo.PersonAlias" );
-            DropForeignKey( "dbo.RequestFilter", "SiteId", "dbo.Site" );
-            DropForeignKey( "dbo.RequestFilter", "ModifiedByPersonAliasId", "dbo.PersonAlias" );
-            DropForeignKey( "dbo.RequestFilter", "CreatedByPersonAliasId", "dbo.PersonAlias" );
-            DropForeignKey( "dbo.PersonalizedEntity", "EntityTypeId", "dbo.EntityType" );
-            DropForeignKey( "dbo.PersonAliasPersonalization", "PersonAliasId", "dbo.PersonAlias" );
-            DropIndex( "dbo.PersonalizationSegment", new[] { "Guid" } );
-            DropIndex( "dbo.PersonalizationSegment", new[] { "ModifiedByPersonAliasId" } );
-            DropIndex( "dbo.PersonalizationSegment", new[] { "CreatedByPersonAliasId" } );
-            DropIndex( "dbo.PersonalizationSegment", new[] { "FilterDataViewId" } );
-            DropIndex( "dbo.RequestFilter", new[] { "Guid" } );
-            DropIndex( "dbo.RequestFilter", new[] { "ModifiedByPersonAliasId" } );
-            DropIndex( "dbo.RequestFilter", new[] { "CreatedByPersonAliasId" } );
-            DropIndex( "dbo.RequestFilter", new[] { "SiteId" } );
-            DropIndex( "dbo.PersonalizedEntity", new[] { "EntityTypeId" } );
-            DropIndex( "dbo.PersonAliasPersonalization", new[] { "PersonAliasId" } );
-            DropColumn( "dbo.Site", "EnablePersonalization" );
-            DropColumn( "dbo.Site", "EnableVisitorTracking" );
-            DropColumn( "dbo.ContentChannel", "EnablePersonalization" );
-            DropColumn( "dbo.PersonAlias", "LastVisitDateTime" );
-            DropColumn( "dbo.PersonAlias", "AliasedDateTime" );
-            DropColumn( "dbo.PersonAlias", "IsPrimaryAlias" );
-            DropTable( "dbo.PersonalizationSegment" );
-            DropTable( "dbo.RequestFilter" );
-            DropTable( "dbo.PersonalizedEntity" );
-            DropTable( "dbo.PersonAliasPersonalization" );
-
-            UpdatePersonAliasAliasPersonIdIndex_Down();
-            AddAnonymousVisitor_Down();
-        }
-        
         private void AddAnonymousVisitor_Down()
         {
             Sql( $@"UPDATE Person
