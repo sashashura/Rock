@@ -17,6 +17,7 @@
 
 using System;
 using System.Configuration;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -54,6 +55,8 @@ namespace Rock.Bus
         /// Is the bus started?
         /// </summary>
         private static bool _isBusStarted = false;
+
+        private static TaskCompletionSource<bool> _busStartupCompleted = new TaskCompletionSource<bool>();
 
         /// <summary>
         /// The bus
@@ -211,17 +214,25 @@ namespace Rock.Bus
         public static Task PublishAsync<TQueue>( IEventMessage<TQueue> message, Type messageType )
             where TQueue : IPublishEventQueue, new()
         {
-            if ( !IsReady() )
-            {
-                ExceptionLogService.LogException( new BusException( $"A message was published before the message bus was ready: {RockMessage.GetLogString( message )}" ) );
-                return Task.CompletedTask;
-            }
-
             message.SenderNodeName = NodeName;
 
             // NOTE: Use Task.Run to wrap an async instead of directly using async, otherwise async will get an exception if it isn't done before the HttpContext is disposed.
             return Task.Run( async () =>
             {
+                if ( !IsReady() && _busStartupCompleted != null )
+                {
+                    // ## DEBUG message
+                    Debug.WriteLine( "Publish is waiting for IsReady()" );
+
+                    // ##TODO Engineering note.
+
+                    _busStartupCompleted.Task.Wait( maxStartupWaitTimeSeconds * 1000 );
+
+
+                    // ## DEBUG message
+                    Debug.WriteLine( "Publish is done waiting for IsReady()" );
+                }
+
                 await _bus.Publish( message, messageType, context =>
                 {
                     context.TimeToLive = RockQueue.GetTimeToLive<TQueue>();
@@ -269,6 +280,7 @@ namespace Rock.Bus
             } );
         }
 
+        private const int maxStartupWaitTimeSeconds = 45;
 
         /// <summary>
         /// Configures and starts the bus.
@@ -289,8 +301,7 @@ namespace Rock.Bus
             var cancelToken = new CancellationTokenSource();
             var task = _bus.StartAsync( cancelToken.Token );
 
-            const int delaySeconds = 45;
-            var delay = Task.Delay( TimeSpan.FromSeconds( delaySeconds ) );
+            var delay = Task.Delay( TimeSpan.FromSeconds( maxStartupWaitTimeSeconds ) );
 
             if ( await Task.WhenAny( task, delay ) == task )
             {
@@ -304,10 +315,11 @@ namespace Rock.Bus
             {
                 // The bus did not connect after some seconds
                 cancelToken.Cancel();
-                throw new Exception( $"The bus failed to connect using {_transportComponent.GetType().Name} within {delaySeconds} seconds" );
+                throw new Exception( $"The bus failed to connect using {_transportComponent.GetType().Name} within {maxStartupWaitTimeSeconds} seconds" );
             }
 
             _isBusStarted = true;
+            _busStartupCompleted.SetResult( true );
         }
 
         /// <summary>
