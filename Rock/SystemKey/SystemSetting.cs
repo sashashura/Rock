@@ -116,7 +116,7 @@ namespace Rock.SystemKey
         public const string PDF_EXTERNAL_RENDER_ENDPOINT = "core_PDFExternalRenderEndpoint";
 
         /// <summary>
-        /// The number of days that a visitor cookie persists. 
+        /// The number of days that a visitor cookie persists. Default is 365.
         /// </summary>
         public const string VISITOR_COOKIE_PERSISTENCE_DAYS = "core_VisitorCookiePersistenceDays";
 

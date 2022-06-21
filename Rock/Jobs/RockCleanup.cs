@@ -128,9 +128,9 @@ namespace Rock.Jobs
         )]
 
     [IntegerField( "Stale Anonymous Visitor Record Retention Period in Days",
-        Description = "PersonAlias records (tied to the ‘Anonymous Visitor’ record) that are not connected to an actual person record which are older than this will be deleted. (default is 180 days)",
+        Description = "PersonAlias records (tied to the ‘Anonymous Visitor’ record) that are not connected to an actual person record which are older than this will be deleted. (default is 365 days)",
         IsRequired = false,
-        DefaultIntegerValue = 180,
+        DefaultIntegerValue = 365,
         Category = "General",
         Order = 9,
         Key = AttributeKey.StaleAnonymousVisitorRecordRetentionPeriodInDays )]
@@ -2376,7 +2376,7 @@ where ISNULL(ValueAsNumeric, 0) != ISNULL((case WHEN LEN([value]) < (100)
         {
             var rockContext = new RockContext();
             rockContext.Database.CommandTimeout = commandTimeout;
-            var staleAnonymousVisitorRecordRetentionPeriodInDays = dataMap.GetIntValue( AttributeKey.StaleAnonymousVisitorRecordRetentionPeriodInDays );
+            var staleAnonymousVisitorRecordRetentionPeriodInDays = dataMap.GetString( AttributeKey.StaleAnonymousVisitorRecordRetentionPeriodInDays ).AsIntegerOrNull() ?? 365;
             var anonymousVisitorId = new PersonService( rockContext ).GetId( Rock.SystemGuid.Person.ANONYMOUS_VISITOR.AsGuid() );
             var personAliasService = new PersonAliasService( rockContext );
             var staleAnonymousVisitorDate = RockDateTime.Now.Add( new TimeSpan( staleAnonymousVisitorRecordRetentionPeriodInDays * -1, 0, 0, 0 ) );
