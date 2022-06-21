@@ -20,9 +20,9 @@ namespace Rock.Personalization
         /// Gets or sets the device types.
         /// </summary>
         /// <value>The device types.</value>
-        public DeviceType[] DeviceTypes { get; set; }
+        public DeviceType[] DeviceTypes { get; set; } = new DeviceType[0];
 
-        private string[] DeviceTypeStrings => DeviceTypes.Select( x => x.ToString() ).ToArray();
+        private string[] DeviceTypeStrings => DeviceTypes?.Select( x => x.ToString() ).ToArray();
 
         #endregion Configuration        
 

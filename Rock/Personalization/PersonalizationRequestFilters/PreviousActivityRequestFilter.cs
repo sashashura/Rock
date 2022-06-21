@@ -17,7 +17,7 @@ namespace Rock.Personalization
         /// Gets or sets the previous activity types.
         /// </summary>
         /// <value>The previous activity types.</value>
-        public PreviousActivityType[] PreviousActivityTypes { get; set; }
+        public PreviousActivityType[] PreviousActivityTypes { get; set; } = new PreviousActivityType[0];
 
         #endregion Configuration
 

@@ -43,8 +43,10 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <Rock:DataViewItemPicker ID="dvpFilterDataView" runat="server" Label="Filter Data View" OnSelectItem="dvpFilterDataView_SelectItem" />
-                                <Rock:NotificationBox ID="nbFilterDataViewWarning" runat="server" NotificationBoxType="Danger"
+                                <Rock:NotificationBox ID="nbFilterDataViewError" runat="server" NotificationBoxType="Danger"
                                     Text="Segments only support data views that have been configured to persist. Please update the configuration of the selected dataview." />
+                                <Rock:NotificationBox ID="nbFilterDataViewWarning" runat="server" NotificationBoxType="Warning"
+                                    Text="The DataView filter must be a persisted dataview. Because this data view is no longer persisted, this Segment Filter is essentially inactive." />
                             </div>
 
                             <div class="col-md-6">
@@ -117,8 +119,6 @@
                 </asp:Panel>
 
                 <div class="actions">
-                    <asp:LinkButton ID="btnTestSegmentFilters" runat="server" Text="## Test Segment Filters ##" CausesValidation="false" CssClass="btn btn-primary" OnClick="btnTestSegmentFilters_Click" />
-
                     <asp:LinkButton ID="btnSave" runat="server" AccessKey="s" ToolTip="Alt+s" Text="Save" CssClass="btn btn-primary" OnClick="btnSave_Click" />
                     <asp:LinkButton ID="btnCancel" runat="server" AccessKey="c" ToolTip="Alt+c" Text="Cancel" CssClass="btn btn-link" CausesValidation="false" OnClick="btnCancel_Click" />
                 </div>
@@ -177,7 +177,7 @@
 
                         <span>optionally limited to the following pages</span>
 
-                        <Rock:PagePicker ID="ppPageViewFilterPages" runat="server" AllowMultiSelect="true" ValidationGroup="vgPageViewFilterConfiguration"  Label="Page Picker Instead?"/>
+                        <Rock:PagePicker ID="ppPageViewFilterPages" runat="server" AllowMultiSelect="true" ValidationGroup="vgPageViewFilterConfiguration" Label=""/>
                     </div>
 
 

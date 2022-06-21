@@ -186,7 +186,7 @@ namespace RockWeb.Blocks.Cms
 
             // Person Filters
             dvpFilterDataView.SetValue( personalizationSegment.FilterDataViewId );
-            ShowDataViewWarningIfInvalid( personalizationSegment.FilterDataViewId );
+            ShowDataViewWarningIfInvalid( personalizationSegment.FilterDataViewId, false );
 
             // Session Filters
             tglSessionCountFiltersAllAny.Checked = AdditionalFilterConfiguration.SessionFilterExpressionType == FilterExpressionType.GroupAll;
@@ -223,16 +223,17 @@ namespace RockWeb.Blocks.Cms
         protected void dvpFilterDataView_SelectItem( object sender, EventArgs e )
         {
             var selectedDataViewId = dvpFilterDataView.SelectedValueAsId();
-            ShowDataViewWarningIfInvalid( selectedDataViewId );
+            ShowDataViewWarningIfInvalid( selectedDataViewId, true );
         }
 
         /// <summary>
         /// Shows the data view warning if invalid.
         /// </summary>
         /// <param name="selectedDataViewId">The selected data view identifier.</param>
-        private void ShowDataViewWarningIfInvalid( int? selectedDataViewId )
+        private void ShowDataViewWarningIfInvalid( int? selectedDataViewId, bool showAsError )
         {
             nbFilterDataViewWarning.Visible = false;
+            nbFilterDataViewError.Visible = false;
             DataView selectedDataView;
             var rockContext = new RockContext();
             if ( selectedDataViewId != null )
@@ -245,7 +246,14 @@ namespace RockWeb.Blocks.Cms
 
                 if ( !selectedDataView.IsPersisted() )
                 {
-                    nbFilterDataViewWarning.Visible = true;
+                    if ( showAsError )
+                    {
+                        nbFilterDataViewError.Visible = true;
+                    }
+                    else
+                    {
+                        nbFilterDataViewWarning.Visible = true;
+                    }
                 }
             }
         }
@@ -260,8 +268,8 @@ namespace RockWeb.Blocks.Cms
             var rockContext = new RockContext();
 
             var filterDataViewId = dvpFilterDataView.SelectedValueAsId();
-            ShowDataViewWarningIfInvalid( filterDataViewId );
-            if ( nbFilterDataViewWarning.Visible )
+            ShowDataViewWarningIfInvalid( filterDataViewId, true );
+            if ( nbFilterDataViewError.Visible )
             {
                 return;
             }
@@ -749,43 +757,5 @@ namespace RockWeb.Blocks.Cms
         }
 
         #endregion Interaction Filter Related
-
-// ## TODO ## remove this
-
-        /// <summary>
-        /// Handles the Click event of the btnTestSegmentFilters control.
-        /// </summary>
-        /// <param name="sender">The source of the event.</param>
-        /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
-        protected void btnTestSegmentFilters_Click( object sender, EventArgs e )
-        {
-            var rockContext = new RockContext();
-            var personalizationSegmentId = hfPersonalizationSegmentId.Value.AsInteger();
-
-            rockContext.SqlLogging( true );
-            var personAliasService = new PersonAliasService( rockContext );
-            var parameterExpression = personAliasService.ParameterExpression;
-            var personalizationSegmentCache = PersonalizationSegmentCache.Get( personalizationSegmentId );
-            Expression segmentFiltersWhereExpression = personalizationSegmentCache.GetPersonAliasFiltersWhereExpression( personAliasService, parameterExpression );
-
-            var personAliasQuery = personAliasService.Get( parameterExpression, segmentFiltersWhereExpression );
-
-            var dataViewFilterId = dvpFilterDataView.SelectedValueAsId();
-            if ( dataViewFilterId.HasValue )
-            {
-                var args = new DataViewGetQueryArgs { DbContext = rockContext };
-                var dataView = new DataViewService( rockContext ).Get( dataViewFilterId.Value );
-
-                var personDataViewQuery = new PersonService( rockContext ).GetQueryUsingDataView( dataView );
-                personAliasQuery = personAliasQuery.Where( pa => personDataViewQuery.Any( person => person.Aliases.Any( alias => alias.Id == pa.Id ) ) );
-            }
-
-            var results = personAliasQuery.ToList();
-
-            rockContext.SqlLogging( false );
-
-            // 
-            Debug.WriteLine( $"\n\nPerson Alias Count: {results.Count}" );
-        }
     }
 }
