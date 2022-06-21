@@ -20,12 +20,10 @@
                     <Rock:GridFilter ID="gFilter" runat="server" OnApplyFilterClick="gfList_ApplyFilterClick" OnClearFilterClick="gfList_ClearFilterClick" >
                         <Rock:RockTextBox ID="tbNameFilter" runat="server" Label="Name" />
                     </Rock:GridFilter>
-                    <Rock:Grid ID="gList" runat="server" AllowSorting="true">
+                    <Rock:Grid ID="gList" runat="server" AllowSorting="true" OnRowSelected="gList_RowSelected">
                         <Columns>
                             <Rock:RockBoundField DataField="Name" HeaderText="Name" SortExpression="Name" />
                             <Rock:RockBoundField DataField="SiteName" HeaderText="Site" SortExpression="SiteName" />
-                            <Rock:RockBoundField DataField="KnownIndividualsCount" HeaderText="Known Individuals" SortExpression="KnownIndividualsCount" />
-                            <Rock:RockBoundField DataField="AnonymousIndividualsCount" HeaderText="Anonymous Individuals" SortExpression="AnonymousIndividualsCount" />
                             <Rock:BoolField DataField="IsActive" HeaderText="Active" SortExpression="IsActive" />
                             <Rock:DeleteField onClick="gList_DeleteClick"/>
                         </Columns>

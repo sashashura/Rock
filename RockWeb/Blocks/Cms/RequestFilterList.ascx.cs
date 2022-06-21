@@ -220,8 +220,6 @@ namespace RockWeb.Blocks.Cms
 
             var anonymousVisitorPersonGuid = Rock.SystemGuid.Person.ANONYMOUS_VISITOR.AsGuid();
 
-            var personAliasPersonalizationsRequestFilterQry = personalizationSegmentService.GetPersonAliasPersonalizationQuery( PersonalizationType.RequestFilter );
-
             var personAliasPersonalizationsQry = rockContext.PersonAliasPersonalizations;
 
             var requestFilterQuery = requestFilterService.Queryable();
@@ -231,18 +229,7 @@ namespace RockWeb.Blocks.Cms
                 Id = a.Id,
                 Name = a.Name,
                 SiteName = a.Site.Name,
-                IsActive = a.IsActive,
-                AnonymousIndividualsCount = personAliasPersonalizationsQry.Where( p =>
-                              p.PersonalizationType == PersonalizationType.RequestFilter
-                              && p.PersonalizationTypeId == a.Id
-                              && p.PersonAlias.Person.Guid == anonymousVisitorPersonGuid
-                         ).Count(),
-                KnownIndividualsCount = personAliasPersonalizationsQry.Where( p =>
-                              p.PersonalizationType == PersonalizationType.RequestFilter
-                              && p.PersonalizationTypeId == a.Id
-                              && p.PersonAlias.Person.Guid != anonymousVisitorPersonGuid
-                         ).Count()
-
+                IsActive = a.IsActive
             } );
 
             // Sort the query based on the column that was selected to be sorted. If no property is specified, sort by the name.
@@ -269,8 +256,6 @@ namespace RockWeb.Blocks.Cms
             public string Name { get; set; }
             public string SiteName { get; set; }
             public bool IsActive { get; set; }
-            public int AnonymousIndividualsCount { get; set; }
-            public int KnownIndividualsCount { get; set; }
         }
     }
 }
