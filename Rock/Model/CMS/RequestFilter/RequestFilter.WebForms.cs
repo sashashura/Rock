@@ -1,4 +1,5 @@
-﻿using System.Web;
+﻿using System.Linq;
+using System.Web;
 
 using Rock.Web.Cache;
 
@@ -38,53 +39,41 @@ namespace Rock.Model
             }
 
             // Check against Query String
-            bool queryStringRequestFiltersMatch = true;
-            foreach ( var queryStringRequestFilter in requestFilterConfiguration.QueryStringRequestFilters )
+            if ( requestFilterConfiguration.QueryStringRequestFilters.Any() )
             {
-                var isMatch = queryStringRequestFilter.IsMatch( request );
+                bool queryStringRequestFiltersMatch;
                 if ( requestFilterConfiguration.QueryStringRequestFilterExpressionType == FilterExpressionType.GroupAll )
                 {
-                    queryStringRequestFiltersMatch = queryStringRequestFiltersMatch && isMatch;
-                    if ( !queryStringRequestFiltersMatch )
-                    {
-                        // If these are and'd and one of them is false, then we can break out of the loop
-                        break;
-                    }
+                    queryStringRequestFiltersMatch = requestFilterConfiguration.QueryStringRequestFilters.All( a => a.IsMatch( request ) );
                 }
                 else
                 {
-                    queryStringRequestFiltersMatch = queryStringRequestFiltersMatch || isMatch;
+                    queryStringRequestFiltersMatch = requestFilterConfiguration.QueryStringRequestFilters.Any( a => a.IsMatch( request ) );
                 }
-            }
 
-            if ( !queryStringRequestFiltersMatch )
-            {
-                return false;
+                if ( !queryStringRequestFiltersMatch )
+                {
+                    return false;
+                }
             }
 
             // Check against Cookie values
-            bool cookieFiltersMatch = true;
-            foreach ( var cookieRequestFilter in requestFilterConfiguration.CookieRequestFilters )
+            if ( requestFilterConfiguration.CookieRequestFilters.Any() )
             {
-                var isMatch = cookieRequestFilter.IsMatch( request );
+                bool cookieFiltersMatch;
                 if ( requestFilterConfiguration.CookieRequestFilterExpressionType == FilterExpressionType.GroupAll )
                 {
-                    cookieFiltersMatch = cookieFiltersMatch && isMatch;
-                    if ( !cookieFiltersMatch )
-                    {
-                        // If these are and'd and one of them is false, then we can break out of the loop
-                        break;
-                    }
+                    cookieFiltersMatch = requestFilterConfiguration.CookieRequestFilters.All( a => a.IsMatch( request ) );
                 }
                 else
                 {
-                    cookieFiltersMatch = cookieFiltersMatch || isMatch;
+                    cookieFiltersMatch = requestFilterConfiguration.CookieRequestFilters.Any( a => a.IsMatch( request ) );
                 }
-            }
 
-            if ( !cookieFiltersMatch )
-            {
-                return false;
+                if ( !cookieFiltersMatch )
+                {
+                    return false;
+                }
             }
 
             // Check against Browser type and version
