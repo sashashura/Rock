@@ -159,6 +159,14 @@ namespace Rock.Model
             ///   <c>true</c> if [include rest users]; otherwise, <c>false</c>.
             /// </value>
             public bool IncludeRestUsers { get; set; } = true;
+
+            /// <summary>
+            /// Gets or sets a value indicating whether [include anonymous visitor].
+            /// </summary>
+            /// <value>
+            ///   <c>true</c> if [include anonymous visitor]; otherwise, <c>false</c>.
+            /// </value>
+            public bool IncludeAnonymousVisitor { get; set; } = false;
         }
 
         /// <summary>
@@ -174,7 +182,7 @@ namespace Rock.Model
 
         /// <summary>
         /// Returns a queryable collection of <see cref="Rock.Model.Person"/> entities with eager loading of properties that are included in the includes parameter.
-        /// using the option specified the <see cref="PersonQueryOptions"/> (default is to exclude deceased people and nameless person records)
+        /// using the option specified the <see cref="PersonQueryOptions"/> (default is to exclude deceased people, nameless person records and the anonymous visitor. )
         /// </summary>
         /// <param name="includes">The includes.</param>
         /// <param name="personQueryOptions">The person query options.</param>
@@ -229,6 +237,12 @@ namespace Rock.Model
             if ( personQueryOptions.IncludeDeceased == false )
             {
                 qry = qry.Where( p => p.IsDeceased == false );
+            }
+
+            if ( personQueryOptions.IncludeAnonymousVisitor == false )
+            {
+                var anonymousVisitorGuid = Rock.SystemGuid.Person.ANONYMOUS_VISITOR.AsGuid();
+                qry = qry.Where( p => p.Guid != anonymousVisitorGuid );
             }
 
             return qry;
