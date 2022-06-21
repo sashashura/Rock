@@ -1,4 +1,4 @@
-// <copyright>
+﻿// <copyright>
 // Copyright by the Spark Development Network
 //
 // Licensed under the Rock Community License (the "License");
@@ -1153,7 +1153,7 @@ namespace RockWeb.Blocks.Groups
                 }
 
                 // Save changes because we'll need the group's Id next...
-                rockContext.SaveChanges();
+                rockContext.SaveChanges( new SaveChangesArgs { IsGroupMembersToBeProcessedInBackground = true } );
 
                 /* 2020-11-18 ETD
                  * Do not assign the group creator Administrate security permissions unless AddAdministrateSecurityToGroupCreator is true.
@@ -1416,6 +1416,20 @@ namespace RockWeb.Blocks.Groups
                 BindInheritedAttributes( CurrentGroupTypeId, new AttributeService( new RockContext() ) );
                 BindGroupRequirementsGrid();
                 BindAdministratorPerson( group, groupType );
+            }
+        }
+
+        /// <summary>
+        /// Handles the CheckedChanged event of the cbIsActive control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
+        protected void cbIsActive_CheckedChanged( object sender, EventArgs e )
+        {
+            nbStatusMessage.Visible = !cbIsActive.Checked;
+            if ( !cbIsActive.Checked )
+            {
+                nbStatusMessage.Text = "When changing the status, it may take several minutes to make all the needed group member changes. Therefore, the save will be performed in the background so you may not see the change for a few minutes.";
             }
         }
 
@@ -1721,6 +1735,7 @@ namespace RockWeb.Blocks.Groups
 
             SetHighlightLabelVisibility( group, false );
 
+            nbStatusMessage.Visible = false;
             ddlGroupType.Visible = group.Id == 0;
             lGroupType.Visible = group.Id != 0;
 

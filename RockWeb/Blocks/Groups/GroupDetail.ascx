@@ -56,12 +56,13 @@
                     <asp:CustomValidator ID="cvGroup" runat="server" Display="None" />
 
                     <div id="pnlEditDetails" runat="server">
+                        <Rock:NotificationBox ID="nbStatusMessage" runat="server" NotificationBoxType="Warning" Visible="false" />
                         <div class="row" style="display: flex; align-items: center;">
                             <div class="col-md-6">
                                 <Rock:DataTextBox ID="tbName" runat="server" SourceTypeName="Rock.Model.Group, Rock" PropertyName="Name" />
                             </div>
                             <div class="col-md-3">
-                                <Rock:RockCheckBox ID="cbIsActive" runat="server" CssClass="js-isactivegroup" Label="Active" />
+                                <Rock:RockCheckBox ID="cbIsActive" runat="server" CssClass="js-isactivegroup" Label="Active" OnCheckedChanged="cbIsActive_CheckedChanged" AutoPostBack="true" />
                             </div>
                             <div class="col-md-3">
                                 <Rock:RockCheckBox ID="cbIsPublic" runat="server" CssClass="js-ispublicgroup" Label="Public" />

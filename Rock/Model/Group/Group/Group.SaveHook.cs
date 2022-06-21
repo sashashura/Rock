@@ -18,6 +18,7 @@ using System;
 using System.Data.Entity.SqlServer;
 using System.Linq;
 using Rock.Data;
+using Rock.Tasks;
 using Rock.Web.Cache;
 
 namespace Rock.Model
@@ -32,7 +33,8 @@ namespace Rock.Model
         {
             private History.HistoryChangeList HistoryChangeList { get; set; }
             private bool _FamilyCampusIsChanged = false;
-
+            private bool _IsGroupMembersStatusUpdatedInBackground = false;
+            private DateTime? _OriginalInactiveDateTimeIfApplies = null;
             /// <summary>
             /// Called before the save operation is executed.
             /// </summary>
@@ -100,8 +102,8 @@ namespace Rock.Model
                                     Entity.InactiveDateTime = null;
                                 }
 
+                                _OriginalInactiveDateTimeIfApplies = originalInactiveDateTime;
                                 DateTime? newInactiveDateTime = Entity.InactiveDateTime;
-
                                 UpdateGroupMembersActiveStatusFromGroupStatus( rockContext, originalIsActive, originalInactiveDateTime, Entity.IsActive, newInactiveDateTime );
                             }
 
@@ -192,6 +194,19 @@ namespace Rock.Model
                 if ( _FamilyCampusIsChanged )
                 {
                     PersonService.UpdatePrimaryFamilyByGroup( Entity.Id, rockContext );
+                }
+
+                if ( _IsGroupMembersStatusUpdatedInBackground )
+                {
+                    var updateGroupMembersStatusMsg = new UpdateGroupMembersStatus.Message
+                    {
+                        GroupId = Entity.Id,
+                        GroupMemberStatus = Entity.IsActive ? GroupMemberStatus.Active : GroupMemberStatus.Inactive,
+                        NewInactiveDateTime = Entity.InactiveDateTime,
+                        OriginalInactiveDateTime = _OriginalInactiveDateTimeIfApplies
+                    };
+
+                    updateGroupMembersStatusMsg.Send();
                 }
 
                 base.PostSave();

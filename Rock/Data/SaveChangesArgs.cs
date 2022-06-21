@@ -35,5 +35,13 @@ namespace Rock.Data
         /// If <see cref="DisablePrePostProcessing"/> is true, then achievements are disabled no matter what this value is.
         /// </summary>
         public bool IsAchievementsEnabled { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether this instance checks for earned achievements on save.
+        /// False by default.
+        /// Set to false for faster performance.
+        /// If <see cref="IsGroupMembersToBeProcessedInBackground"/> is true, then group members are likely to be processed in background.
+        /// </summary>
+        public bool IsGroupMembersToBeProcessedInBackground { get; set; } = false;
     }
 }

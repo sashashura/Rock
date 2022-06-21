@@ -1397,6 +1397,7 @@
     <Compile Include="Tasks\UpdateDigitalSignatureDocument.cs" />
     <Compile Include="Tasks\UpdateFacebookFriendGroupMembers.cs" />
     <Compile Include="Tasks\UpdateGroupMember.cs" />
+    <Compile Include="Tasks\UpdateGroupMembersStatus.cs" />
     <Compile Include="Tasks\UpdatePaymentStatusFinancialScheduledTransactions.cs" />
     <Compile Include="Tasks\UpdatePersonSignalTypes.cs" />
     <Compile Include="Tasks\UpdateReportStatistics.cs" />
