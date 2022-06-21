@@ -37,7 +37,7 @@ using static Rock.Personalization.PreviousActivityRequestFilter;
 
 namespace RockWeb.Blocks.Cms
 {
-    [DisplayName( "Request Filters" )]
+    [DisplayName( "Request Filter Detail" )]
     [Category( "Cms" )]
     [Description( "Block that lists the existing request details" )]
 
@@ -182,6 +182,7 @@ namespace RockWeb.Blocks.Cms
             /* Name, etc */
             hfRequestFilterId.Value = requestFilter.Id.ToString();
             tbName.Text = requestFilter.Name;
+            tbKey.Text = requestFilter.RequestFilterKey;
             hlInactive.Visible = !requestFilter.IsActive;
             cbIsActive.Checked = requestFilter.IsActive;
             hfExistingRequestFilterKeyNames.Value = RequestFilterCache.All()
@@ -203,7 +204,9 @@ namespace RockWeb.Blocks.Cms
             this.AdditionalFilterConfiguration = requestFilter.FilterConfiguration ?? new Rock.Personalization.PersonalizationRequestFilterConfiguration();
 
             cblDeviceTypes.BindToEnum<DeviceType>();
+            cblDeviceTypes.SetValues( this.AdditionalFilterConfiguration.DeviceTypeRequestFilter.DeviceTypes.Select( a => a.ConvertToInt() ) );
             cblPreviousActivity.BindToEnum<PreviousActivityType>();
+            cblPreviousActivity.SetValues( this.AdditionalFilterConfiguration.PreviousActivityRequestFilter.PreviousActivityTypes.Select( a => a.ConvertToInt() ) );
 
             BindQueryStringFilterToGrid();
             BindCookieFilterToGrid();
