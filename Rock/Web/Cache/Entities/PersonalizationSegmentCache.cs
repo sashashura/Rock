@@ -15,12 +15,14 @@
 // </copyright>
 //
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
 using System.Runtime.Serialization;
 
 using Rock.Data;
 using Rock.Model;
 using Rock.Personalization;
-using System.Linq.Expressions;
 
 namespace Rock.Web.Cache
 {
@@ -59,6 +61,37 @@ namespace Rock.Web.Cache
 
         /// <inheritdoc cref="PersonalizationSegment.AdditionalFilterConfiguration"/>
         public PersonalizationSegmentAdditionalFilterConfiguration AdditionalFilterConfiguration { get; private set; }
+
+        /// <summary>
+        /// Gets the active segments with an option to include Segments that have a DataView that is not persisted.
+        /// Note that Segments that have a DataView that is not persisted are considered inactive.
+        /// </summary>
+        /// <param name="includeSegmentsWithNonPersistedDataViews">if set to <c>true</c> [include segments with non persisted data views].</param>
+        /// <returns></returns>
+        public static IEnumerable<PersonalizationSegmentCache> GetActiveSegments( bool includeSegmentsWithNonPersistedDataViews )
+        {
+            var activeSegments = All().Where( a => a.IsActive );
+            var segmentFilterDataViewIds = activeSegments.Where( a => a.FilterDataViewId.HasValue ).Select( a => a.FilterDataViewId.Value ).ToList();
+            var nonPersistedDataFilterDataViewIds = new DataViewService( new RockContext() ).GetByIds( segmentFilterDataViewIds )
+                .Where( a => a.PersistedScheduleIntervalMinutes == null ).Select( a => a.Id );
+
+            if ( nonPersistedDataFilterDataViewIds.Any() && !includeSegmentsWithNonPersistedDataViews )
+            {
+                /* 06/22/2022 MP
+
+                Personalization Segments require that if it has a DataView, it must be a persisted DataView.
+                The UI tries prevents this, but in case the DataView is not persisted we'll treat
+                it as an Inactive Segment.
+
+                See https://app.asana.com/0/0/1202399967339503/f
+
+                */
+
+                activeSegments = activeSegments.Where( a => !a.FilterDataViewId.HasValue || !nonPersistedDataFilterDataViewIds.Contains( a.FilterDataViewId.Value ) );
+            }
+
+            return activeSegments;
+        }
 
         #endregion
 

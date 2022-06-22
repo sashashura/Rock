@@ -7,6 +7,7 @@
 */
 SET NOCOUNT ON
 
+/*
 DELETE
 FROM Interaction
 WHERE ForeignKey = 'Interactions Sample Data'
@@ -17,17 +18,19 @@ WHERE Id NOT IN (
         SELECT InteractionSessionId
         FROM Interaction
         )
+        */
 
 DECLARE @populateStartDateTimeLastHour DATETIME = DateAdd(hour, - 1, GetDate())
+     , @populateStartDateTimeLast3Weeks DATETIME = DateAdd(WEEK, - 3, GetDate())
     , @populateStartDateTimeLast12Months DATETIME = DateAdd(MONTH, - 12, GetDate())
     , @populateStartDateTimeLast5Years DATETIME = DateAdd(YEAR, - 5, GetDate())
 DECLARE
     -- set this to @populateStartDateTimeLastHour or @populateStartDateTimeLast12Months (or custom), depending on what you need
-    @populateStartDateTime DATETIME = @populateStartDateTimeLast5Years
+    @populateStartDateTime DATETIME = @populateStartDateTimeLast3Weeks
     , @populateEndDateTime DATETIME = DateAdd(hour, 0, GetDate())
-    , @maxInteractionCount INT = 500000
+    , @maxInteractionCount INT = 100000
     , @avgInteractionsPerSession INT = 10
-    , @personSampleSize INT = 10000 -- number of people to use when randomly assigning a person to each interaction. You might want to set this lower or higher depending on what type of data you want
+    , @personSampleSize INT = 10 -- number of people to use when randomly assigning a person to each interaction. You might want to set this lower or higher depending on what type of data you want
     -- Parameters
 DECLARE
     -- Set this value to place a tag in the ForeignKey field of the sample data records for easier identification.
@@ -128,9 +131,9 @@ BEGIN
     DEALLOCATE interactionPersonAliasIdCursor;
 END
 
--- put all personIds in randomly ordered cursor to speed up getting a random personAliasId for each interaction
-DECLARE interactionPersonAliasIdCursor CURSOR LOCAL FAST_FORWARD
-FOR
+DECLARE @personAliasIdTable as TABLE (Id int not null primary key)
+
+insert into @personAliasIdTable
 SELECT TOP (@personSampleSize) Id
 FROM PersonAlias pa
 WHERE pa.PersonId NOT IN (
@@ -141,6 +144,13 @@ WHERE pa.PersonId NOT IN (
                 AND RecordStatusValueId != 3
                 )
         )
+ORDER BY newid();
+
+
+-- put all personIds in randomly ordered cursor to speed up getting a random personAliasId for each interaction
+DECLARE interactionPersonAliasIdCursor CURSOR LOCAL FAST_FORWARD
+FOR
+SELECT Id from @personAliasIdTable
 ORDER BY newid();
 
 OPEN interactionPersonAliasIdCursor;
@@ -226,7 +236,7 @@ BEGIN
             @interactionComponentId
             , 'View'
             , CONCAT (
-                'http//:localhost/page/'
+                'http://localhost/page/'
                 , @interactionComponentId
                 )
             , @interactionPersonAliasId
@@ -243,8 +253,8 @@ BEGIN
 
         SET @interactionDateTime = DATEADD(ms, @millsecondsIncrement, @interactionDateTime)
 
-        -- Print if a multiple of 500
-        IF (@interactionCounter % 500 = 0)
+        -- Print if a multiple of 1000
+        IF (@interactionCounter % 1000 = 0)
         BEGIN
             PRINT @interactionDateTime
             PRINT @interactionCounter

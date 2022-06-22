@@ -15,13 +15,13 @@
 // </copyright>
 //
 
-using Rock.Personalization;
-using Rock.Web.Cache;
-
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Data.Entity;
 using System.Linq.Expressions;
+
+using Rock.Personalization;
+using Rock.Web.Cache;
 
 namespace Rock.Model
 {

@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq;
 
 using Rock.Data;
 using Rock.Utility;
@@ -13,43 +12,31 @@ namespace Rock.Model
     public partial class PersonalizationSegmentService
     {
         /// <summary>
-        /// Calculates the Segments that the PersonAliasId in is based on the configuration of active <see cref="Rock.Model.PersonalizationSegment">PersonalizationSegments</see>,
-        /// return returns the list of Ids of the PersonalizationSegment that meet the criteria.
+        /// Gets a Queryable of PersonAlias for PersonAlias's that meet the criteria of the Segment
         /// </summary>
-        /// <param name="personAliasId">The person alias identifier.</param>
-        /// <returns>System.Int32[].</returns>
-        public int[] CalculatePersonalizationSegmentIdsForPersonAliasId( int personAliasId )
+        /// <param name="segment">The segment.</param>
+        /// <returns></returns>
+        public IQueryable<PersonAlias> GetPersonAliasQueryForSegment( PersonalizationSegmentCache segment )
         {
-            var segmentList = PersonalizationSegmentCache.All().Where( a => a.IsActive );
             var rockContext = this.Context as RockContext;
             var personAliasService = new PersonAliasService( rockContext );
             var parameterExpression = personAliasService.ParameterExpression;
-            var segmentIds = new List<int>();
-            foreach ( var segment in segmentList )
+
+            var whereExpression = segment.GetPersonAliasFiltersWhereExpression( personAliasService, parameterExpression );
+
+            var personAliasQuery = personAliasService.Get( parameterExpression, whereExpression );
+
+            var dataViewFilterId = segment.FilterDataViewId;
+            if ( dataViewFilterId.HasValue )
             {
-                var whereExpression = segment.GetPersonAliasFiltersWhereExpression( personAliasService, parameterExpression );
+                var args = new DataViewGetQueryArgs { DbContext = rockContext };
+                var dataView = new DataViewService( rockContext ).Get( dataViewFilterId.Value );
 
-                var personAliasQuery = personAliasService.Get( parameterExpression, whereExpression );
-
-                var dataViewFilterId = segment.FilterDataViewId;
-                if ( dataViewFilterId.HasValue )
-                {
-                    var args = new DataViewGetQueryArgs { DbContext = rockContext };
-                    var dataView = new DataViewService( rockContext ).Get( dataViewFilterId.Value );
-
-                    var personDataViewQuery = new PersonService( rockContext ).GetQueryUsingDataView( dataView );
-                    personAliasQuery = personAliasQuery.Where( pa => personDataViewQuery.Any( person => person.Aliases.Any( alias => alias.Id == pa.Id ) ) );
-                }
-
-                var isInSegment = personAliasQuery.Any( a => a.Id == personAliasId );
-
-                if ( isInSegment )
-                {
-                    segmentIds.Add( segment.Id );
-                }
+                var personDataViewQuery = new PersonService( rockContext ).GetQueryUsingDataView( dataView );
+                personAliasQuery = personAliasQuery.Where( pa => personDataViewQuery.Any( person => person.Aliases.Any( alias => alias.Id == pa.Id ) ) );
             }
 
-            return segmentIds.ToArray();
+            return personAliasQuery;
         }
 
         /// <summary>
