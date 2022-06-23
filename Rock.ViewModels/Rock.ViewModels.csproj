@@ -44,6 +44,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Blocks\CMS\PageShortLinkDetail\PageShortLinkBag.cs" />
+    <Compile Include="Blocks\CMS\PageShortLinkDetail\PageShortLinkDetailOptionsBag.cs" />
     <Compile Include="Blocks\Core\CampusDetail\CampusBag.cs" />
     <Compile Include="Blocks\Core\CampusDetail\CampusDetailOptionsBag.cs" />
     <Compile Include="Blocks\Core\CampusDetail\CampusScheduleBag.cs" />
