@@ -14,6 +14,7 @@
 // limitations under the License.
 // </copyright>
 //
+using System.Collections.Generic;
 using System.Linq;
 
 using Rock.Data;
@@ -56,13 +57,94 @@ namespace Rock.Model
         }
 
         /// <summary>
-        /// Gets the person alias personalization query that have the specified PersonalizationType.
-        /// For example, <see cref="Rock.Model.PersonalizationType.Segment" />.
+        /// Gets a Queryable of <see cref="PersonAliasPersonalization"/> that have a <see cref="PersonAliasPersonalization.PersonalizationType"/> of <see cref="PersonalizationType.Segment"/>
         /// </summary>
-        /// <returns>IQueryable&lt;Rock.Model.PersonAliasPersonalization&gt;.</returns>
-        public IQueryable<Rock.Model.PersonAliasPersonalization> GetPersonAliasPersonalizationQuery( PersonalizationType personalizationType )
+        /// <returns></returns>
+        public IQueryable<Rock.Model.PersonAliasPersonalization> GetPersonAliasPersonalizationSegmentQuery()
         {
-            return ( this.Context as RockContext ).PersonAliasPersonalizations.Where( a => a.PersonalizationType == personalizationType );
+            return ( this.Context as RockContext ).PersonAliasPersonalizations.Where( a => a.PersonalizationType == PersonalizationType.Segment  );
+        }
+
+        /// <summary>
+        /// Gets the person alias personalization query for the specifed segment.
+        /// </summary>
+        /// <param name="personalizationSegment">The personalization segment.</param>
+        /// <returns></returns>
+        public IQueryable<Rock.Model.PersonAliasPersonalization> GetPersonAliasPersonalizationSegmentQuery( PersonalizationSegmentCache personalizationSegment )
+        {
+            return GetPersonAliasPersonalizationSegmentQuery().Where( a => a.PersonalizationTypeId == personalizationSegment.Id );
+        }
+
+        /// <inheritdoc cref="UpdatePersonAliasPersonalizationDataForSegment(PersonalizationSegmentCache)"/>
+        public void UpdatePersonAliasPersonalizationData( PersonalizationSegmentCache segment )
+        {
+            this.UpdatePersonAliasPersonalizationDataForSegment( segment );
+        }
+
+        /// <summary>
+        /// Updates the data in <see cref="Rock.Model.PersonAliasPersonalization"/> table based on the specified segment's criteria.
+        /// </summary>
+        /// <param name="segment">The segment.</param>
+        /// <returns></returns>
+        internal SegmentUpdateResults UpdatePersonAliasPersonalizationDataForSegment( PersonalizationSegmentCache segment )
+        {
+            var rockContext = this.Context as RockContext;
+            var personAliasService = new PersonAliasService( rockContext );
+            var parameterExpression = personAliasService.ParameterExpression;
+
+            var whereExpression = segment.GetPersonAliasFiltersWhereExpression( personAliasService, parameterExpression );
+
+            var personAliasQuery = personAliasService.Get( parameterExpression, whereExpression );
+
+            var dataViewFilterId = segment.FilterDataViewId;
+            if ( dataViewFilterId.HasValue )
+            {
+                var args = new DataViewGetQueryArgs { DbContext = rockContext };
+                var dataView = new DataViewService( rockContext ).Get( dataViewFilterId.Value );
+
+                var personDataViewQuery = new PersonService( rockContext ).GetQueryUsingDataView( dataView );
+                personAliasQuery = personAliasQuery.Where( pa => personDataViewQuery.Any( person => person.Aliases.Any( alias => alias.Id == pa.Id ) ) );
+            }
+
+            var personAliasIdsInSegmentQry = personAliasQuery.Select( a => a.Id );
+            var personAliasPersonalizationQry = this.GetPersonAliasPersonalizationSegmentQuery( segment );
+
+            // Delete PersonAliasIds that are no longer in the segment
+            var personAliasToDeleteFromSegment = personAliasPersonalizationQry.Where( a => !personAliasIdsInSegmentQry.Contains( a.PersonAliasId ) );
+            var countRemovedFromSegment = rockContext.BulkDelete( personAliasToDeleteFromSegment );
+
+            // Add PersonAliasIds that are new in the segment.
+            var personAliasIdsToAddToSegment = personAliasIdsInSegmentQry
+                .Where( personAliasId => !personAliasPersonalizationQry.Any( pp => pp.PersonAliasId == personAliasId ) )
+                .ToList();
+
+            List<PersonAliasPersonalization> personAliasPersonalizationsToInsert = personAliasIdsToAddToSegment
+                .Select( personAliasId => new PersonAliasPersonalization
+                {
+                    PersonAliasId = personAliasId,
+                    PersonalizationType = PersonalizationType.Segment,
+                    PersonalizationTypeId = segment.Id
+                } ).ToList();
+
+            var countAddedToSegment = personAliasPersonalizationsToInsert.Count();
+            if ( countAddedToSegment > 0 )
+            {
+                rockContext.BulkInsert( personAliasPersonalizationsToInsert );
+            }
+
+            return new SegmentUpdateResults( countAddedToSegment, countRemovedFromSegment );
+        }
+
+        internal struct SegmentUpdateResults
+        {
+            public int CountAddedSegment;
+            public int CountRemovedFromSegment;
+
+            public SegmentUpdateResults( int countAddedSegment, int countRemovedFromSegment )
+            {
+                CountAddedSegment = countAddedSegment;
+                CountRemovedFromSegment = countRemovedFromSegment;
+            }
         }
 
         /// <summary>

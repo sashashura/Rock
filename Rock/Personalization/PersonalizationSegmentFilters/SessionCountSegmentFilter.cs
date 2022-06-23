@@ -89,21 +89,26 @@ namespace Rock.Personalization.SegmentFilters
             }
 
             var siteNames = GetSelectedSites().Select( a => a.Name ).ToList();
-            string onTheSites = "on the "+ siteNames.AsDelimited( ", ", " or " ) + " website(s)";
+            string onTheSites = "on the " + siteNames.AsDelimited( ", ", " or " ) + " website(s)";
 
-            var dateRangeType = SlidingDateRangePicker.GetSlidingDateRangeTypeFromDelimitedValues(SlidingDateRangeDelimitedValues );
+            var dateRangeType = SlidingDateRangePicker.GetSlidingDateRangeTypeFromDelimitedValues( SlidingDateRangeDelimitedValues );
             string inTheDateRange;
             if ( dateRangeType == SlidingDateRangePicker.SlidingDateRangeType.DateRange )
             {
                 inTheDateRange = "from " + SlidingDateRangePicker.FormatDelimitedValues( SlidingDateRangeDelimitedValues ).ToLower();
+            }
+            else if ( dateRangeType == SlidingDateRangePicker.SlidingDateRangeType.All )
+            {
+                // No Date Range specified
+                inTheDateRange = "";
             }
             else
             {
                 inTheDateRange = "in the " + SlidingDateRangePicker.FormatDelimitedValues( SlidingDateRangeDelimitedValues ).ToLower();
             }
 
-            var description = $"{comparisonPhrase} {onTheSites} {inTheDateRange}.";
-            return description;
+            var description = $"{comparisonPhrase} {onTheSites} {inTheDateRange}";
+            return description.Trim() + ".";
         }
 
         /// <summary>

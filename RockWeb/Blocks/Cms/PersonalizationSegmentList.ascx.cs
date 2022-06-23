@@ -219,7 +219,7 @@ namespace RockWeb.Blocks.Cms
             var rockContext = new RockContext();
             var personalizationSegmentService = new PersonalizationSegmentService( rockContext );
 
-            var personAliasPersonalizationsSegmentsQry = personalizationSegmentService.GetPersonAliasPersonalizationQuery( PersonalizationType.Segment );
+            var personAliasPersonalizationsSegmentsQry = personalizationSegmentService.GetPersonAliasPersonalizationSegmentQuery();
 
             var segmentQuery = personalizationSegmentService.Queryable();
 

@@ -37,7 +37,7 @@ namespace Rock.Personalization
         #region Configuration
 
         /// <summary>
-        /// Gets or sets the browser family. Configured UI should only present browsers from <seealso cref="SupportedBrowserFamilyOptions"/>.
+        /// Gets or sets the browser family. Configured UI should only present browsers from <seealso cref="BrowserFamilyEnum">supported browsers</seealso>.
         /// </summary>
         /// <value>The browser family.</value>
         public BrowserFamilyEnum BrowserFamily { get; set; }

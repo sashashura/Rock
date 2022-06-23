@@ -113,6 +113,11 @@ namespace Rock.Personalization.SegmentFilters
             {
                 inTheDateRange = "from " + SlidingDateRangePicker.FormatDelimitedValues( SlidingDateRangeDelimitedValues ).ToLower();
             }
+            else if ( dateRangeType == SlidingDateRangePicker.SlidingDateRangeType.All )
+            {
+                // No Date Range specified
+                inTheDateRange = "";
+            }
             else
             {
                 inTheDateRange = "in the " + SlidingDateRangePicker.FormatDelimitedValues( SlidingDateRangeDelimitedValues ).ToLower();
