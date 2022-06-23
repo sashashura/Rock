@@ -670,11 +670,11 @@ namespace RockWeb.Blocks.Cms
             {
                 ipAddressRequestFilter = new Rock.Personalization.IPAddressRequestFilter();
                 ipAddressRequestFilter.Guid = Guid.NewGuid();
-                mdBrowser.Title = "Add IP Address Filter";
+                mdIPAddress.Title = "Add IP Address Filter";
             }
             else
             {
-                mdBrowser.Title = "Edit IP Address Filter";
+                mdIPAddress.Title = "Edit IP Address Filter";
             }
 
             // populate the modal
