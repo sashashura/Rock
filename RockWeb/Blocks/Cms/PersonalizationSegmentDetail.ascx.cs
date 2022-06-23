@@ -16,14 +16,11 @@
 //
 using System;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 
 using Rock;
-using Rock.Attribute;
 using Rock.Constants;
 using Rock.Data;
 using Rock.Model;
@@ -44,7 +41,6 @@ namespace RockWeb.Blocks.Cms
     [Rock.SystemGuid.BlockTypeGuid( "1F0A0A57-952D-4774-8760-52C6D56B9DB5" )]
     public partial class PersonalizationSegmentDetail : Rock.Web.UI.RockBlock
     {
-
         #region Attribute Keys
 
         private static class AttributeKey
@@ -330,6 +326,8 @@ namespace RockWeb.Blocks.Cms
             personalizationSegment.AdditionalFilterConfiguration = this.AdditionalFilterConfiguration;
 
             rockContext.SaveChanges();
+
+            personalizationSegmentService.UpdatePersonAliasPersonalizationData( PersonalizationSegmentCache.Get( personalizationSegment.Id ) );
             NavigateToParentPage();
         }
 
