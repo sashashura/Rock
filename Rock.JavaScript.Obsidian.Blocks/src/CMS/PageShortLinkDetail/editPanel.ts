@@ -56,7 +56,7 @@ export default defineComponent({
 
         const attributes = ref(props.modelValue.attributes ?? {});
         const attributeValues = ref(props.modelValue.attributeValues ?? {});
-        const siteId = propertyRef(props.modelValue.siteId ?? "siteId", "SiteId");
+        const site = propertyRef(props?.modelValue?.site?.value ?? "", "SiteId");
         const url = propertyRef(props.modelValue.url ?? "", "Url");
         const token = propertyRef(props.modelValue.token ?? "", "Token");
 
@@ -64,7 +64,7 @@ export default defineComponent({
         // objects returned by propertyRef().
         const propRefs = [url,
             token,
-            siteId];
+            site];
 
         // #endregion
 
@@ -88,7 +88,7 @@ export default defineComponent({
         watch(() => props.modelValue, () => {
             updateRefValue(attributes, props.modelValue.attributes ?? {});
             updateRefValue(attributeValues, props.modelValue.attributeValues ?? {});
-            updateRefValue(siteId, props.modelValue.siteId ?? "");
+            updateRefValue(site, props.modelValue.site?.value ?? "");
             updateRefValue(url, props.modelValue.url ?? "");
             updateRefValue(token, props.modelValue.token ?? "");
         });
@@ -96,13 +96,13 @@ export default defineComponent({
         // Determines which values we want to track changes on (defined in the
         // array) and then emit a new object defined as newValue.
         watch([attributeValues, ...propRefs], () => {
-            console.log(siteId.value);
+            console.log(site);
             const newValue: PageShortLinkBag = {
                 ...props.modelValue,
                 attributeValues: attributeValues.value,
                 url: url.value,
                 token: token.value,
-                siteId: siteId.value
+                site: { value: site.value }
             };
 
             emit("update:modelValue", newValue);
@@ -115,7 +115,7 @@ export default defineComponent({
         return {
             attributes,
             attributeValues,
-            siteId,
+            site,
             url,
             token,
             siteOptions,
@@ -126,7 +126,7 @@ export default defineComponent({
 <fieldset>
     <div class="row">
             <div class="col-md-6">
-                <DropDownList v-model="siteId"
+                <DropDownList v-model="site"
                     label="Site"
                     rules="required"
                     help="The site to use for the short link."

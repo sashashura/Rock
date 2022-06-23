@@ -72,6 +72,15 @@ export default defineComponent({
                 return valueBuilder.build();
             }
 
+            if (props.modelValue.site) {
+                const siteType = props.modelValue.site?.text ?? "";
+                valueBuilder.addTextValue("Site", siteType);
+            }
+
+            if (props.modelValue.url) {
+                valueBuilder.addTextValue("URL", props.modelValue.url);
+            }
+
             return valueBuilder.build();
         });
 
@@ -81,6 +90,10 @@ export default defineComponent({
 
             if (!props.modelValue) {
                 return valueBuilder.build();
+            }
+
+            if (props.modelValue.token) {
+                valueBuilder.addTextValue("Token", props.modelValue.token);
             }
 
             return valueBuilder.build();

@@ -1,4 +1,4 @@
-// <copyright>
+﻿// <copyright>
 // Copyright by the Spark Development Network
 //
 // Licensed under the Rock Community License (the "License");
@@ -94,7 +94,7 @@ namespace Rock.Blocks.CMS
                     .Where( site => site.EnabledForShortening )
                     .Select( site => new ListItemBag
                     {
-                        Value = site.Id.ToString(),
+                        Value = site.Guid.ToString(),
                         Text = site.Name
                     } )
                    .ToList(),

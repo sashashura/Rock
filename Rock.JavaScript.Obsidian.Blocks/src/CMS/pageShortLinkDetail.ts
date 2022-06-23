@@ -59,7 +59,7 @@ export default defineComponent({
         // inform the server which incoming values have valid data in them.
         const validProperties = [
             "attributeValues",
-            "siteId",
+            "site",
             "token",
             "url"
         ];
@@ -74,7 +74,8 @@ export default defineComponent({
          * The entity name to display in the block panel.
          */
         const panelName = computed((): string => {
-            return pageShortLinkViewBag.value?.name ?? "";
+            return "Shortened Link";
+            //return pageShortLinkViewBag.value?.name ?? "";
         });
 
         /**
@@ -212,7 +213,7 @@ export default defineComponent({
                 if (result.statusCode === 200 && typeof result.data === "object") {
                     pageShortLinkViewBag.value = result.data;
 
-                    return true;
+                    return true;    
                 }
                 else if (result.statusCode === 201 && typeof result.data === "string") {
                     window.location.href = result.data;

@@ -25,10 +25,8 @@ import { ListItemBag } from "@Obsidian/ViewModels/Utility/listItemBag";
 import { PublicAttributeBag } from "@Obsidian/ViewModels/Utility/publicAttributeBag";
 
 export type PageShortLinkBag = {
-    name?: string | null;
-
     /** Gets or sets the Rock.Model.Site that is associated with this PageShortLink. */
-    siteId?: string | null;
+    site?: ListItemBag | null;
 
     /** Gets or sets the token. */
     token?: string | null;
