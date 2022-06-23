@@ -49,6 +49,12 @@ namespace Rock.Personalization
         /// <returns><c>true</c> if the specified HTTP request is match; otherwise, <c>false</c>.</returns>
         public override bool IsMatch( HttpRequest httpRequest )
         {
+            if ( !DeviceTypes.Any() )
+            {
+                // If there is no DeviceType criteria, return true;
+                return true;
+            }
+
             var clientType = InteractionDeviceType.GetClientType( httpRequest.UserAgent );
 
             return DeviceTypeStrings.Contains( clientType, StringComparer.OrdinalIgnoreCase );

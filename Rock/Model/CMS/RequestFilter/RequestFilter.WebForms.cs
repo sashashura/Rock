@@ -28,14 +28,27 @@ namespace Rock.Model
         /// </summary>
         /// <param name="requestFilterId">The request filter identifier.</param>
         /// <param name="request">The request.</param>
-        /// <returns><c>true</c> if XXXX, <c>false</c> otherwise.</returns>
-        public static bool RequestMeetsCriteria( int requestFilterId, HttpRequest request )
+        /// <param name="site">The site.</param>
+        /// <returns>
+        ///   <c>true</c> if XXXX, <c>false</c> otherwise.
+        /// </returns>
+        public static bool RequestMeetsCriteria( int requestFilterId, HttpRequest request, SiteCache site )
         {
-            var requestFilterConfiguration = RequestFilterCache.Get( requestFilterId )?.FilterConfiguration;
-            if ( requestFilterConfiguration == null )
+            var requestFilter = RequestFilterCache.Get( requestFilterId );
+            var requestFilterConfiguration = requestFilter?.FilterConfiguration;
+            if ( requestFilter == null || requestFilterConfiguration == null )
             {
                 // somehow null so return false
                 return false;
+            }
+
+            if ( requestFilter.SiteId.HasValue && site != null )
+            {
+                if ( requestFilter.SiteId.Value != site.Id )
+                {
+                    // this request filter is limited to a site other than the one we are on.
+                    return false;
+                }
             }
 
             /* All of these are AND'd so, if any are false we can return false */

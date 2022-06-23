@@ -1935,7 +1935,7 @@ Obsidian.init({{ debug: true, fingerprint: ""v={_obsidianFingerprint}"" }});
             var requestFilterIds = new List<int>();
             foreach ( var requestFilter in requestFilters )
             {
-                if ( requestFilter.RequestMeetsCriteria( this.Request ) )
+                if ( requestFilter.RequestMeetsCriteria( this.Request, this.Site ) )
                 {
                     requestFilterIds.Add( requestFilter.Id );
                 }

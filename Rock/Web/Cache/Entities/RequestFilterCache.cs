@@ -68,10 +68,13 @@ namespace Rock.Web.Cache
         /// Returns true if the HttpRequest meets the criteria defined in the FilterConfiguration.
         /// </summary>
         /// <param name="request">The request.</param>
-        /// <returns><c>true</c> if XXXX, <c>false</c> otherwise.</returns>
-        public bool RequestMeetsCriteria( System.Web.HttpRequest request)
+        /// <param name="site">The site.</param>
+        /// <returns>
+        ///   <c>true</c> if XXXX, <c>false</c> otherwise.
+        /// </returns>
+        public bool RequestMeetsCriteria( System.Web.HttpRequest request, SiteCache site)
         {
-            return Rock.Model.RequestFilter.RequestMeetsCriteria( this.Id, request );
+            return Rock.Model.RequestFilter.RequestMeetsCriteria( this.Id, request, site );
         }
 
         /// <summary>
