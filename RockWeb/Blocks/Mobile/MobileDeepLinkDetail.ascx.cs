@@ -259,6 +259,5 @@ namespace RockWeb.Blocks.Mobile
         }
 
         #endregion
-
     }
 }

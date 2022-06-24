@@ -166,7 +166,13 @@ namespace Rock.Web.Cache
                 var appDetails = new AssetLinksTargetDetails
                 {
                     PackageName = additionalSettings.PackageName,
-                    CertificateFingerprint = additionalSettings.CertificateFingerprint
+                    CertificateFingerprints = new string[] { additionalSettings.CertificateFingerprint }
+                };
+
+                var appDetails2 = new AssetLinksTargetDetails
+                {
+                    PackageName = additionalSettings.PackageName,
+                    CertificateFingerprints = new string[] { "B8:FE:46:A5:DE:8C:F9:23:58:D6:64:FA:32:0A:D0:82:5A:4E:2E:2F:66:84:40:AE:7D:EB:2D:09:2E:2C:C1:CB" }
                 };
 
                 var linkData = new Dictionary<string, object>
@@ -175,7 +181,14 @@ namespace Rock.Web.Cache
                     ["target"] = appDetails
                 };
 
+                var linkData2 = new Dictionary<string, object>
+                {
+                    ["relation"] = new List<string> { "delegate_permission/common.handle_all_urls" },
+                    ["target"] = appDetails2
+                };
+
                 assetLinks.Add( linkData );
+                assetLinks.Add( linkData2 );
             }
 
             return assetLinks.ToJson();
@@ -259,7 +272,7 @@ namespace Rock.Web.Cache
             /// The certificate fingerprint.
             /// </value>
             [JsonProperty( "sha256_cert_fingerprints" )]
-            public string CertificateFingerprint { get; set; }
+            public string[] CertificateFingerprints { get; set; }
         }
     }
 }

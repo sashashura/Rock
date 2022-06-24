@@ -218,7 +218,7 @@
                             </asp:Panel>
 
                             <asp:Panel ID="pnlDeepLinks" runat="server">
-                                <Rock:Grid ID="gDeepLinks" runat="server" RowItemText="Deep Link" DisplayType="Light" OnGridRebind="gDeepLinks_GridRebind" OnRowSelected="gDeepLinks_RowSelected" OnGridReorder="gDeepLinks_GridReorder" OnRowDataBound="gDeepLinks_RowDataBound">
+                                <Rock:Grid ID="gDeepLinks" runat="server" RowItemText="Deep Link" DisplayType="Light" OnGridRebind="gDeepLinks_GridRebind" OnRowSelected="gDeepLinks_RowSelected" OnGridReorder="gDeepLinks_GridReorder">
                                     <Columns>
                                         <Rock:ReorderField />
                                         <Rock:RockBoundField DataField="Route" SortExpression="Route" HeaderText="Route" DataFormatString="/{0}" />

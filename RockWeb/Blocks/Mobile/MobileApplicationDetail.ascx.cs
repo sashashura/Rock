@@ -1524,39 +1524,6 @@ namespace RockWeb.Blocks.Mobile
         }
 
         /// <summary>
-        /// Handles the RowDataBound event of the gDeepLinks control.
-        /// </summary>
-        /// <param name="sender">The source of the event.</param>
-        /// <param name="e">The <see cref="GridViewRowEventArgs"/> instance containing the event data.</param>
-        protected void gDeepLinks_RowDataBound( object sender, GridViewRowEventArgs e )
-        {
-            if ( e.Row.RowType != DataControlRowType.DataRow )
-            {
-                return;
-            }
-
-            if ( hfSiteId.Value.IsNullOrWhiteSpace() || hfSiteId.Value.AsInteger() == 0 )
-            {
-                return;
-            }
-
-            var deepLinkRoute = e.Row.DataItem as DeepLinkRoute;
-            if ( deepLinkRoute != null )
-            {
-                var fallbackField = gDeepLinks.Columns.OfType<RockTemplateField>().FirstOrDefault( a => a.HeaderText == "Fallback" );
-
-                if ( deepLinkRoute.UsesUrlAsFallback )
-                {
-                    //  fallbackField.ItemTemplate = "WebFallbackPageUrl";
-                }
-                else
-                {
-                    // fallbackField.DataField = "WebFallbackPageGuid";
-                }
-            }
-        }
-
-        /// <summary>
         /// Handles the DeleteClick event of the gDeepLinks control.
         /// </summary>
         /// <param name="sender">The source of the event.</param>
