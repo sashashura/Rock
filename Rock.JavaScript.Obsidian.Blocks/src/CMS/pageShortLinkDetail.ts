@@ -172,6 +172,25 @@ export default defineComponent({
             }
         };
 
+        const copyLink = (event: Event) => {
+            navigator.clipboard.writeText(window.location.href);
+        }
+
+        /** Adding the copy button as a secondary footer action in the block. */
+        const internalFooterSecondaryActions = computed((): PanelAction[] => {
+            const actions: PanelAction[] = [];
+
+            if( pageShortLinkViewBag ) {
+                    actions.push({
+                        iconCssClass: "fa fa-clipboard",
+                        title: "Copy",
+                        type: "default",
+                        handler: copyLink
+                    });
+            }
+                return actions;
+        });
+
         /**
          * Event handler for when a value has changed that has an associated
          * C# property name. This is used to detect changes to values that
@@ -252,6 +271,7 @@ export default defineComponent({
             entityTypeGuid: EntityType.PageShortLink,
             errorMessage,
             isEditable,
+            internalFooterSecondaryActions,
             onCancelEdit,
             onDelete,
             onEdit,
@@ -275,12 +295,13 @@ export default defineComponent({
     :entityKey="entityKey"
     :entityTypeGuid="entityTypeGuid"
     entityTypeName="PageShortLink"
-    :isAuditHidden="false"
+    :isAuditHidden="true"
     :isBadgesVisible="true"
     :isDeleteVisible="isEditable"
     :isEditVisible="isEditable"
-    :isFollowVisible="true"
-    :isSecurityHidden="false"
+    :isFollowVisible="false"
+    :isSecurityHidden="true"
+    :footerSecondaryActions="internalFooterSecondaryActions"
     @cancelEdit="onCancelEdit"
     @delete="onDelete"
     @edit="onEdit"
