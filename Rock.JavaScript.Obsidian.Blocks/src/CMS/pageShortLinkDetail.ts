@@ -180,7 +180,7 @@ export default defineComponent({
         const internalFooterSecondaryActions = computed((): PanelAction[] => {
             const actions: PanelAction[] = [];
 
-            if( pageShortLinkViewBag ) {
+            if( panelMode.value === DetailPanelMode.View ) {
                     actions.push({
                         iconCssClass: "fa fa-clipboard",
                         title: "Copy",
@@ -215,7 +215,6 @@ export default defineComponent({
          * @returns true if the panel should leave edit mode; otherwise false.
          */
         const onSave = async (): Promise<boolean> => {
-            console.log(pageShortLinkEditBag);
             errorMessage.value = "";
 
             const data: DetailBlockBox<PageShortLinkBag, PageShortLinkDetailOptionsBag> = {
