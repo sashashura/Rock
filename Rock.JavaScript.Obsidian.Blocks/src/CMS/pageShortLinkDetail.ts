@@ -174,7 +174,7 @@ export default defineComponent({
 
         const copyLink = (event: Event) => {
             navigator.clipboard.writeText(window.location.href);
-        }
+        };
 
         /** Adding the copy button as a secondary footer action in the block. */
         const internalFooterSecondaryActions = computed((): PanelAction[] => {
@@ -294,7 +294,7 @@ export default defineComponent({
     :entityKey="entityKey"
     :entityTypeGuid="entityTypeGuid"
     entityTypeName="PageShortLink"
-    :isAuditHidden="true"
+    :isAuditHidden="false"
     :isBadgesVisible="true"
     :isDeleteVisible="isEditable"
     :isEditVisible="isEditable"
