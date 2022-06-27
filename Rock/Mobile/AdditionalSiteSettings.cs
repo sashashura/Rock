@@ -334,14 +334,6 @@ namespace Rock.Mobile
         public string DeepLinkPathPrefix { get; set; }
 
         /// <summary>
-        /// Gets or sets the target domain.
-        /// </summary>
-        /// <value>
-        /// The target domain.
-        /// </value>
-        public string TargetDomain { get; set; }
-
-        /// <summary>
         /// Gets or sets the deep link routes.
         /// </summary>
         /// <value>

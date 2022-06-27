@@ -28,12 +28,26 @@ namespace Rock.Web.Cache
 {
     internal static class DeepLinkCache
     {
+        /// <summary>
+        /// The routes cache key.
+        /// </summary>
         private const string RoutesCacheKey = "DeepLinkCache:Routes";
 
+        /// <summary>
+        /// The apple payload cache key.
+        /// </summary>
         private const string ApplePayloadCacheKey = "DeepLinkCache:ApplePayload";
 
+        /// <summary>
+        /// The android payload cache key.
+        /// </summary>
         private const string AndroidPayloadCacheKey = "DeepLinkCache:AndroidPayload";
 
+        /// <summary>
+        /// Gets a list of <see cref="DeepLinkRoute"/>s based on the given prefix.
+        /// </summary>
+        /// <param name="prefix">The prefix.</param>
+        /// <returns>List&lt;DeepLinkRoute&gt;.</returns>
         public static List<DeepLinkRoute> GetDeepLinksForPrefix( string prefix )
         {
             var routeTable = RockCache.GetOrAddExisting( RoutesCacheKey, BuildDeepLinkRoutes ) as Dictionary<string, List<DeepLinkRoute>>;
@@ -47,16 +61,27 @@ namespace Rock.Web.Cache
             }
         }
 
+        /// <summary>
+        /// Gets the apple payload.
+        /// </summary>
+        /// <returns>System.String.</returns>
         public static string GetApplePayload()
         {
             return RockCache.GetOrAddExisting( ApplePayloadCacheKey, BuildAASA ) as string;
         }
 
+        /// <summary>
+        /// Gets the android payload.
+        /// </summary>
+        /// <returns>System.String.</returns>
         public static string GetAndroidPayload()
         {
             return RockCache.GetOrAddExisting( AndroidPayloadCacheKey, BuildAssetLinks ) as string;
         }
 
+        /// <summary>
+        /// Flushes the cache.
+        /// </summary>
         public static void Flush()
         {
             RockCache.Remove( RoutesCacheKey );
@@ -64,9 +89,13 @@ namespace Rock.Web.Cache
             RockCache.Remove( AndroidPayloadCacheKey );
         }
 
-
+        /// <summary>
+        /// Builds the deep link routes.
+        /// </summary>
+        /// <returns>Dictionary&lt;System.String, List&lt;DeepLinkRoute&gt;&gt;.</returns>
         private static Dictionary<string, List<DeepLinkRoute>> BuildDeepLinkRoutes()
         {
+            // All of our mobile sites.
             var sites = SiteCache.All()
                 .Where( x => x.SiteType == SiteType.Mobile );
 
@@ -75,7 +104,11 @@ namespace Rock.Web.Cache
             {
                 var additionalSettings = site.AdditionalSettings.FromJsonOrNull<AdditionalSiteSettings>();
 
-                if ( additionalSettings == null || !additionalSettings.IsDeepLinkingEnabled || additionalSettings.DeepLinkPathPrefix.IsNullOrWhiteSpace() || additionalSettings.DeepLinkRoutes == null)
+                // If the additional settings doesn't exist or deep linking is disabled or the prefix is unset OR no routes exist.
+                if ( additionalSettings == null
+                    || !additionalSettings.IsDeepLinkingEnabled
+                    || additionalSettings.DeepLinkPathPrefix.IsNullOrWhiteSpace()
+                    || additionalSettings.DeepLinkRoutes == null)
                 {
                     continue;
                 }
@@ -163,16 +196,11 @@ namespace Rock.Web.Cache
                     continue;
                 }
 
+                // Building the asset links from our POCOs.
                 var appDetails = new AssetLinksTargetDetails
                 {
                     PackageName = additionalSettings.PackageName,
                     CertificateFingerprints = new string[] { additionalSettings.CertificateFingerprint }
-                };
-
-                var appDetails2 = new AssetLinksTargetDetails
-                {
-                    PackageName = additionalSettings.PackageName,
-                    CertificateFingerprints = new string[] { "B8:FE:46:A5:DE:8C:F9:23:58:D6:64:FA:32:0A:D0:82:5A:4E:2E:2F:66:84:40:AE:7D:EB:2D:09:2E:2C:C1:CB" }
                 };
 
                 var linkData = new Dictionary<string, object>
@@ -181,14 +209,7 @@ namespace Rock.Web.Cache
                     ["target"] = appDetails
                 };
 
-                var linkData2 = new Dictionary<string, object>
-                {
-                    ["relation"] = new List<string> { "delegate_permission/common.handle_all_urls" },
-                    ["target"] = appDetails2
-                };
-
                 assetLinks.Add( linkData );
-                assetLinks.Add( linkData2 );
             }
 
             return assetLinks.ToJson();

@@ -52,8 +52,8 @@ namespace RockWeb.Blocks.Mobile
     [Description( "Edits and configures the settings of a mobile application." )]
     [LinkedPage( "Layout Detail", "", true )]
     [LinkedPage( "Page Detail", "", true )]
-    [Rock.SystemGuid.BlockTypeGuid( "1D001ED9-F711-4820-BED0-92150D069BA2" )]
     [LinkedPage( "Deep Link Detail", "", true )]
+    [Rock.SystemGuid.BlockTypeGuid( "1D001ED9-F711-4820-BED0-92150D069BA2" )]
     public partial class MobileApplicationDetail : RockBlock
     {
         /// <summary>
@@ -469,8 +469,8 @@ namespace RockWeb.Blocks.Mobile
                 tbTeamId.Text = additionalSettings.TeamIdentifier;
                 tbPackageName.Text = additionalSettings.PackageName;
                 tbCertificateFingerprint.Text = additionalSettings.CertificateFingerprint;
-                tbDeepLinkPathPrefix.Text = additionalSettings.DeepLinkPathPrefix;
-                tbSiteDomains.Text = additionalSettings.TargetDomain;
+                tbDeepLinkPathPrefix.Text = $"/{additionalSettings.DeepLinkPathPrefix}/";
+                tbDeepLinkPathPrefix.Enabled = false;
             }
 
             pnlDeepLinkSettings.Visible = isDeepLinkingEnabled;
@@ -898,7 +898,7 @@ namespace RockWeb.Blocks.Mobile
             var additionalSettings = site.AdditionalSettings.FromJsonOrNull<AdditionalSiteSettings>() ?? new AdditionalSiteSettings();
 
             // Save the deep link settings, if enabled.
-            if ( additionalSettings.IsDeepLinkingEnabled )
+            if ( cbEnableDeepLinking.Checked )
             {
                 var deepLinkPrefix = tbDeepLinkPathPrefix.Text.Trim( '/' );
 
@@ -920,7 +920,6 @@ namespace RockWeb.Blocks.Mobile
                 additionalSettings.PackageName = tbPackageName.Text;
                 additionalSettings.CertificateFingerprint = tbCertificateFingerprint.Text;
                 additionalSettings.DeepLinkPathPrefix = deepLinkPrefix;
-                additionalSettings.TargetDomain = tbSiteDomains.Text;
             }
 
             // Ensure that the Downhill CSS platform is mobile
@@ -1089,7 +1088,6 @@ namespace RockWeb.Blocks.Mobile
         protected void cbEnableDeepLinking_CheckedChanged( object sender, EventArgs e )
         {
             pnlDeepLinkSettings.Visible = cbEnableDeepLinking.Checked;
-            lblDeepLinkNote.Visible = !cbEnableDeepLinking.Checked;
         }
 
         /// <summary>

@@ -21,11 +21,8 @@ using System.ComponentModel.Composition;
 using System.Linq;
 using System.Web;
 
-using Newtonsoft.Json;
-
 using Rock.Common.Mobile;
 using Rock.Data;
-using Rock.Mobile;
 using Rock.Model;
 using Rock.Web.Cache;
 

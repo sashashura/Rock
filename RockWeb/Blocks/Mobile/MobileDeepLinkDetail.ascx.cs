@@ -200,7 +200,7 @@ namespace RockWeb.Blocks.Mobile
                 var route = new DeepLinkRoute
                 {
                     Guid = guid,
-                    Route = tbRoute.Text,
+                    Route = tbRoute.Text.Trim('/'),
                     UsesUrlAsFallback = tglFallbackType.Checked,
                     MobilePageGuid = mobilePageGuid.Value,
                     WebFallbackPageGuid = webFallbackPageGuid,
