@@ -4,15 +4,13 @@
     .mobile-app-preview {
         padding: 20px;
     }
-
-        .mobile-app-preview img {
-            width: 100%;
-            height: auto;
-            display: block;
-            min-height: 50px;
-            background-color: #ddd;
-        }
-
+    .mobile-app-preview img {
+        width: 100%;
+        height: auto;
+        display: block;
+        min-height: 50px;
+        background-color: #ddd;
+    }
     .mobile-app-icon {
         width: 100%;
         height: auto;
