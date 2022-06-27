@@ -92,6 +92,7 @@ namespace Rock.Blocks.CMS
                 SiteOptions = Web.Cache.SiteCache
                     .All()
                     .Where( site => site.EnabledForShortening )
+                    .OrderBy( site => site.Name )
                     .Select( site => new ListItemBag
                     {
                         Value = site.Guid.ToString(),
