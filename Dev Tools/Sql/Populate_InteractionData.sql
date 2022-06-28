@@ -19,16 +19,15 @@ WHERE Id NOT IN (
         FROM Interaction
         )
         */
-
 DECLARE @populateStartDateTimeLastHour DATETIME = DateAdd(hour, - 1, GetDate())
-     , @populateStartDateTimeLast3Weeks DATETIME = DateAdd(WEEK, - 3, GetDate())
+    , @populateStartDateTimeLast3Weeks DATETIME = DateAdd(WEEK, - 3, GetDate())
     , @populateStartDateTimeLast12Months DATETIME = DateAdd(MONTH, - 12, GetDate())
     , @populateStartDateTimeLast5Years DATETIME = DateAdd(YEAR, - 5, GetDate())
 DECLARE
     -- set this to @populateStartDateTimeLastHour or @populateStartDateTimeLast12Months (or custom), depending on what you need
-    @populateStartDateTime DATETIME = @populateStartDateTimeLast3Weeks
+    @populateStartDateTime DATETIME = @populateStartDateTimeLast5Years
     , @populateEndDateTime DATETIME = DateAdd(hour, 0, GetDate())
-    , @maxInteractionCount INT = 100000
+    , @maxInteractionCount INT = 1500000
     , @avgInteractionsPerSession INT = 10
     , @personSampleSize INT = 10 -- number of people to use when randomly assigning a person to each interaction. You might want to set this lower or higher depending on what type of data you want
     -- Parameters
@@ -131,9 +130,9 @@ BEGIN
     DEALLOCATE interactionPersonAliasIdCursor;
 END
 
-DECLARE @personAliasIdTable as TABLE (Id int not null primary key)
+DECLARE @personAliasIdTable AS TABLE (Id INT NOT NULL PRIMARY KEY)
 
-insert into @personAliasIdTable
+INSERT INTO @personAliasIdTable
 SELECT TOP (@personSampleSize) Id
 FROM PersonAlias pa
 WHERE pa.PersonId NOT IN (
@@ -146,11 +145,11 @@ WHERE pa.PersonId NOT IN (
         )
 ORDER BY newid();
 
-
 -- put all personIds in randomly ordered cursor to speed up getting a random personAliasId for each interaction
 DECLARE interactionPersonAliasIdCursor CURSOR LOCAL FAST_FORWARD
 FOR
-SELECT Id from @personAliasIdTable
+SELECT Id
+FROM @personAliasIdTable
 ORDER BY newid();
 
 OPEN interactionPersonAliasIdCursor;

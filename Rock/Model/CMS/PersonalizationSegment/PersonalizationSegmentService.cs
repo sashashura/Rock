@@ -62,7 +62,7 @@ namespace Rock.Model
         /// <returns></returns>
         public IQueryable<Rock.Model.PersonAliasPersonalization> GetPersonAliasPersonalizationSegmentQuery()
         {
-            return ( this.Context as RockContext ).PersonAliasPersonalizations.Where( a => a.PersonalizationType == PersonalizationType.Segment  );
+            return ( this.Context as RockContext ).PersonAliasPersonalizations.Where( a => a.PersonalizationType == PersonalizationType.Segment );
         }
 
         /// <summary>
@@ -89,12 +89,13 @@ namespace Rock.Model
         internal SegmentUpdateResults UpdatePersonAliasPersonalizationDataForSegment( PersonalizationSegmentCache segment )
         {
             var rockContext = this.Context as RockContext;
+            rockContext.SqlLogging( true );
             var personAliasService = new PersonAliasService( rockContext );
             var parameterExpression = personAliasService.ParameterExpression;
 
             var whereExpression = segment.GetPersonAliasFiltersWhereExpression( personAliasService, parameterExpression );
 
-            var personAliasQuery = personAliasService.Get( parameterExpression, whereExpression );
+            var personAliasQueryForSegment = personAliasService.Get( parameterExpression, whereExpression );
 
             var dataViewFilterId = segment.FilterDataViewId;
             if ( dataViewFilterId.HasValue )
@@ -103,10 +104,10 @@ namespace Rock.Model
                 var dataView = new DataViewService( rockContext ).Get( dataViewFilterId.Value );
 
                 var personDataViewQuery = new PersonService( rockContext ).GetQueryUsingDataView( dataView );
-                personAliasQuery = personAliasQuery.Where( pa => personDataViewQuery.Any( person => person.Aliases.Any( alias => alias.Id == pa.Id ) ) );
+                personAliasQueryForSegment = personAliasQueryForSegment.Where( pa => personDataViewQuery.Any( person => person.Aliases.Any( alias => alias.Id == pa.Id ) ) );
             }
 
-            var personAliasIdsInSegmentQry = personAliasQuery.Select( a => a.Id );
+            var personAliasIdsInSegmentQry = personAliasQueryForSegment.Select( a => a.Id );
             var personAliasPersonalizationQry = this.GetPersonAliasPersonalizationSegmentQuery( segment );
 
             // Delete PersonAliasIds that are no longer in the segment
@@ -131,6 +132,8 @@ namespace Rock.Model
             {
                 rockContext.BulkInsert( personAliasPersonalizationsToInsert );
             }
+
+            rockContext.SqlLogging( false );
 
             return new SegmentUpdateResults( countAddedToSegment, countRemovedFromSegment );
         }
@@ -161,6 +164,59 @@ namespace Rock.Model
             var segmentIdKeys = segmentIds.Select( a => IdHasher.Instance.GetHash( a ) ).ToArray();
 
             return segmentIdKeys;
+        }
+
+        /// <summary>
+        /// Bulk updates the <see cref="PersonAliasPersonalization.PersonAliasId" /> for this person to the person's PrimaryAliasId
+        /// if there is any data that uses any of their non-primary alias ids.
+        /// Returns the number of PersonAliasPersonalization records updated.
+        /// </summary>
+        /// <param name="personId">The person identifier.</param>
+        public int MergePersonAliasPersonalizationToPrimaryAliasId( int personId )
+        {
+            var rockContext = this.Context as RockContext;
+            var anonymousVisitorPersonId = new PersonService( rockContext ).GetOrCreateAnonymousVisitorPersonId();
+            if ( personId == anonymousVisitorPersonId )
+            {
+                // don't merge PersonAliasPersonalization into the AnonymousVisitor record
+                return 0;
+            }
+
+            var primaryAliasId = new PersonAliasService( rockContext ).GetPrimaryAliasId( personId );
+            if ( !primaryAliasId.HasValue )
+            {
+                // shouldn't happen, but just in case
+                return 0;
+            }
+
+            var qryPersonAliasPersonalization = rockContext.PersonAliasPersonalizations as IQueryable<PersonAliasPersonalization>;
+            var qryNonPrimaryAliasData = qryPersonAliasPersonalization.Where( a => a.PersonAlias.PersonId == personId && a.PersonAliasId != primaryAliasId );
+            var recordsUpdated = rockContext.BulkUpdate( qryNonPrimaryAliasData, p => new PersonAliasPersonalization { PersonAliasId = primaryAliasId.Value } );
+            return recordsUpdated;
+        }
+
+        /// <summary>
+        /// Bulk updates the <see cref="PersonAliasPersonalization.PersonAliasId" /> to the primary alias id of each person.
+        /// </summary>
+        /// <returns>System.Int32.</returns>
+        public int MergePersonAliasPersonalizationToPrimaryAliasId()
+        {
+            var rockContext = this.Context as RockContext;
+            var anonymousVisitorPersonId = new PersonService( rockContext ).GetOrCreateAnonymousVisitorPersonId();
+
+            var qryPersonAliasPersonalization = rockContext.PersonAliasPersonalizations as IQueryable<PersonAliasPersonalization>;
+            var primaryAliasIdQry = new PersonAliasService( rockContext ).GetPrimaryAliasQuery().Select( a => a.Id );
+            var qryNonPrimaryAliasData = qryPersonAliasPersonalization.Where( a => !primaryAliasIdQry.Contains( a.PersonAliasId ) && a.PersonAlias.PersonId != anonymousVisitorPersonId );
+            var personIdsWithNonPrimaryAliasData = qryNonPrimaryAliasData.Select( a => a.PersonAlias.PersonId ).Distinct();
+            int totalRecordsUpdated = 0;
+            foreach ( var personId in personIdsWithNonPrimaryAliasData )
+            {
+                var recordsUpdated = MergePersonAliasPersonalizationToPrimaryAliasId( personId );
+                totalRecordsUpdated += recordsUpdated;
+            }
+
+            return totalRecordsUpdated;
+
         }
     }
 }

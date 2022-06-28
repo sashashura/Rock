@@ -21,6 +21,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 using Rock.Utility;
+using Rock.Web.Cache;
 
 namespace Rock.Personalization
 {
@@ -36,6 +37,12 @@ namespace Rock.Personalization
         public string PersonAliasIdKey { get; set; }
 
         /// <summary>
+        /// Gets or sets the last time the data in this cookie was updated (in RockDateTime )
+        /// </summary>
+        /// <value>The last update date time</value>
+        public DateTime LastUpdateDateTime { get; set; }
+
+        /// <summary>
         /// Determines whether the <paramref name="otherPersonAliasId"/> is the same PersonAliasId that is embedded in <see cref="PersonAliasIdKey"/>.
         /// </summary>
         /// <param name="otherPersonAliasId">The other person alias identifier.</param>
@@ -44,6 +51,34 @@ namespace Rock.Personalization
         {
             var thisPersonAliasId = IdHasher.Instance.GetId( PersonAliasIdKey ?? string.Empty );
             return thisPersonAliasId.HasValue && thisPersonAliasId.Value == otherPersonAliasId;
+        }
+
+        /// <summary>
+        /// Determines whether the data in the cookie is stale.
+        /// </summary>
+        /// <param name="currentDateTime">The current date time.</param>
+        /// <returns><c>true</c> if the data is stale; otherwise, <c>false</c>.</returns>
+        public bool IsStale( DateTime currentDateTime )
+        {
+            var activeSegments = PersonalizationSegmentCache.GetActiveSegments( false );
+            if ( !activeSegments.Any() )
+            {
+                return false;
+            }
+
+            var lastModifiedDateTime = activeSegments.Max( a => a.ModifiedDateTime );
+            if ( LastUpdateDateTime < lastModifiedDateTime )
+            {
+                return true;
+            }
+
+            TimeSpan maxCacheLifetime = TimeSpan.FromMinutes( 60 );
+            if ( currentDateTime - LastUpdateDateTime > maxCacheLifetime )
+            {
+                return true;
+            }
+
+            return false;
         }
 
         /// <summary>

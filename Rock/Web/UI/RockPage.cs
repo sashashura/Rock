@@ -1898,16 +1898,21 @@ Obsidian.init({{ debug: true, fingerprint: ""v={_obsidianFingerprint}"" }});
             if ( cookieValueJson != null )
             {
                 segmentFilterCookieData = cookieValueJson.FromJsonOrNull<Personalization.SegmentFilterCookieData>();
-                bool validCookieDataExists = false;
+                bool isCookieDataValid = false;
                 if ( segmentFilterCookieData != null )
                 {
                     if ( segmentFilterCookieData.IsSamePersonAlias( personalizationPersonAliasId.Value ) && segmentFilterCookieData.SegmentIdKeys != null )
                     {
-                        validCookieDataExists = true;
+                        isCookieDataValid = true;
+                    }
+
+                    if ( segmentFilterCookieData.IsStale( RockDateTime.Now ) )
+                    {
+                        isCookieDataValid = false;
                     }
                 }
 
-                if ( !validCookieDataExists )
+                if ( !isCookieDataValid )
                 {
                     segmentFilterCookieData = null;
                 }
@@ -1917,6 +1922,7 @@ Obsidian.init({{ debug: true, fingerprint: ""v={_obsidianFingerprint}"" }});
             {
                 segmentFilterCookieData = new Personalization.SegmentFilterCookieData();
                 segmentFilterCookieData.PersonAliasIdKey = IdHasher.Instance.GetHash( personalizationPersonAliasId.Value );
+                segmentFilterCookieData.LastUpdateDateTime = RockDateTime.Now;
                 var segmentIdKeys = new PersonalizationSegmentService( new RockContext() ).GetPersonalizationSegmentIdKeysForPersonAliasId( personalizationPersonAliasId.Value );
                 segmentFilterCookieData.SegmentIdKeys = segmentIdKeys;
             }
