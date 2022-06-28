@@ -556,7 +556,7 @@ namespace Rock.Transactions
 
             this.BrowserSessionId = this.BrowserSessionId ?? rockPage?.Session["RockSessionId"]?.ToString().AsGuidOrNull();
 
-            this.PersonAliasId = this.PersonAliasId ?? rockPage?.CurrentPersonAliasId;
+            this.PersonAliasId = this.PersonAliasId ?? rockPage?.CurrentPersonAliasId ?? rockPage?.CurrentVisitor?.Id;
 
             // Make sure we don't exceed this field's character limit.
             this.InteractionOperation = EnforceLengthLimitation( this.InteractionOperation, 25 );
