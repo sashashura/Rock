@@ -202,7 +202,7 @@
                         <Rock:InteractionChannelPicker ID="pInteractionFilterInteractionChannel" runat="server" Label="Channel" ValidationGroup="vgInteractionFilterConfiguration" Required="true" AutoPostBack="true" OnSelectedIndexChanged="pInteractionFilterInteractionChannel_SelectedIndexChanged" />
                         <Rock:InteractionComponentPicker ID="pInteractionFilterInteractionComponent" runat="server" Label="Component" ValidationGroup="vgInteractionFilterConfiguration" Required="false" />
 
-                        <Rock:RockTextBox ID="tbInteractionFilterOperation" runat="server" Label="Operation" />
+                        <Rock:RockTextBox ID="tbInteractionFilterOperation" runat="server" Label="Operation" Help="Examples: 'Viewed', 'Opened', 'Click', 'Prayed', 'Form Viewed', 'Form Completed'" />
 
                         <span>In the following date range</span>
                         <Rock:SlidingDateRangePicker ID="drpInteractionFilterSlidingDateRange" runat="server" Label="" PreviewLocation="Right" EnabledSlidingDateRangeTypes="Previous, Last, Current, DateRange" ValidationGroup="vgInteractionFilterConfiguration" ToolTip="<div class='js-slidingdaterange-info'></>" />

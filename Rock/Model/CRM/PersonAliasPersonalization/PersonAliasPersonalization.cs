@@ -81,7 +81,7 @@ namespace Rock.Model
     /// <summary>
     /// PersonAlias Personalization Configuration class.
     /// </summary>
-    public partial class PersonAliasPersonalizationConfiguration : EntityTypeConfiguration<PersonAliasPersonalization>
+    public class PersonAliasPersonalizationConfiguration : EntityTypeConfiguration<PersonAliasPersonalization>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="PersonAliasPersonalizationConfiguration"/> class.

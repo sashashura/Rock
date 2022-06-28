@@ -155,6 +155,8 @@ namespace RockWeb.Blocks.Cms
                 segmentService.Delete( segment );
                 rockContext.SaveChanges();
             }
+
+            BindGrid();
         }
 
         /// <summary>

@@ -14,8 +14,6 @@
 // limitations under the License.
 // </copyright>
 //
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Text;
@@ -76,7 +74,7 @@ namespace Rock.Jobs
             var segmentList = PersonalizationSegmentCache.GetActiveSegments( includeSegmentsWithNonPersistedDataViews );
             var resultsBuilder = new StringBuilder();
 
-            foreach ( var segment in segmentList )
+            foreach ( var segment in segmentList.OrderBy( s => s.Name ) )
             {
                 context.UpdateLastStatusMessage( $"Updating {segment.Name}..." );
                 var rockContext = new RockContext();
@@ -91,7 +89,7 @@ namespace Rock.Jobs
                 }
             }
 
-            context.UpdateLastStatusMessage ( resultsBuilder.ToString() );
+            context.UpdateLastStatusMessage( resultsBuilder.ToString() );
         }
     }
 }

@@ -60,10 +60,7 @@ namespace Rock.Personalization.SegmentFilters
         /// <value>The interaction component guid.</value>
         public Guid? InteractionComponentGuid { get; set; }
 
-        /// <summary>
-        /// Gets or sets the operation.
-        /// </summary>
-        /// <value>The operation.</value>
+        /// <inheritdoc cref="Interaction.Operation"/>
         public string Operation { get; set; }
 
         /// <summary>
