@@ -1,4 +1,4 @@
-// <copyright>
+﻿// <copyright>
 // Copyright by the Spark Development Network
 //
 // Licensed under the Rock Community License (the "License");
@@ -820,6 +820,8 @@ namespace RockWeb.Blocks.Crm
                     parms.Add( "NewId", primaryPersonId.Value );
                     DbService.ExecuteCommand( "spCrm_PersonMerge", CommandType.StoredProcedure, parms );
                 }
+
+                new PersonalizationSegmentService( new RockContext() ).MergePersonAliasPersonalizationToPrimaryAliasId( primaryPersonId.Value );
             }
             catch ( Exception ex )
             {

@@ -29,7 +29,7 @@ namespace Rock.Model
     public partial class PersonalizationSegmentService
     {
         /// <summary>
-        /// Gets a Queryable of PersonAlias for PersonAlias's that meet the criteria of the Segment
+        /// Gets a Queryable of PersonAlias that meet the criteria of the Segment
         /// </summary>
         /// <param name="segment">The segment.</param>
         /// <returns></returns>
@@ -59,17 +59,15 @@ namespace Rock.Model
         /// <summary>
         /// Gets a Queryable of <see cref="PersonAliasPersonalization"/> that have a <see cref="PersonAliasPersonalization.PersonalizationType"/> of <see cref="PersonalizationType.Segment"/>
         /// </summary>
-        /// <returns></returns>
         public IQueryable<Rock.Model.PersonAliasPersonalization> GetPersonAliasPersonalizationSegmentQuery()
         {
             return ( this.Context as RockContext ).PersonAliasPersonalizations.Where( a => a.PersonalizationType == PersonalizationType.Segment );
         }
 
         /// <summary>
-        /// Gets the person alias personalization query for the specifed segment.
+        /// Gets the person alias personalization query for the specified segment.
         /// </summary>
         /// <param name="personalizationSegment">The personalization segment.</param>
-        /// <returns></returns>
         public IQueryable<Rock.Model.PersonAliasPersonalization> GetPersonAliasPersonalizationSegmentQuery( PersonalizationSegmentCache personalizationSegment )
         {
             return GetPersonAliasPersonalizationSegmentQuery().Where( a => a.PersonalizationTypeId == personalizationSegment.Id );
@@ -85,7 +83,6 @@ namespace Rock.Model
         /// Updates the data in <see cref="Rock.Model.PersonAliasPersonalization"/> table based on the specified segment's criteria.
         /// </summary>
         /// <param name="segment">The segment.</param>
-        /// <returns></returns>
         internal SegmentUpdateResults UpdatePersonAliasPersonalizationDataForSegment( PersonalizationSegmentCache segment )
         {
             var rockContext = this.Context as RockContext;
@@ -168,7 +165,7 @@ namespace Rock.Model
 
         /// <summary>
         /// Bulk updates the <see cref="PersonAliasPersonalization.PersonAliasId" /> for this person to the person's PrimaryAliasId
-        /// if there is any data that uses any of their non-primary alias ids.
+        /// if there is any Personalization data that uses any of their non-primary alias ids.
         /// Returns the number of PersonAliasPersonalization records updated.
         /// </summary>
         /// <param name="personId">The person identifier.</param>
