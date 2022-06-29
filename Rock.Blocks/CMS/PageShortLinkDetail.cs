@@ -42,11 +42,26 @@ namespace Rock.Blocks.CMS
 
     #region Block Attributes
 
+    [IntegerField(
+        "Minimum Token Length",
+        Key = AttributeKey.MinimumTokenLength,
+        Description = "The minimum number of characters for the token.",
+        IsRequired = false,
+        DefaultIntegerValue = 7,
+        Order = 0 )]
+
     #endregion
 
     public class PageShortLinkDetail : RockObsidianDetailBlockType
     {
+        private int _minTokenLength = 7;
+
         #region Keys
+
+        private static class AttributeKey
+        {
+            public const string MinimumTokenLength = "MinimumTokenLength";
+        }
 
         private static class PageParameterKey
         {
@@ -65,6 +80,8 @@ namespace Rock.Blocks.CMS
         /// <inheritdoc/>
         public override object GetObsidianBlockInitialization()
         {
+            _minTokenLength = GetAttributeValue( AttributeKey.MinimumTokenLength ).AsIntegerOrNull() ?? 7;
+
             using ( var rockContext = new RockContext() )
             {
                 var box = new DetailBlockBox<PageShortLinkBag, PageShortLinkDetailOptionsBag>();
@@ -115,6 +132,22 @@ namespace Rock.Blocks.CMS
         private bool ValidatePageShortLink( PageShortLink pageShortLink, RockContext rockContext, out string errorMessage )
         {
             errorMessage = null;
+
+            // should have a token of minimum length
+            if ( pageShortLink.Token.Length < _minTokenLength )
+            {
+                errorMessage = string.Format( "Please enter a token that is a least {0} characters long.", _minTokenLength );
+                return false;
+            }
+
+            // should have a token that is unique for the siteId
+            var service = new PageShortLinkService( rockContext );
+            bool isTokenUsedBySite = !service.VerifyUniqueToken( pageShortLink.SiteId, 0, pageShortLink.Token );
+            if ( isTokenUsedBySite )
+            {
+                errorMessage = "The selected token is already being used. Please enter a different token.";
+                return false;
+            }
 
             return true;
         }
