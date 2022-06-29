@@ -99,7 +99,7 @@ namespace Rock.Blocks.CMS
                         Text = site.Name
                     } )
                    .ToList(),
-        };
+            };
 
             return options;
         }
@@ -208,6 +208,12 @@ namespace Rock.Blocks.CMS
             }
 
             var bag = GetCommonEntityBag( entity );
+
+            bag.CopyLink = entity.Site
+                .DefaultDomainUri
+                .ToString()
+                .EnsureTrailingForwardslash()
+                + entity.Token;
 
             if ( loadAttributes )
             {
@@ -519,12 +525,6 @@ namespace Rock.Blocks.CMS
                 {
                     return ActionStatusCode( System.Net.HttpStatusCode.NoContent );
                 }
-
-                box.Options.CopyLink = entity.Site
-                    .DefaultDomainUri
-                    .ToString()
-                    .EnsureTrailingForwardslash()
-                    + entity.Token;
 
                 // Replace any values for attributes that haven't changed with
                 // the value sent by the client. This ensures any unsaved attribute

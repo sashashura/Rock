@@ -37,6 +37,9 @@ export type PageShortLinkBag = {
     /** Gets or sets the identifier key of this entity. */
     idKey?: string | null;
 
+    /** Gets or sets the link to be copied to the clipboard in view mode. */
+    copyLink?: string | null;
+
     /** Gets or sets the attributes. */
     attributes?: Record<string, PublicAttributeBag> | null;
 
