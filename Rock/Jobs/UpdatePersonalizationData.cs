@@ -89,6 +89,8 @@ namespace Rock.Jobs
                 }
             }
 
+            //new PersonalizationSegmentService( new RockContext() ).MergePersonAliasPersonalizationToPrimaryAliasId();
+
             context.UpdateLastStatusMessage( resultsBuilder.ToString() );
         }
     }

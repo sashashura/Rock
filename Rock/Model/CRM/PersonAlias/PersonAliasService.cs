@@ -354,7 +354,7 @@ namespace Rock.Model
         /// <returns></returns>
         public IQueryable<PersonAlias> GetPrimaryAliasQuery()
         {
-            return this.Queryable().Where( a => a.PersonId == a.AliasPersonId );
+            return this.Queryable().Where( a => a.PersonId == a.AliasPersonId && a.AliasPersonId.HasValue );
         }
     }
 }
