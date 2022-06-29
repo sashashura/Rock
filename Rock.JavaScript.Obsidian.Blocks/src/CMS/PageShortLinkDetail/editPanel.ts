@@ -96,7 +96,6 @@ export default defineComponent({
         // Determines which values we want to track changes on (defined in the
         // array) and then emit a new object defined as newValue.
         watch([attributeValues, ...propRefs], () => {
-            console.log(site);
             const newValue: PageShortLinkBag = {
                 ...props.modelValue,
                 attributeValues: attributeValues.value,
@@ -136,7 +135,7 @@ export default defineComponent({
                 <TextBox v-model="token"
                     label="Token"
                     rules="required"
-                    help="The token to use for the short link. Must be unique" />
+                    help="The token to use for the short link. Must be unique." />
             </div>
     </div>
     <TextBox v-model="url"

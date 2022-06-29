@@ -1,4 +1,4 @@
-// <copyright>
+﻿// <copyright>
 // Copyright by the Spark Development Network
 //
 // Licensed under the Rock Community License (the "License");
@@ -24,5 +24,11 @@ namespace Rock.ViewModels.Blocks.CMS.PageShortLinkDetail
     public class PageShortLinkDetailOptionsBag
     {
         public List<ListItemBag> SiteOptions { get; set; }
+
+        /// <summary>
+        /// Gets or sets the link to be copied to the clipboard in the UI when the user clicks the copy button in the view mode.
+        /// </summary>
+        /// <value>The link to be copied.</value>
+        public string CopyLink { get; set; }
     }
 }

@@ -38,7 +38,7 @@ namespace Rock.Blocks.CMS
     [DisplayName( "Page Short Link Detail" )]
     [Category( "Obsidian > CMS" )]
     [Description( "Displays the details of a particular page short link." )]
-    [IconCssClass( "fa fa-building" )]
+    [IconCssClass( "fa fa-question" )]
 
     #region Block Attributes
 
@@ -99,7 +99,7 @@ namespace Rock.Blocks.CMS
                         Text = site.Name
                     } )
                    .ToList(),
-            };
+        };
 
             return options;
         }
@@ -195,7 +195,7 @@ namespace Rock.Blocks.CMS
         }
 
         /// <summary>
-        /// Gets the bag for viewing the specied entity.
+        /// Gets the bag for viewing the specified entity.
         /// </summary>
         /// <param name="entity">The entity to be represented for view purposes.</param>
         /// <param name="loadAttributes"><c>true</c> if attributes and values should be loaded; otherwise <c>false</c>.</param>
@@ -519,6 +519,12 @@ namespace Rock.Blocks.CMS
                 {
                     return ActionStatusCode( System.Net.HttpStatusCode.NoContent );
                 }
+
+                box.Options.CopyLink = entity.Site
+                    .DefaultDomainUri
+                    .ToString()
+                    .EnsureTrailingForwardslash()
+                    + entity.Token;
 
                 // Replace any values for attributes that haven't changed with
                 // the value sent by the client. This ensures any unsaved attribute

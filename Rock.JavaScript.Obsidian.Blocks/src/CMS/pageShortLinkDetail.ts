@@ -75,7 +75,6 @@ export default defineComponent({
          */
         const panelName = computed((): string => {
             return "Shortened Link";
-            //return pageShortLinkViewBag.value?.name ?? "";
         });
 
         /**
@@ -104,6 +103,21 @@ export default defineComponent({
 
         const options = computed((): PageShortLinkDetailOptionsBag => {
             return config.options ?? {};
+        });
+
+        /** Adding the copy button as a secondary footer action in the block. */
+        const internalFooterSecondaryActions = computed((): PanelAction[] => {
+            const actions: PanelAction[] = [];
+
+            if (panelMode.value === DetailPanelMode.View) {
+                actions.push({
+                    iconCssClass: "fa fa-clipboard",
+                    title: "Copy",
+                    type: "default",
+                    handler: onCopyLink
+                });
+            }
+            return actions;
         });
 
         // #endregion
@@ -148,7 +162,7 @@ export default defineComponent({
             }
             else {
                 errorMessage.value = result.errorMessage ?? "Unknown error while trying to delete page short link.";
-            }
+            }       
         };
 
         /**
@@ -172,24 +186,11 @@ export default defineComponent({
             }
         };
 
-        const copyLink = (event: Event) => {
-            navigator.clipboard.writeText(window.location.href);
+        /** The event handler to copy the website link to the clipboard */
+        const onCopyLink = (event: Event) => {
+            const copyLink = pageShortLinkViewBag.value?.copyLink ?? "";
+            navigator.clipboard.writeText(copyLink);
         };
-
-        /** Adding the copy button as a secondary footer action in the block. */
-        const internalFooterSecondaryActions = computed((): PanelAction[] => {
-            const actions: PanelAction[] = [];
-
-            if( panelMode.value === DetailPanelMode.View ) {
-                    actions.push({
-                        iconCssClass: "fa fa-clipboard",
-                        title: "Copy",
-                        type: "default",
-                        handler: copyLink
-                    });
-            }
-                return actions;
-        });
 
         /**
          * Event handler for when a value has changed that has an associated
