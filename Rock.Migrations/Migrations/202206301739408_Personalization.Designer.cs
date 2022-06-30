@@ -13,7 +13,7 @@ namespace Rock.Migrations
         
         string IMigrationMetadata.Id
         {
-            get { return "202206272022220_Personalization"; }
+            get { return "202206301739408_Personalization"; }
         }
         
         string IMigrationMetadata.Source

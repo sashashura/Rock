@@ -72,6 +72,13 @@ namespace Rock.Jobs
         {
             var includeSegmentsWithNonPersistedDataViews = false;
             var segmentList = PersonalizationSegmentCache.GetActiveSegments( includeSegmentsWithNonPersistedDataViews );
+
+            if ( !segmentList.Any() )
+            {
+                context.UpdateLastStatusMessage( "No Personalization Segments configured." );
+                return;
+            }
+
             var resultsBuilder = new StringBuilder();
             int commandTimeoutSeconds = context.JobDetail.JobDataMap.GetString( AttributeKey.CommandTimeoutSeconds ).AsIntegerOrNull() ?? 180;
 

@@ -123,7 +123,10 @@ namespace Rock.Migrations
             UpdatePersonAliasAliasPersonIdIndex_Up();
 
             BlocksPagesUp();
+
+            AddUpdatePersonalizationDataJob_Up();
         }
+
 
         /// <summary>
         /// Operations to be performed during the downgrade process.
@@ -161,6 +164,7 @@ namespace Rock.Migrations
             DropTable( "dbo.PersonAliasPersonalization" );
             UpdatePersonAliasAliasPersonIdIndex_Down();
             AddAnonymousVisitor_Down();
+            AddUpdatePersonalizationDataJob_Down();
         }
 
         private void UpdatePersonAliasAliasPersonIdIndex_Up()
@@ -186,6 +190,45 @@ CREATE UNIQUE NONCLUSTERED INDEX[IX_AliasPersonId] ON[dbo].[PersonAlias]
 
     [AliasPersonId] ASC
 )" );
+        }
+
+
+        private void AddUpdatePersonalizationDataJob_Down()
+        {
+            Sql( $"DELETE FROM ServiceJob WHERE Guid = '{Rock.SystemGuid.ServiceJob.UPDATE_PERSONALIZATION_DATA}';" );
+        }
+
+        private void AddUpdatePersonalizationDataJob_Up()
+        {
+            Sql( $@"
+            IF NOT EXISTS (
+                SELECT 1
+                FROM [ServiceJob]
+                WHERE [Class] = 'Rock.Jobs.UpdatePersonalizationData'
+                                AND [Guid] = '{SystemGuid.ServiceJob.UPDATE_PERSONALIZATION_DATA}'
+            )
+            BEGIN
+                INSERT INTO [ServiceJob] (
+                    [IsSystem]
+                    ,[IsActive]
+                    ,[Name]
+                    ,[Description]
+                    ,[Class]
+                    ,[CronExpression]
+                    ,[NotificationStatus]
+                    ,[Guid]
+                ) VALUES (
+                    1
+                    ,1
+                    ,'Update Personalization Data'
+                    ,'Job that updates Personalization Data.'
+                    ,'Rock.Jobs.UpdatePersonalizationData'
+                    ,'0 0 2 1/1 * ? *'
+                    ,1
+                    ,'{SystemGuid.ServiceJob.UPDATE_PERSONALIZATION_DATA}'
+                );
+            END" );
+
         }
 
         private void AddAnonymousVisitor_Up()
