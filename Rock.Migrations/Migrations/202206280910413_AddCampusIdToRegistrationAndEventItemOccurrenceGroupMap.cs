@@ -22,24 +22,19 @@ namespace Rock.Migrations
     /// <summary>
     ///
     /// </summary>
-    public partial class AddOrderToConnectionStatusAutomation : Rock.Migrations.RockMigration
+    public partial class AddCampusIdToRegistrationAndEventItemOccurrenceGroupMap : Rock.Migrations.RockMigration
     {
         /// <summary>
         /// Operations to be performed during the upgrade process.
         /// </summary>
         public override void Up()
         {
-            AddColumn("dbo.ConnectionStatusAutomation", "Order", c => c.Int(nullable: false));
-
-            Sql( @"
-            WITH CTE AS 
-            (SELECT [Id],[Order],ROW_NUMBER() OVER (PARTITION BY [SourceStatusId] ORDER BY [Id]) As [SuggestedOrder] FROM [ConnectionStatusAutomation])
-
-            UPDATE
-	            [CTE]
-            SET [Order] = [SuggestedOrder]
-
-            " );
+            AddColumn("dbo.EventItemOccurrenceGroupMap", "CampusId", c => c.Int());
+            AddColumn("dbo.Registration", "CampusId", c => c.Int());
+            CreateIndex("dbo.EventItemOccurrenceGroupMap", "CampusId");
+            CreateIndex("dbo.Registration", "CampusId");
+            AddForeignKey("dbo.EventItemOccurrenceGroupMap", "CampusId", "dbo.Campus", "Id", cascadeDelete: true);
+            AddForeignKey("dbo.Registration", "CampusId", "dbo.Campus", "Id", cascadeDelete: true);
         }
         
         /// <summary>
@@ -47,7 +42,12 @@ namespace Rock.Migrations
         /// </summary>
         public override void Down()
         {
-            DropColumn("dbo.ConnectionStatusAutomation", "Order");
+            DropForeignKey("dbo.Registration", "CampusId", "dbo.Campus");
+            DropForeignKey("dbo.EventItemOccurrenceGroupMap", "CampusId", "dbo.Campus");
+            DropIndex("dbo.Registration", new[] { "CampusId" });
+            DropIndex("dbo.EventItemOccurrenceGroupMap", new[] { "CampusId" });
+            DropColumn("dbo.Registration", "CampusId");
+            DropColumn("dbo.EventItemOccurrenceGroupMap", "CampusId");
         }
     }
 }

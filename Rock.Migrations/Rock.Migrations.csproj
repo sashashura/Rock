@@ -124,9 +124,9 @@
     <Compile Include="Migrations\202206241516012_AddOrderToConnectionStatusAutomation.designer.cs">
       <DependentUpon>202206241516012_AddOrderToConnectionStatusAutomation.cs</DependentUpon>
     </Compile>
-    <Compile Include="Migrations\202206272022220_Personalization.cs" />
-    <Compile Include="Migrations\202206272022220_Personalization.designer.cs">
-      <DependentUpon>202206272022220_Personalization.cs</DependentUpon>
+    <Compile Include="Migrations\202206280910413_AddCampusIdToRegistrationAndEventItemOccurrenceGroupMap.cs" />
+    <Compile Include="Migrations\202206280910413_AddCampusIdToRegistrationAndEventItemOccurrenceGroupMap.designer.cs">
+      <DependentUpon>202206280910413_AddCampusIdToRegistrationAndEventItemOccurrenceGroupMap.cs</DependentUpon>
     </Compile>
     <Compile Include="Migrations\Version 13.0\Version 1.13.3\202203101710039_AddFormBuilderBlocksAndPages.cs" />
     <Compile Include="Migrations\Version 13.0\Version 1.13.3\202203101710039_AddFormBuilderBlocksAndPages.Designer.cs">
@@ -1239,8 +1239,8 @@
     <EmbeddedResource Include="Migrations\202206241516012_AddOrderToConnectionStatusAutomation.resx">
       <DependentUpon>202206241516012_AddOrderToConnectionStatusAutomation.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Migrations\202206272022220_Personalization.resx">
-      <DependentUpon>202206272022220_Personalization.cs</DependentUpon>
+    <EmbeddedResource Include="Migrations\202206280910413_AddCampusIdToRegistrationAndEventItemOccurrenceGroupMap.resx">
+      <DependentUpon>202206280910413_AddCampusIdToRegistrationAndEventItemOccurrenceGroupMap.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Migrations\Version 13.0\Version 1.13.3\202203101710039_AddFormBuilderBlocksAndPages.resx">
       <DependentUpon>202203101710039_AddFormBuilderBlocksAndPages.cs</DependentUpon>
