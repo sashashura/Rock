@@ -110,7 +110,7 @@ namespace Rock.Blocks.Types.Mobile.Events
     #endregion
 
     [Rock.SystemGuid.EntityTypeGuid( Rock.SystemGuid.EntityType.MOBILE_EVENTS_PRAYER_SESSION_BLOCK_TYPE )]
-    [Rock.SystemGuid.BlockTypeGuid( "420DEA5F-9ABC-4E59-A9BD-DCA972657B84")]
+    [Rock.SystemGuid.BlockTypeGuid( "420DEA5F-9ABC-4E59-A9BD-DCA972657B84" )]
     public class PrayerSession : RockMobileBlockType
     {
         #region Block Attributes
@@ -442,8 +442,8 @@ namespace Rock.Blocks.Types.Mobile.Events
                 query = query.Where( a => !a.GroupId.HasValue );
             }
 
-            query = query.OrderBy( PrayerOrder )
-                .OrderByDescending( x => x.IsUrgent );
+            query = query.OrderByDescending( a => a.IsUrgent )
+                .ThenBy( PrayerOrder );
 
             return query;
         }
