@@ -14,20 +14,12 @@
 // limitations under the License.
 // </copyright>
 //
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
 using Rock.Data;
 
 namespace Rock.Model
 {
     public partial class PersonalizationSegment
     {
-
         internal class SaveHook : EntitySaveHook<PersonalizationSegment>
         {
             protected override void PostSave()
@@ -36,8 +28,7 @@ namespace Rock.Model
 
                 if ( Entry.State == EntityContextState.Deleted )
                 {
-                    var deletedCount = new PersonalizationSegmentService( this.RockContext ).CleanupPersonAliasPersonalizationDataForSegmentsThatDontExist();
-                    Debug.WriteLine( deletedCount );
+                    new PersonalizationSegmentService( this.RockContext ).CleanupPersonAliasPersonalizationDataForSegmentsThatDontExist();
                 }
             }
         }
