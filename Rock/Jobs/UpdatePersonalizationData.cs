@@ -73,23 +73,33 @@ namespace Rock.Jobs
             var includeSegmentsWithNonPersistedDataViews = false;
             var segmentList = PersonalizationSegmentCache.GetActiveSegments( includeSegmentsWithNonPersistedDataViews );
             var resultsBuilder = new StringBuilder();
+            int commandTimeoutSeconds = context.JobDetail.JobDataMap.GetString( AttributeKey.CommandTimeoutSeconds ).AsIntegerOrNull() ?? 180;
 
             foreach ( var segment in segmentList.OrderBy( s => s.Name ) )
             {
-                context.UpdateLastStatusMessage( $"Updating {segment.Name}..." );
-                var rockContext = new RockContext();
-                var segmentUpdateResults = new PersonalizationSegmentService( rockContext ).UpdatePersonAliasPersonalizationDataForSegment( segment );
-                if ( segmentUpdateResults.CountAddedSegment == 0 && segmentUpdateResults.CountRemovedFromSegment == 0 )
+                context.UpdateLastStatusMessage( $"{segment.Name}: Updating..." );
+                using ( var rockContext = new RockContext() )
                 {
-                    resultsBuilder.AppendLine( $"{segment.Name} - No changes needed." );
-                }
-                else
-                {
-                    resultsBuilder.AppendLine( $"{segment.Name} - {segmentUpdateResults.CountAddedSegment} added and {segmentUpdateResults.CountRemovedFromSegment} removed." );
+                    rockContext.Database.CommandTimeout = commandTimeoutSeconds;
+                    var segmentUpdateResults = new PersonalizationSegmentService( rockContext ).UpdatePersonAliasPersonalizationDataForSegment( segment );
+                    if ( segmentUpdateResults.CountAddedSegment == 0 && segmentUpdateResults.CountRemovedFromSegment == 0 )
+                    {
+                        resultsBuilder.AppendLine( $"{segment.Name} - No changes." );
+                    }
+                    else
+                    {
+                        resultsBuilder.AppendLine( $"{segment.Name} - {segmentUpdateResults.CountAddedSegment} added and {segmentUpdateResults.CountRemovedFromSegment} removed." );
+                    }
                 }
             }
 
-            //new PersonalizationSegmentService( new RockContext() ).MergePersonAliasPersonalizationToPrimaryAliasId();
+            var cleanupRockContext = new RockContext();
+            cleanupRockContext.Database.CommandTimeout = commandTimeoutSeconds;
+            var cleanedUpCount = new PersonalizationSegmentService( cleanupRockContext ).CleanupPersonAliasPersonalizationDataForSegmentsThatDontExist();
+            if ( cleanedUpCount > 0 )
+            {
+                resultsBuilder.AppendLine( $"Cleaned up {cleanedUpCount}" );
+            }
 
             context.UpdateLastStatusMessage( resultsBuilder.ToString() );
         }

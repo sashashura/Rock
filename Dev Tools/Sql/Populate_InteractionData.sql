@@ -25,11 +25,11 @@ DECLARE @populateStartDateTimeLastHour DATETIME = DateAdd(hour, - 1, GetDate())
     , @populateStartDateTimeLast5Years DATETIME = DateAdd(YEAR, - 5, GetDate())
 DECLARE
     -- set this to @populateStartDateTimeLastHour or @populateStartDateTimeLast12Months (or custom), depending on what you need
-    @populateStartDateTime DATETIME = @populateStartDateTimeLast5Years
+    @populateStartDateTime DATETIME = @populateStartDateTimeLast12Months
     , @populateEndDateTime DATETIME = DateAdd(hour, 0, GetDate())
-    , @maxInteractionCount INT = 1500000
+    , @maxInteractionCount INT = 150000
     , @avgInteractionsPerSession INT = 10
-    , @personSampleSize INT = 10 -- number of people to use when randomly assigning a person to each interaction. You might want to set this lower or higher depending on what type of data you want
+    , @personSampleSize INT = 2500 -- number of people to use when randomly assigning a person to each interaction. You might want to set this lower or higher depending on what type of data you want
     -- Parameters
 DECLARE
     -- Set this value to place a tag in the ForeignKey field of the sample data records for easier identification.

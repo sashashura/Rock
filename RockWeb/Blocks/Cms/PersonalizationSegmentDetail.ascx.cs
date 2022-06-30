@@ -21,6 +21,7 @@ using System.Web.UI;
 using System.Web.UI.WebControls;
 
 using Rock;
+using Rock.Attribute;
 using Rock.Constants;
 using Rock.Data;
 using Rock.Model;
@@ -37,7 +38,16 @@ namespace RockWeb.Blocks.Cms
 
     #region Block Attributes
 
+    [IntegerField(
+        "Database Timeout",
+        Key = AttributeKey.DatabaseTimeoutSeconds,
+        Description = "The number of seconds to wait before reporting a database timeout.",
+        IsRequired = false,
+        DefaultIntegerValue = 180,
+        Order = 0 )]
+
     #endregion Block Attributes
+
     [Rock.SystemGuid.BlockTypeGuid( "1F0A0A57-952D-4774-8760-52C6D56B9DB5" )]
     public partial class PersonalizationSegmentDetail : Rock.Web.UI.RockBlock
     {
@@ -45,7 +55,7 @@ namespace RockWeb.Blocks.Cms
 
         private static class AttributeKey
         {
-            //
+            public const string DatabaseTimeoutSeconds = "DatabaseTimeout";
         }
 
         #endregion Attribute Keys
@@ -97,6 +107,16 @@ namespace RockWeb.Blocks.Cms
             gInteractionFilters.DataKeyNames = new string[] { "Guid" };
             gInteractionFilters.Actions.ShowAdd = true;
             gInteractionFilters.Actions.AddClick += gInteractionFilters_AddClick;
+
+            //// Set postback timeout and request-timeout to whatever the DatabaseTimeout is plus an extra 5 seconds so that page doesn't timeout before the database does
+            //// We'll want to do this in this block because the PersonalizationData is recalcuated when the configuration is saved.
+            int databaseTimeout = GetAttributeValue( AttributeKey.DatabaseTimeoutSeconds ).AsIntegerOrNull() ?? 180;
+            var sm = ScriptManager.GetCurrent( this.Page );
+            if ( sm.AsyncPostBackTimeout < databaseTimeout + 5 )
+            {
+                sm.AsyncPostBackTimeout = databaseTimeout + 5;
+                Server.ScriptTimeout = databaseTimeout + 5;
+            }
         }
 
         /// <summary>
@@ -327,7 +347,30 @@ namespace RockWeb.Blocks.Cms
 
             rockContext.SaveChanges();
 
-            personalizationSegmentService.UpdatePersonAliasPersonalizationData( PersonalizationSegmentCache.Get( personalizationSegment.Id ) );
+            try
+            {
+                var updatePersonalizationRockContext = new RockContext();
+                updatePersonalizationRockContext.Database.CommandTimeout = GetAttributeValue( AttributeKey.DatabaseTimeoutSeconds ).AsIntegerOrNull() ?? 180;
+                new PersonalizationSegmentService( updatePersonalizationRockContext ).UpdatePersonAliasPersonalizationData( PersonalizationSegmentCache.Get( personalizationSegment.Id ) );
+            }
+            catch ( Exception ex )
+            {
+                this.LogException( ex );
+                var sqlTimeoutException = ReportingHelper.FindSqlTimeoutException( ex );
+                if ( sqlTimeoutException != null )
+                {
+                    nbSegmentDataUpdateError.NotificationBoxType = NotificationBoxType.Warning;
+                    nbSegmentDataUpdateError.Text = "This segment filter personalization data could not be calculated in a timely manner. You can try again or adjust the timeout setting of this block.";
+                    return;
+                }
+
+                nbSegmentDataUpdateError.NotificationBoxType = NotificationBoxType.Danger;
+                nbSegmentDataUpdateError.Text = "An error occurred when updating personalization data";
+                nbSegmentDataUpdateError.Details = ex.Message;
+                return;
+            }
+
+
             NavigateToParentPage();
         }
 

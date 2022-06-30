@@ -820,8 +820,6 @@ namespace RockWeb.Blocks.Crm
                     parms.Add( "NewId", primaryPersonId.Value );
                     DbService.ExecuteCommand( "spCrm_PersonMerge", CommandType.StoredProcedure, parms );
                 }
-
-                new PersonalizationSegmentService( new RockContext() ).MergePersonAliasPersonalizationToPrimaryAliasId( primaryPersonId.Value );
             }
             catch ( Exception ex )
             {
