@@ -22,10 +22,10 @@ using System.Runtime.Serialization;
 using System.Web.Http;
 using System.Web.Http.Controllers;
 using System.Web.Http.ExceptionHandling;
-using System.Web.Http.OData.Builder;
-using System.Web.Http.OData.Extensions;
-using System.Web.Http.OData.Routing;
-using System.Web.Http.OData.Routing.Conventions;
+using System.Web.OData.Builder;
+using System.Web.OData.Extensions;
+using System.Web.OData.Routing;
+using System.Web.OData.Routing.Conventions;
 using System.Web.Http.ValueProviders;
 using System.Web.Routing;
 
@@ -33,6 +33,8 @@ using Rock;
 using Rock.Rest.Utility;
 using Rock.Rest.Utility.ValueProviders;
 using Rock.Tasks;
+using System.Collections.Generic;
+using Microsoft.OData.Edm;
 
 namespace Rock.Rest
 {
@@ -41,6 +43,11 @@ namespace Rock.Rest
     /// </summary>
     public static class WebApiConfig
     {
+        /// <summary>
+        /// Compiled Model that is used to create the OData Routes and Process Queries (see RockEnableQueryAttribute)
+        /// </summary>
+        public static IEdmModel EdmModel = null;
+
         /// <summary>
         /// Maps ODataService Route and registers routes for any controller actions that use a [Route] attribute
         /// </summary>
@@ -312,7 +319,16 @@ namespace Rock.Rest
 
             foreach ( var entityType in entityTypeList )
             {
-                var entityTypeConfig = builder.AddEntity( entityType );
+                var entityTypeConfig = builder.AddEntityType( entityType );
+
+
+                // OData 4 convention is to treat all IDictionary<string, object> properties as special "Open Types", we don't want OData to do that!
+                // See https://docs.microsoft.com/en-us/aspnet/web-api/overview/odata-support-in-aspnet-web-api/odata-v4/use-open-types-in-odata-v4
+                var odataDynamicProperties = entityType.GetProperties().Where( p => typeof( IDictionary<string, object> ).IsAssignableFrom( p.PropertyType ) );
+                foreach ( var odataDynamicProperty in odataDynamicProperties )
+                {
+                    entityTypeConfig.RemoveProperty( odataDynamicProperty );
+                }
 
                 var tableAttribute = entityType.GetCustomAttribute<TableAttribute>();
                 string name;
@@ -332,7 +348,9 @@ namespace Rock.Rest
             // Disable the api/$metadata route
             var conventions = defaultConventions.Except( defaultConventions.OfType<MetadataRoutingConvention>() );
 
-            config.Routes.MapODataServiceRoute( "api", "api", builder.GetEdmModel(), pathHandler: new DefaultODataPathHandler(), routingConventions: conventions );
+            WebApiConfig.EdmModel = builder.GetEdmModel();
+
+            config.MapODataServiceRoute( "api", "api", WebApiConfig.EdmModel, pathHandler: new DefaultODataPathHandler(), routingConventions: conventions );
 
 
             new Rock.Transactions.RegisterControllersTransaction().Enqueue();
