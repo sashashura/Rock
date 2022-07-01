@@ -150,5 +150,10 @@ namespace Rock.SystemGuid
         /// The Process Elevated Security Job. <see cref="Rock.Jobs.ProcessElevatedSecurity"/>
         /// </summary>
         public const string PROCESS_ELEVATED_SECURITY = "A1AF9D7D-E968-4AF6-B203-6BB4FD625714";
+
+        /// <summary>
+        /// The Calculate Reminder Counts Job. <see cref="Rock.Jobs.CalculateReminderCounts"/>
+        /// </summary>
+        public const string CALCULATE_REMINDER_COUNTS = "3F697C80-4C33-4552-9038-D3470445EA40";
     }
 }
