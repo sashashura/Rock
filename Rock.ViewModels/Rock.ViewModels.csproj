@@ -47,6 +47,8 @@
     <Compile Include="Blocks\Core\CampusDetail\CampusBag.cs" />
     <Compile Include="Blocks\Core\CampusDetail\CampusDetailOptionsBag.cs" />
     <Compile Include="Blocks\Core\CampusDetail\CampusScheduleBag.cs" />
+    <Compile Include="Blocks\CRM\AssessmentTypeDetail\AssessmentTypeBag.cs" />
+    <Compile Include="Blocks\CRM\AssessmentTypeDetail\AssessmentTypeDetailOptionsBag.cs" />
     <Compile Include="Blocks\CRM\PersonDetail\Badges\BadgesConfigurationBox.cs" />
     <Compile Include="Blocks\DetailBlockBox.cs" />
     <Compile Include="Blocks\Engagement\StepFlowBox.cs" />

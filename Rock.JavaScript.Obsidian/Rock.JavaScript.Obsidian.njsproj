@@ -88,6 +88,7 @@
     <Folder Include="Framework\ViewModels\Blocks\Core\" />
     <Folder Include="Framework\ViewModels\Blocks\Core\CampusDetail\" />
     <Folder Include="Framework\ViewModels\Blocks\CRM\" />
+    <Folder Include="Framework\ViewModels\Blocks\CRM\AssessmentTypeDetail\" />
     <Folder Include="Framework\ViewModels\Blocks\CRM\PersonDetail\" />
     <Folder Include="Framework\ViewModels\Blocks\CRM\PersonDetail\Badges\" />
     <Folder Include="Framework\ViewModels\Blocks\Engagement\" />
@@ -372,6 +373,8 @@
     <TypeScriptCompile Include="Framework\ViewModels\Blocks\Core\CampusDetail\campusBag.d.ts" />
     <TypeScriptCompile Include="Framework\ViewModels\Blocks\Core\CampusDetail\campusDetailOptionsBag.d.ts" />
     <TypeScriptCompile Include="Framework\ViewModels\Blocks\Core\CampusDetail\campusScheduleBag.d.ts" />
+    <TypeScriptCompile Include="Framework\ViewModels\Blocks\CRM\AssessmentTypeDetail\assessmentTypeBag.d.ts" />
+    <TypeScriptCompile Include="Framework\ViewModels\Blocks\CRM\AssessmentTypeDetail\assessmentTypeDetailOptionsBag.d.ts" />
     <TypeScriptCompile Include="Framework\ViewModels\Blocks\CRM\PersonDetail\Badges\badgesConfigurationBox.d.ts" />
     <TypeScriptCompile Include="Framework\ViewModels\Blocks\detailBlockBox.d.ts" />
     <TypeScriptCompile Include="Framework\ViewModels\Blocks\Engagement\Steps\flowNodeDiagramEdgeBag.d.ts" />

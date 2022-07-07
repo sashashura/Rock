@@ -61,6 +61,7 @@
     </Compile>
     <Compile Include="Core\Attributes.cs" />
     <Compile Include="Core\CampusDetail.cs" />
+    <Compile Include="CRM\AssessmentTypeDetail.cs" />
     <Compile Include="CRM\PersonDetail\Badges.cs" />
     <Compile Include="Event\RegistrationEntry.cs" />
     <Compile Include="Example\FieldTypeGallery.cs" />
