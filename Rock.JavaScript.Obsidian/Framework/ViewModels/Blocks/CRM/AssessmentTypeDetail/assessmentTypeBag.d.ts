@@ -48,6 +48,9 @@ export type AssessmentTypeBag = {
     /** Gets or sets the Title of the Rock.Model.AssessmentType   */
     title?: string | null;
 
+    /** Gets or sets the Valid Duration of the Rock.Model.AssessmentType   */
+    validDuration: number;
+
     /** Gets or sets the identifier key of this entity. */
     idKey?: string | null;
 

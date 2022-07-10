@@ -1,4 +1,4 @@
-// <copyright>
+﻿// <copyright>
 // Copyright by the Spark Development Network
 //
 // Licensed under the Rock Community License (the "License");
@@ -184,7 +184,8 @@ namespace Rock.Blocks.CRM
                 IsSystem = entity.IsSystem,
                 MinimumDaysToRetake = entity.MinimumDaysToRetake,
                 RequiresRequest = entity.RequiresRequest,
-                Title = entity.Title
+                Title = entity.Title,
+                ValidDuration = entity.ValidDuration
             };
         }
 

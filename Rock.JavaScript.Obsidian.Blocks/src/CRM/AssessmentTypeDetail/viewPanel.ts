@@ -76,6 +76,18 @@ export default defineComponent({
                 return valueBuilder.build();
             }
 
+            if (props.modelValue.requiresRequest) {
+                valueBuilder.addTextValue("Requires Request", props.modelValue.requiresRequest ? "True" : "False");
+            }
+
+            if (props.modelValue.minimumDaysToRetake) {
+                valueBuilder.addTextValue("Minimum Days To Retake", props.modelValue.minimumDaysToRetake.toString());
+            }
+
+            if (props.modelValue.validDuration) {
+                valueBuilder.addTextValue("Valid Duration", props.modelValue.validDuration.toString());
+            }
+
             return valueBuilder.build();
         });
 
@@ -110,10 +122,6 @@ export default defineComponent({
 
     template: `
 <fieldset>
-    <Alert v-if="isSystem" alertType="info">
-        <strong>Note</strong> Because this assessment type is used by Rock, editing is not enabled.
-    </Alert>
-
     <ValueDetailList :modelValue="topValues" />
 
     <div class="row">

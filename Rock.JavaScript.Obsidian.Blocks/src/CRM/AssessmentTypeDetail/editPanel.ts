@@ -16,6 +16,7 @@
 //
 
 import { defineComponent, PropType, ref, watch } from "vue";
+import NumberBox from "@Obsidian/Controls/numberBox";
 import CheckBox from "@Obsidian/Controls/checkBox";
 import TextBox from "@Obsidian/Controls/textBox";
 import { propertyRef, updateRefValue } from "@Obsidian/Utility/component";
@@ -39,7 +40,8 @@ export default defineComponent({
 
     components: {
         CheckBox,
-        TextBox
+        TextBox,
+        NumberBox
     },
 
     emits: {
@@ -49,12 +51,17 @@ export default defineComponent({
     setup(props, { emit }) {
         // #region Values
 
+        const title = propertyRef(props.modelValue.title ?? "", "Title");
         const description = propertyRef(props.modelValue.description ?? "", "Description");
         const isActive = propertyRef(props.modelValue.isActive ?? false, "IsActive");
+        const assessmentPath = propertyRef(props.modelValue.assessmentPath ?? "", "AssessmentPath");
+        const assessmentResultsPath = propertyRef(props.modelValue.assessmentResultsPath ?? "", "AssessmentResultsPath");
+        const minimumDaysToRetake = propertyRef(props.modelValue.minimumDaysToRetake ?? "", "MinimumDaysToRetake");
+        const requiresRequest = propertyRef(props.modelValue.requiresRequest ?? false, "RequiresRequest");
 
         // The properties that are being edited. This should only contain
         // objects returned by propertyRef().
-        const propRefs = [description, isActive];
+        const propRefs = [title, description, isActive, assessmentPath, assessmentResultsPath, minimumDaysToRetake, requiresRequest];
 
         // #endregion
 
@@ -72,8 +79,13 @@ export default defineComponent({
 
         // Watch for parental changes in our model value and update all our values.
         watch(() => props.modelValue, () => {
+            updateRefValue(title, props.modelValue.title ?? "");
             updateRefValue(description, props.modelValue.description ?? "");
             updateRefValue(isActive, props.modelValue.isActive ?? false);
+            updateRefValue(assessmentPath, props.modelValue.assessmentPath ?? "");
+            updateRefValue(assessmentResultsPath, props.modelValue.assessmentResultsPath ?? "");
+            updateRefValue(minimumDaysToRetake, props.modelValue.minimumDaysToRetake ?? "");
+            updateRefValue(requiresRequest, props.modelValue.requiresRequest ?? false);
         });
 
         // Determines which values we want to track changes on (defined in the
@@ -81,23 +93,36 @@ export default defineComponent({
         watch([...propRefs], () => {
             const newValue: AssessmentTypeBag = {
                 ...props.modelValue,
+                title: title.value,
                 description: description.value,
                 isActive: isActive.value,
+                assessmentPath: assessmentPath.value,
+                assessmentResultsPath: assessmentResultsPath.value,
+                minimumDaysToRetake: minimumDaysToRetake.value,
+                requiresRequest: requiresRequest.value
             };
 
             emit("update:modelValue", newValue);
         });
 
         return {
+            title,
             description,
             isActive,
+            assessmentPath,
+            assessmentResultsPath,
+            minimumDaysToRetake,
+            requiresRequest
         };
     },
 
     template: `
 <fieldset>
     <div class="row">
-
+        <div class="col-md-6">
+            <TextBox v-model="title"
+                label="Title" rules="required" />
+        </div>
         <div class="col-md-6">
             <CheckBox v-model="isActive"
                 label="Active" />
@@ -107,6 +132,23 @@ export default defineComponent({
     <TextBox v-model="description"
         label="Description"
         textMode="multiline" />
+
+    <TextBox v-model="assessmentPath"
+        label="Assessment Path" rules="required" />
+
+    <TextBox v-model="assessmentResultsPath"
+        label="Assessment Results Path Path" rules="required" />
+
+    <div class="row">
+        <div class="col-md-6">
+            <NumberBox v-model="minimumDaysToRetake"
+                label="Minimum Days To Retake" help="The minimum number of days after the test has been taken before it can be taken again." />
+        </div>
+        <div class="col-md-6">
+            <CheckBox v-model="requiresRequest"
+                label="Requires Request" help="Is a person required to receive a request before this test can be taken?" />
+        </div>
+    </div>
 </fieldset>
 `
 });

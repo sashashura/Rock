@@ -1,4 +1,4 @@
-// <copyright>
+﻿// <copyright>
 // Copyright by the Spark Development Network
 //
 // Licensed under the Rock Community License (the "License");
@@ -60,5 +60,11 @@ namespace Rock.ViewModels.Blocks.CRM.AssessmentTypeDetail
         /// Gets or sets the Title of the Rock.Model.AssessmentType  
         /// </summary>
         public string Title { get; set; }
+
+        /// <summary>
+        /// Gets or sets the number of days the assessment is valid for <see cref="Rock.Model.AssessmentType"/>.
+        /// How long (in days) is this assessment valid before it must be taken again.
+        /// </summary>
+        public int ValidDuration { get; set; }
     }
 }

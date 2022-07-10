@@ -74,7 +74,7 @@ export default defineComponent({
          * The entity name to display in the block panel.
          */
         const panelName = computed((): string => {
-            return "TODO: Fill Me In";
+            return assessmentTypeViewBag.value?.title ?? "";
         });
 
         /**
@@ -113,7 +113,7 @@ export default defineComponent({
         });
 
         const isEditable = computed((): boolean => {
-            return config.isEditable === true && assessmentTypeViewBag.value?.isSystem !== true;
+            return config.isEditable === true;
         });
 
         const options = computed((): AssessmentTypeDetailOptionsBag => {
@@ -286,7 +286,7 @@ export default defineComponent({
     :isBadgesVisible="true"
     :isDeleteVisible="isEditable"
     :isEditVisible="isEditable"
-    :isFollowVisible="true"
+    :isFollowVisible="false"
     :isSecurityHidden="false"
     @cancelEdit="onCancelEdit"
     @delete="onDelete"
