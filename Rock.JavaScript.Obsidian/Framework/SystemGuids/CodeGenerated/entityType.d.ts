@@ -295,4 +295,6 @@ export const enum EntityType {
     InteractionSourcedAchievementComponent = "1F2B13BE-EFAA-4D4E-B2D2-D221B51AEA67",
     /** The lava shortcode category */
     LavaShortcodeCategory = "6CFE20AD-F883-4F53-A678-0D048406299D",
+    /** The EntityType Guid for Rock.Model.PageRoute */
+    PageRoute = "42C14361-67B2-472C-95BE-EA8A9C511837",
 }

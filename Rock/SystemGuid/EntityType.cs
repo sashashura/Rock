@@ -704,5 +704,10 @@ namespace Rock.SystemGuid
         /// The lava shortcode category
         /// </summary>
         public const string LAVA_SHORTCODE_CATEGORY = "6CFE20AD-F883-4F53-A678-0D048406299D";
+
+        /// <summary>
+        /// The EntityType Guid for <see cref="Rock.Model.PageRoute"/>
+        /// </summary>
+        public const string PAGE_ROUTE = "42C14361-67B2-472C-95BE-EA8A9C511837";
     }
 }
