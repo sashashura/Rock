@@ -21,17 +21,17 @@ import { EntityType } from "@Obsidian/SystemGuids";
 import DetailBlock from "@Obsidian/Templates/detailBlock";
 import { DetailPanelMode } from "@Obsidian/Types/Controls/detailPanelMode";
 import { PanelAction } from "@Obsidian/Types/Controls/panelAction";
-import EditPanel from "./PersonalLinkSectionDetail/editPanel";
-import ViewPanel from "./PersonalLinkSectionDetail/viewPanel";
+import EditPanel from "./PersonalLinkSectionDetail/editPanel.partial";
+import ViewPanel from "./PersonalLinkSectionDetail/viewPanel.partial";
 import { getSecurityGrant, provideSecurityGrant, refreshDetailAttributes, useConfigurationValues, useInvokeBlockAction } from "@Obsidian/Utility/block";
 import { debounce } from "@Obsidian/Utility/util";
 import { NavigationUrlKey } from "./PersonalLinkSectionDetail/types";
 import { DetailBlockBox } from "@Obsidian/ViewModels/Blocks/detailBlockBox";
-import { PersonalLinkSectionBag } from "@Obsidian/ViewModels/Blocks/CMS/PersonalLinkSectionDetail/personalLinkSectionBag";
-import { PersonalLinkSectionDetailOptionsBag } from "@Obsidian/ViewModels/Blocks/CMS/PersonalLinkSectionDetail/personalLinkSectionDetailOptionsBag";
+import { PersonalLinkSectionBag } from "@Obsidian/ViewModels/Blocks/Cms/PersonalLinkSectionDetail/personalLinkSectionBag";
+import { PersonalLinkSectionDetailOptionsBag } from "@Obsidian/ViewModels/Blocks/Cms/PersonalLinkSectionDetail/personalLinkSectionDetailOptionsBag";
 
 export default defineComponent({
-    name: "CMS.PersonalLinkSectionDetail",
+    name: "Cms.PersonalLinkSectionDetail",
 
     components: {
         Alert,
@@ -59,10 +59,7 @@ export default defineComponent({
         // inform the server which incoming values have valid data in them.
         const validProperties = [
             "attributeValues",
-            "iconCssClass",
-            "isShared",
-            "name",
-            "personAlias"
+            "name"
         ];
 
         const refreshAttributesDebounce = debounce(() => refreshDetailAttributes(personalLinkSectionEditBag, validProperties, invokeBlockAction), undefined, true);
@@ -93,6 +90,13 @@ export default defineComponent({
 
             if (panelMode.value !== DetailPanelMode.View) {
                 return null;
+            }
+
+            if (personalLinkSectionViewBag.value?.isShared == true) {
+                labels.push({
+                    title: "Shared",
+                    type: "info"
+                });
             }
 
             return labels;

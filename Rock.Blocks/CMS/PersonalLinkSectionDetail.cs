@@ -26,9 +26,9 @@ using Rock.Data;
 using Rock.Model;
 using Rock.Security;
 using Rock.ViewModels.Blocks;
-using Rock.ViewModels.Blocks.CMS.PersonalLinkSectionDetail;
+using Rock.ViewModels.Blocks.Cms.PersonalLinkSectionDetail;
 
-namespace Rock.Blocks.CMS
+namespace Rock.Blocks.Cms
 {
     /// <summary>
     /// Displays the details of a particular personal link section.
@@ -36,7 +36,7 @@ namespace Rock.Blocks.CMS
     /// <seealso cref="Rock.Blocks.RockObsidianDetailBlockType" />
 
     [DisplayName( "Personal Link Section Detail" )]
-    [Category( "CMS" )]
+    [Category( "Cms" )]
     [Description( "Displays the details of a particular personal link section." )]
     [IconCssClass( "fa fa-question" )]
 
@@ -190,10 +190,8 @@ namespace Rock.Blocks.CMS
             return new PersonalLinkSectionBag
             {
                 IdKey = entity.IdKey,
-                IconCssClass = entity.IconCssClass,
                 IsShared = entity.IsShared,
-                Name = entity.Name,
-                PersonAlias = entity.PersonAlias.ToListItemBag()
+                Name = entity.Name
             };
         }
 
@@ -257,17 +255,8 @@ namespace Rock.Blocks.CMS
                 return false;
             }
 
-            box.IfValidProperty( nameof( box.Entity.IconCssClass ),
-                () => entity.IconCssClass = box.Entity.IconCssClass );
-
-            box.IfValidProperty( nameof( box.Entity.IsShared ),
-                () => entity.IsShared = box.Entity.IsShared );
-
             box.IfValidProperty( nameof( box.Entity.Name ),
                 () => entity.Name = box.Entity.Name );
-
-            box.IfValidProperty( nameof( box.Entity.PersonAlias ),
-                () => entity.PersonAliasId = box.Entity.PersonAlias.GetEntityId<PersonAlias>( rockContext ) );
 
             box.IfValidProperty( nameof( box.Entity.AttributeValues ),
                 () =>
@@ -456,42 +445,44 @@ namespace Rock.Blocks.CMS
 
                 entity = entityService.Get( entity.Id );
 
-                if ( entity != null )
+                if ( entity == null )
                 {
-                    if ( entity.IsShared )
+                    return ActionInternalServerError( "Unable to save, please try again later." );
+                }
+
+                if ( entity.IsShared )
+                {
+                    var groupService = new GroupService( rockContext );
+
+                    var communicationAdministrators = groupService.Get( Rock.SystemGuid.Group.GROUP_COMMUNICATION_ADMINISTRATORS.AsGuid() );
+                    if ( communicationAdministrators != null )
                     {
-                        var groupService = new GroupService( rockContext );
-
-                        var communicationAdministrators = groupService.Get( Rock.SystemGuid.Group.GROUP_COMMUNICATION_ADMINISTRATORS.AsGuid() );
-                        if ( communicationAdministrators != null )
-                        {
-                            entity.AllowSecurityRole( Authorization.VIEW, communicationAdministrators, rockContext );
-                            entity.AllowSecurityRole( Authorization.EDIT, communicationAdministrators, rockContext );
-                            entity.AllowSecurityRole( Authorization.ADMINISTRATE, communicationAdministrators, rockContext );
-                        }
-
-                        var webAdministrators = groupService.Get( Rock.SystemGuid.Group.GROUP_WEB_ADMINISTRATORS.AsGuid() );
-                        if ( webAdministrators != null )
-                        {
-                            entity.AllowSecurityRole( Authorization.VIEW, webAdministrators, rockContext );
-                            entity.AllowSecurityRole( Authorization.EDIT, webAdministrators, rockContext );
-                            entity.AllowSecurityRole( Authorization.ADMINISTRATE, webAdministrators, rockContext );
-                        }
-
-                        var rockAdministrators = groupService.Get( Rock.SystemGuid.Group.GROUP_ADMINISTRATORS.AsGuid() );
-                        if ( rockAdministrators != null )
-                        {
-                            entity.AllowSecurityRole( Authorization.VIEW, rockAdministrators, rockContext );
-                            entity.AllowSecurityRole( Authorization.EDIT, rockAdministrators, rockContext );
-                            entity.AllowSecurityRole( Authorization.ADMINISTRATE, rockAdministrators, rockContext );
-                        }
+                        entity.AllowSecurityRole( Authorization.VIEW, communicationAdministrators, rockContext );
+                        entity.AllowSecurityRole( Authorization.EDIT, communicationAdministrators, rockContext );
+                        entity.AllowSecurityRole( Authorization.ADMINISTRATE, communicationAdministrators, rockContext );
                     }
-                    else
+
+                    var webAdministrators = groupService.Get( Rock.SystemGuid.Group.GROUP_WEB_ADMINISTRATORS.AsGuid() );
+                    if ( webAdministrators != null )
                     {
-                        entity.MakePrivate( Authorization.VIEW, currentPerson );
-                        entity.MakePrivate( Authorization.EDIT, currentPerson, rockContext );
-                        entity.MakePrivate( Authorization.ADMINISTRATE, currentPerson, rockContext );
+                        entity.AllowSecurityRole( Authorization.VIEW, webAdministrators, rockContext );
+                        entity.AllowSecurityRole( Authorization.EDIT, webAdministrators, rockContext );
+                        entity.AllowSecurityRole( Authorization.ADMINISTRATE, webAdministrators, rockContext );
                     }
+
+                    var rockAdministrators = groupService.Get( Rock.SystemGuid.Group.GROUP_ADMINISTRATORS.AsGuid() );
+                    if ( rockAdministrators != null )
+                    {
+                        entity.AllowSecurityRole( Authorization.VIEW, rockAdministrators, rockContext );
+                        entity.AllowSecurityRole( Authorization.EDIT, rockAdministrators, rockContext );
+                        entity.AllowSecurityRole( Authorization.ADMINISTRATE, rockAdministrators, rockContext );
+                    }
+                }
+                else
+                {
+                    entity.MakePrivate( Authorization.VIEW, currentPerson );
+                    entity.MakePrivate( Authorization.EDIT, currentPerson, rockContext );
+                    entity.MakePrivate( Authorization.ADMINISTRATE, currentPerson, rockContext );
                 }
 
                 if ( isNew )

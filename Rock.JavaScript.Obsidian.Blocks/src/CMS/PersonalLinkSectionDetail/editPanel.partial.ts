@@ -20,11 +20,11 @@ import AttributeValuesContainer from "@Obsidian/Controls/attributeValuesContaine
 import TextBox from "@Obsidian/Controls/textBox";
 import { watchPropertyChanges } from "@Obsidian/Utility/block";
 import { propertyRef, updateRefValue } from "@Obsidian/Utility/component";
-import { PersonalLinkSectionBag } from "@Obsidian/ViewModels/Blocks/CMS/PersonalLinkSectionDetail/personalLinkSectionBag";
-import { PersonalLinkSectionDetailOptionsBag } from "@Obsidian/ViewModels/Blocks/CMS/PersonalLinkSectionDetail/personalLinkSectionDetailOptionsBag";
+import { PersonalLinkSectionBag } from "@Obsidian/ViewModels/Blocks/Cms/PersonalLinkSectionDetail/personalLinkSectionBag";
+import { PersonalLinkSectionDetailOptionsBag } from "@Obsidian/ViewModels/Blocks/Cms/PersonalLinkSectionDetail/personalLinkSectionDetailOptionsBag";
 
 export default defineComponent({
-    name: "CMS.PersonalLinkSectionDetail.EditPanel",
+    name: "Cms.PersonalLinkSectionDetail.EditPanel",
 
     props: {
         modelValue: {

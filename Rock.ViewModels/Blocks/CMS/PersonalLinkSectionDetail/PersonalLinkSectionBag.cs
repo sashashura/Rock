@@ -1,4 +1,4 @@
-// <copyright>
+﻿// <copyright>
 // Copyright by the Spark Development Network
 //
 // Licensed under the Rock Community License (the "License");
@@ -17,15 +17,10 @@
 
 using Rock.ViewModels.Utility;
 
-namespace Rock.ViewModels.Blocks.CMS.PersonalLinkSectionDetail
+namespace Rock.ViewModels.Blocks.Cms.PersonalLinkSectionDetail
 {
     public class PersonalLinkSectionBag : EntityBagBase
     {
-        /// <summary>
-        /// Gets or sets the icon CSS class.
-        /// </summary>
-        public string IconCssClass { get; set; }
-
         /// <summary>
         /// Gets or sets a flag indicating if this Link Section is shared.
         /// </summary>
@@ -35,10 +30,5 @@ namespace Rock.ViewModels.Blocks.CMS.PersonalLinkSectionDetail
         /// Gets or sets the name.
         /// </summary>
         public string Name { get; set; }
-
-        /// <summary>
-        /// Gets or sets the person alias.
-        /// </summary>
-        public ListItemBag PersonAlias { get; set; }
     }
 }

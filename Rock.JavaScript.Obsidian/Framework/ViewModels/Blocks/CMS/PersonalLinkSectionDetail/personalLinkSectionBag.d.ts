@@ -25,17 +25,11 @@ import { ListItemBag } from "@Obsidian/ViewModels/Utility/listItemBag";
 import { PublicAttributeBag } from "@Obsidian/ViewModels/Utility/publicAttributeBag";
 
 export type PersonalLinkSectionBag = {
-    /** Gets or sets the icon CSS class. */
-    iconCssClass?: string | null;
-
     /** Gets or sets a flag indicating if this Link Section is shared. */
     isShared: boolean;
 
     /** Gets or sets the name. */
     name?: string | null;
-
-    /** Gets or sets the person alias. */
-    personAlias?: ListItemBag | null;
 
     /** Gets or sets the identifier key of this entity. */
     idKey?: string | null;

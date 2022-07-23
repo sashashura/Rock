@@ -1,4 +1,4 @@
-// <copyright>
+﻿// <copyright>
 // Copyright by the Spark Development Network
 //
 // Licensed under the Rock Community License (the "License");
@@ -15,7 +15,7 @@
 // </copyright>
 //
 
-namespace Rock.ViewModels.Blocks.CMS.PersonalLinkSectionDetail
+namespace Rock.ViewModels.Blocks.Cms.PersonalLinkSectionDetail
 {
     public class PersonalLinkSectionDetailOptionsBag
     {

@@ -36,8 +36,8 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="src\" />
-    <Folder Include="src\CMS\" />
-    <Folder Include="src\CMS\PersonalLinkSectionDetail\" />
+    <Folder Include="src\Cms\" />
+    <Folder Include="src\Cms\PersonalLinkSectionDetail\" />
     <Folder Include="src\Core\" />
     <Folder Include="src\Core\CampusDetail\" />
     <Folder Include="src\CRM\" />
@@ -59,10 +59,10 @@
     <Folder Include="src\WorkFlow\FormBuilder\Shared\" />
   </ItemGroup>
   <ItemGroup>
-    <TypeScriptCompile Include="src\CMS\personalLinkSectionDetail.ts" />
-    <TypeScriptCompile Include="src\CMS\PersonalLinkSectionDetail\editPanel.ts" />
-    <TypeScriptCompile Include="src\CMS\PersonalLinkSectionDetail\types.d.ts" />
-    <TypeScriptCompile Include="src\CMS\PersonalLinkSectionDetail\viewPanel.ts" />
+    <TypeScriptCompile Include="src\Cms\personalLinkSectionDetail.ts" />
+    <TypeScriptCompile Include="src\Cms\PersonalLinkSectionDetail\editPanel.partial.ts" />
+    <TypeScriptCompile Include="src\Cms\PersonalLinkSectionDetail\types.d.ts" />
+    <TypeScriptCompile Include="src\Cms\PersonalLinkSectionDetail\viewPanel.partial.ts" />
     <TypeScriptCompile Include="src\Core\attributes.ts" />
     <TypeScriptCompile Include="src\Core\campusDetail.ts" />
     <TypeScriptCompile Include="src\Core\CampusDetail\editPanel.ts" />

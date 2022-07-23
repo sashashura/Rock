@@ -20,11 +20,11 @@ import AttributeValuesContainer from "@Obsidian/Controls/attributeValuesContaine
 import ValueDetailList from "@Obsidian/Controls/valueDetailList";
 import { ValueDetailListItemBuilder } from "@Obsidian/Core/Controls/valueDetailListItemBuilder";
 import { ValueDetailListItem } from "@Obsidian/Types/Controls/valueDetailListItem";
-import { PersonalLinkSectionBag } from "@Obsidian/ViewModels/Blocks/CMS/PersonalLinkSectionDetail/personalLinkSectionBag";
-import { PersonalLinkSectionDetailOptionsBag } from "@Obsidian/ViewModels/Blocks/CMS/PersonalLinkSectionDetail/personalLinkSectionDetailOptionsBag";
+import { PersonalLinkSectionBag } from "@Obsidian/ViewModels/Blocks/Cms/PersonalLinkSectionDetail/personalLinkSectionBag";
+import { PersonalLinkSectionDetailOptionsBag } from "@Obsidian/ViewModels/Blocks/Cms/PersonalLinkSectionDetail/personalLinkSectionDetailOptionsBag";
 
 export default defineComponent({
-    name: "CMS.PersonalLinkSectionDetail.ViewPanel",
+    name: "Cms.PersonalLinkSectionDetail.ViewPanel",
 
     props: {
         modelValue: {
