@@ -1,4 +1,4 @@
-// <copyright>
+﻿// <copyright>
 // Copyright by the Spark Development Network
 //
 // Licensed under the Rock Community License (the "License");
@@ -439,6 +439,16 @@ namespace RockWeb.Blocks.Cms
                     {
                         taglTags.EntityGuid = contentItem.Guid;
                         taglTags.SaveTagValues( CurrentPersonAlias );
+                    }
+
+                    if ( contentItem.ContentChannel.EnablePersonalization )
+                    {
+                        var entityTypeId = EntityTypeCache.Get<Rock.Model.ContentChannelItem>().Id;
+                        var personalizationSegmentService = new PersonalizationSegmentService( rockContext );
+                        personalizationSegmentService.UpdatePersonalizedEntityForSegments( entityTypeId, contentItem.Id, lbSegments.SelectedValuesAsInt );
+
+                        var requestFilterService = new RequestFilterService( rockContext );
+                        requestFilterService.UpdatePersonalizedEntityForRequestFilters( entityTypeId, contentItem.Id, lbRequestFilters.SelectedValuesAsInt );
                     }
 
                     int? eventItemOccurrenceId = PageParameter( PageParameterKey.EventItemOccurrenceId ).AsIntegerOrNull();
@@ -1099,6 +1109,23 @@ namespace RockWeb.Blocks.Cms
                 bool canHaveChildren = contentItem.Id > 0 && contentItem.ContentChannel.ChildContentChannels.Any();
                 bool canHaveParents = contentItem.Id > 0 && contentItem.ContentChannel.ParentContentChannels.Any();
 
+                var enablePersonalization = contentItem.Id > 0 && contentItem.ContentChannel.EnablePersonalization;
+                if ( contentItem.Id == 0 && contentChannelId.HasValue )
+                {
+                    var contentChannel = ContentChannelCache.Get( contentChannelId.Value );
+                    if ( contentChannel != null )
+                    {
+                        enablePersonalization = contentChannel.EnablePersonalization;
+                    }
+                }
+
+                pnlPersonalization.Visible = enablePersonalization;
+                if ( enablePersonalization )
+                {
+                    BindSegmentListBox( contentItem );
+                    BindRequestFilterListBox( contentItem );
+                }
+
                 pnlChildrenParents.Visible = canHaveChildren || canHaveParents;
                 phPills.Visible = canHaveChildren && canHaveParents;
                 if ( canHaveChildren && !canHaveParents )
@@ -1126,6 +1153,42 @@ namespace RockWeb.Blocks.Cms
             {
                 nbEditModeMessage.Text = EditModeMessage.NotAuthorizedToEdit( ContentChannelItem.FriendlyTypeName );
                 pnlEditDetails.Visible = false;
+            }
+        }
+
+        private void BindRequestFilterListBox( ContentChannelItem contentItem )
+        {
+            var requestFilterService = new RequestFilterService( new RockContext() );
+            var requestFilters = requestFilterService
+                .Queryable()
+                .ToList();
+            lbRequestFilters.DataSource = requestFilters;
+            lbRequestFilters.DataBind();
+            if ( contentItem.Id > 0 )
+            {
+                var selectedRequestFilterIds = requestFilterService
+                    .GetPersonalizedEntityQueryForRequestFilter( EntityTypeCache.Get<Rock.Model.ContentChannelItem>().Id, contentItem.Id )
+                    .Select( a => a.PersonalizationEntityId )
+                    .ToList();
+                lbRequestFilters.SetValues( selectedRequestFilterIds );
+            }
+        }
+
+        private void BindSegmentListBox( ContentChannelItem contentItem )
+        {
+            var personalizationSegmentService = new PersonalizationSegmentService( new RockContext() );
+            var segments = new PersonalizationSegmentService( new RockContext() )
+                .Queryable()
+                .ToList();
+            lbSegments.DataSource = segments;
+            lbSegments.DataBind();
+            if ( contentItem.Id > 0 )
+            {
+                var selectedSegmentIds = personalizationSegmentService
+                    .GetPersonalizedEntityQueryForSegment( EntityTypeCache.Get<Rock.Model.ContentChannelItem>().Id, contentItem.Id )
+                    .Select( a => a.PersonalizationEntityId )
+                    .ToList();
+                lbSegments.SetValues( selectedSegmentIds );
             }
         }
 
