@@ -35,7 +35,12 @@ export default defineComponent({
             required: false
         },
 
-        showAll: {
+        ShowInactive: {
+            type: Boolean as PropType<boolean>,
+            default: false
+        },
+
+        ShowAllGatewayComponents: {
             type: Boolean as PropType<boolean>,
             default: false
         },
@@ -76,7 +81,8 @@ export default defineComponent({
          */
         const loadOptions = async (): Promise<ListItemBag[]> => {
             const options: Partial<FinancialGatewayPickerGetFinancialGatewaysOptionsBag> = {
-                showAll: props.showAll
+                showInactive: props.ShowInactive,
+                showAllGatewayComponents: props.ShowAllGatewayComponents
             };
 
             const result = await http.post<ListItemBag[]>("/api/v2/Controls/FinancialGatewayPickerGetFinancialGateways", undefined, options);
@@ -109,7 +115,11 @@ export default defineComponent({
 
         // #region Watchers
 
-        watch(() => props.showAll, () => {
+        watch(() => props.ShowInactive, () => {
+            loadedItems.value = null;
+        });
+
+        watch(() => props.ShowAllGatewayComponents, () => {
             loadedItems.value = null;
         });
 
