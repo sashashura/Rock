@@ -15,7 +15,7 @@
 // </copyright>
 //
 import { Guid } from "@Obsidian/Types";
-import { post } from "@Obsidian/Utility/http";
+import { useHttp } from "@Obsidian/Utility/http";
 import { useSuspense } from "@Obsidian/Utility/suspense";
 import { ControlLazyMode, ControlLazyModeType } from "@Obsidian/Types/Controls/controlLazyMode";
 import { EntityTagListAddEntityTagOptionsBag } from "@Obsidian/ViewModels/Rest/Controls/entityTagListAddEntityTagOptionsBag";
@@ -25,9 +25,10 @@ import { EntityTagListGetAvailableTagsOptionsBag } from "@Obsidian/ViewModels/Re
 import { EntityTagListRemoveEntityTagOptionsBag } from "@Obsidian/ViewModels/Rest/Controls/entityTagListRemoveEntityTagOptionsBag";
 import { EntityTagListTagBag } from "@Obsidian/ViewModels/Rest/Controls/entityTagListTagBag";
 import { AutoComplete } from "ant-design-vue";
-import { computed, defineComponent, PropType, Ref, ref, watch } from "vue";
+import { computed, defineComponent, nextTick, PropType, Ref, ref, watch } from "vue";
 import { useSecurityGrantToken } from "@Obsidian/Utility/block";
 import { alert, confirm } from "@Obsidian/Utility/dialogs";
+import { HttpFunctions } from "@Obsidian/Types/Utility/http";
 
 /** The type definition for a select option, since the ones from the library are wrong. */
 type SelectOption = {
@@ -107,21 +108,21 @@ const tag = defineComponent({
 
 /**
  * Get the existing tags on an entity.
- * 
+ *
  * @param entityTypeGuid The unique identifier of the entity type.
  * @param entityKey The identifier key of the entity.
  * @param securityToken The security token to grant additional access.
  *
  * @returns A promise to an array of EntityTagListTagBag objects with the existing tag information.
  */
-async function getEntityTags(entityTypeGuid: Guid, entityKey: string, securityToken: string | null): Promise<EntityTagListTagBag[]> {
+async function getEntityTags(http: HttpFunctions, entityTypeGuid: Guid, entityKey: string, securityToken: string | null): Promise<EntityTagListTagBag[]> {
     const data: EntityTagListGetEntityTagsOptionsBag = {
         entityTypeGuid: entityTypeGuid,
         entityKey: entityKey,
         securityGrantToken: securityToken
     };
 
-    const result = await post<EntityTagListTagBag[]>("/api/v2/Controls/EntityTagListGetEntityTags", undefined, data);
+    const result = await http.post<EntityTagListTagBag[]>("/api/v2/Controls/EntityTagListGetEntityTags", undefined, data);
 
     if (result.isSuccess && result.data) {
         return result.data;
@@ -177,10 +178,12 @@ export default defineComponent({
         // #region Values
 
         const securityToken = useSecurityGrantToken();
+        const http = useHttp();
         const currentTags = ref<EntityTagListTagBag[]>([]);
         const searchValue = ref("");
         const searchOptions = ref<SelectOption[]>([]);
         const isNewTagVisible = ref(false);
+        const tagsInputRef = ref<HTMLElement | null>(null);
         let loadCancelledToken: Ref<boolean> | null = null;
         let searchCancelledToken: Ref<boolean> | null = null;
         let isAddNewTagCancelled: boolean = false;
@@ -191,7 +194,7 @@ export default defineComponent({
 
         /**
          * Finds an existing tag with the given name and returns it.
-         * 
+         *
          * @param name The name of the tag to find on the server.
          *
          * @returns An object that contains the tag information or null if no matching tag was found.
@@ -205,7 +208,7 @@ export default defineComponent({
                 securityGrantToken: securityToken.value
             };
 
-            const result = await post<EntityTagListTagBag[]>("/api/v2/Controls/EntityTagListGetAvailableTags", undefined, data);
+            const result = await http.post<EntityTagListTagBag[]>("/api/v2/Controls/EntityTagListGetAvailableTags", undefined, data);
 
             if (result.isSuccess && result.data) {
                 // Filter the matching tags to find one that matches the tag name
@@ -226,7 +229,7 @@ export default defineComponent({
 
         /**
          * Creates a new personal tag on the server with the given tag name.
-         * 
+         *
          * @param name The name of the tag to be created.
          *
          * @returns An object that contains the tag information that was created or null if one couldn't be created.
@@ -239,7 +242,7 @@ export default defineComponent({
                 securityGrantToken: securityToken.value
             };
 
-            const result = await post<EntityTagListTagBag>("/api/v2/Controls/EntityTagListCreatePersonalTag", undefined, data);
+            const result = await http.post<EntityTagListTagBag>("/api/v2/Controls/EntityTagListCreatePersonalTag", undefined, data);
 
             // An OK and CONFLICT both will return a valid tag.
             if ((result.isSuccess || result.statusCode === 409) && result.data) {
@@ -252,7 +255,7 @@ export default defineComponent({
 
         /**
          * Add an existing tag to the entity.
-         * 
+         *
          * @param tagKey The key identifier of the tag to be added.
          */
         const addTag = async (tagKey: string): Promise<void> => {
@@ -263,7 +266,7 @@ export default defineComponent({
                 securityGrantToken: securityToken.value
             };
 
-            const result = await post<EntityTagListTagBag>("/api/v2/Controls/EntityTagListAddEntityTag", undefined, data);
+            const result = await http.post<EntityTagListTagBag>("/api/v2/Controls/EntityTagListAddEntityTag", undefined, data);
 
             if (result.isSuccess && result.data) {
                 const newTags = [...currentTags.value];
@@ -280,7 +283,7 @@ export default defineComponent({
 
         /**
          * Remove an existing tag from the entity.
-         * 
+         *
          * @param tagKey The identifier key of the tag to be removed.
          */
         const removeTag = async (tagKey: string): Promise<void> => {
@@ -291,7 +294,7 @@ export default defineComponent({
                 securityGrantToken: securityToken.value
             };
 
-            const result = await post<EntityTagListTagBag>("/api/v2/Controls/EntityTagListRemoveEntityTag", undefined, data);
+            const result = await http.post<EntityTagListTagBag>("/api/v2/Controls/EntityTagListRemoveEntityTag", undefined, data);
 
             if (result.isSuccess) {
                 const newTags = currentTags.value.filter(t => t.idKey !== tagKey);
@@ -306,7 +309,7 @@ export default defineComponent({
         /**
          * Add a tag by name to the entity. If the tag doesn't exist the user
          * will be prompted to create a new personal tag.
-         * 
+         *
          * @param tagName The name of the tag to be added.
          */
         const addNamedTag = async (tagName: string): Promise<void> => {
@@ -342,7 +345,7 @@ export default defineComponent({
                 const cancelled = ref(false);
                 loadCancelledToken = cancelled;
 
-                const tags = await getEntityTags(props.entityTypeGuid, props.entityKey, securityToken.value);
+                const tags = await getEntityTags(http, props.entityTypeGuid, props.entityKey, securityToken.value);
 
                 // If we haven't been cancelled, then set the value.
                 if (!cancelled.value) {
@@ -357,7 +360,7 @@ export default defineComponent({
 
         /**
          * Called when the user selects an existing tag from the popup list.
-         * 
+         *
          * @param value The value of the tag that was selected.
          */
         const onSelect = (value: string): void => {
@@ -376,7 +379,7 @@ export default defineComponent({
 
         /**
          * Called when an autocomplete search operation should start.
-         * 
+         *
          * @param value The value that has been typed so far that should be searched for.
          */
         const onSearch = async (value: string): Promise<void> => {
@@ -399,7 +402,7 @@ export default defineComponent({
                 name: value
             };
 
-            const result = await post<EntityTagListTagBag[]>("/api/v2/Controls/EntityTagListGetAvailableTags", undefined, data);
+            const result = await http.post<EntityTagListTagBag[]>("/api/v2/Controls/EntityTagListGetAvailableTags", undefined, data);
 
             if (result.isSuccess && result.data) {
                 searchOptions.value = result.data.map(t => {
@@ -413,7 +416,7 @@ export default defineComponent({
 
         /**
          * Called when a key has been pressed while the tag search field has focus.
-         * 
+         *
          * @param ev The object that describes the event being handled.
          */
         const onInputKeyDown = (ev: KeyboardEvent): void => {
@@ -435,7 +438,7 @@ export default defineComponent({
 
         /**
          * Called when the remove button for an existing tag has been clicked.
-         * 
+         *
          * @param tagKey The identifier key of the tag to be removed.
          */
         const onRemoveTag = async (tagKey: string): Promise<void> => {
@@ -448,6 +451,12 @@ export default defineComponent({
          */
         const onAddNewTagsClick = (): void => {
             isNewTagVisible.value = true;
+
+            // After the UI updates, put the keyboard focus on the input box.
+            nextTick(() => {
+                const input = tagsInputRef.value?.querySelector("input.ant-select-selection-search-input") as HTMLElement;
+                input?.focus();
+            });
         };
 
         // #endregion
@@ -475,7 +484,8 @@ export default defineComponent({
             onSearch,
             onSelect,
             searchOptions,
-            searchValue
+            searchValue,
+            tagsInputRef
         };
     },
 
@@ -525,7 +535,7 @@ export default defineComponent({
     </v-style>
 
     <div class="tag-wrap">
-        <div class="tagsInput">
+        <div class="tagsinput" ref="tagsInputRef">
             <Tag v-for="tag in currentTags"
                 :key="tag.value"
                 :modelValue="tag"

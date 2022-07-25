@@ -35,12 +35,8 @@ type FlowDiagramLevelNode = FlowNodeDiagramNodeBag & Rectangle & {
 type FlowDiagramLevel = FlowDiagramLevelNode[];
 type FlowDiagramData = FlowDiagramLevel[];
 
-type FlowNodeDiagramSettingsFull = {
-    nodeWidth: number;
-    nodeVerticalSpacing: number;
-    nodeHorizontalSpacing: number;
-    chartHeight: number;
-};
+type NonNullValues<T> = { [P in keyof T]: NonNullable<T[P]> };
+type FlowNodeDiagramSettingsFull = NonNullValues<Required<FlowNodeDiagramSettingsBag>>;
 
 const defaultSettings = {
     nodeWidth: 12,
@@ -146,8 +142,7 @@ const FlowNodeDiagramLevel = defineComponent({ // eslint-disable-line @typescrip
             v-for="(flow, index) in node.inFlows"
             key="node.id + 'flow' + index"
             :d="flowPoints(flow)"
-            fill="#AAAAAA"
-            :fill-opacity="0.6"
+            fill="rgb(170, 170, 170, 0.6)"
             @mousemove="onHoverFlow(flow, $event)"
             @mouseout="onUnHover"
             :class="flowClass(flow)"
@@ -208,7 +203,7 @@ export default defineComponent({
     setup(props) {
         const settings = computed<FlowNodeDiagramSettingsFull>(() => {
             const settings = { ...defaultSettings };
-            Object.entries((key, value) => {
+            Object.entries(props.settings).forEach(([key, value]) => {
                 if (value !== undefined && value !== null) {
                     settings[key] = value;
                 }
@@ -220,7 +215,7 @@ export default defineComponent({
         const levelsCount = computed(() => props.flowEdges.reduce((count, edge) => Math.max(count, edge.level), 0));
         const chartWidth = computed(() => {
             // 24 is the left margin before the first level nodes so we have room for labels and a bit of padding.
-            const calculated = 24 + /* nodes */ (settings.value.nodeWidth * nodeCount.value) + /* flows */ (settings.value.nodeHorizontalSpacing * (levelsCount.value - 1));
+            const calculated = 24 + /* nodes */ (settings.value.nodeWidth * levelsCount.value) + /* flows */ (settings.value.nodeHorizontalSpacing * (levelsCount.value - 1));
 
             // Want to make sure it always has a minimum size so we can display "loading" while we have no data
             return Math.max(calculated, 200);
@@ -391,17 +386,20 @@ export default defineComponent({
     position: relative;
     width: max-content;
     max-width: 100%;
+    margin: 0 auto;
 }
 
 .flow-node-diagram-container .flow-tooltip {
     position: absolute;
-    background: white;
+    background: #fff;
     {{ tooltip.side }}: {{ tooltip.x }}px;
     top: {{ tooltip.y }}px;
-    width: max-content;
+    max-width: 260px;
     border: 1px solid #ddd;
-    border-radius: 5px;
-    padding: 1rem;
+    border-radius: 4px;
+    padding: 8px;
+    font-size: 14px;
+    box-shadow: 0 1px 2px 0 rgba(0,0,0,.05)
 }
 
 .flow-node-diagram-container svg {
@@ -437,15 +435,19 @@ export default defineComponent({
 .flow-node-diagram-container .fade-leave-active {
     transition: opacity .2s ease-in-out;
 }
+
+.step-flow-svg .edge:hover {
+    fill: rgba(170, 170, 170, 0.8);
+}
 </v-style>
 
 <div class="flow-node-diagram-container">
     <div class="flow-tooltip" v-html="tooltip.html" v-if="tooltip.isShown" />
 
-    <svg :width="chartWidth" :height="chartHeight" :viewBox="'0 0 ' + chartWidth + ' ' + chartHeight">
+    <svg class="step-flow-svg mx-auto" :width="chartWidth" :height="chartHeight" :viewBox="'0 0 ' + chartWidth + ' ' + chartHeight">
         <FlowNodeDiagramLevel
             v-for="(level, levelNum) in diagramData"
-            key="levelNum"
+            :key="'level' + levelNum"
             :levelData="level"
             :levelNumber="levelNum + 1"
             @showTooltip="showTooltip"

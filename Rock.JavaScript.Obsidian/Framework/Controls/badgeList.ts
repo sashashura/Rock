@@ -16,9 +16,11 @@
 //
 
 import { Guid } from "@Obsidian/Types";
-import { post } from "@Obsidian/Utility/http";
+import { useHttp } from "@Obsidian/Utility/http";
+import { popover } from "@Obsidian/Utility/popover";
+import { tooltip } from "@Obsidian/Utility/tooltip";
 import { BadgeListGetBadgesOptionsBag } from "@Obsidian/ViewModels/Rest/Controls/badgeListGetBadgesOptionsBag";
-import { RenderedBadgeBag } from "@Obsidian/ViewModels/CRM/renderedBadgeBag";
+import { RenderedBadgeBag } from "@Obsidian/ViewModels/Crm/renderedBadgeBag";
 import { defineComponent, nextTick, PropType, ref, watch } from "vue";
 
 /** Displays a collection of badges for the specified entity. */
@@ -49,7 +51,15 @@ export default defineComponent({
     },
 
     setup(props) {
+        // #region Values
+
+        const http = useHttp();
         const badges = ref<string[]>([]);
+        const containerRef = ref<HTMLElement | null>(null);
+
+        // #endregion
+
+        // #region Functions
 
         /** Load the badges from our property data and render the output to the DOM. */
         const loadBadges = async (): Promise<void> => {
@@ -59,7 +69,7 @@ export default defineComponent({
                 entityKey: props.entityKey
             };
 
-            const result = await post<RenderedBadgeBag[]>("/api/v2/Controls/BadgeListGetBadges", undefined, data);
+            const result = await http.post<RenderedBadgeBag[]>("/api/v2/Controls/BadgeListGetBadges", undefined, data);
 
             if (result.isSuccess && result.data) {
                 // Get all the HTML content to be rendered.
@@ -82,12 +92,24 @@ export default defineComponent({
                         document.body.appendChild(scriptNode);
                     });
                 }
+
+                // Enable tooltips and popovers.
+                nextTick(() => {
+                    if (!containerRef.value) {
+                        return;
+                    }
+
+                    tooltip(Array.from(containerRef.value.querySelectorAll(".rockbadge[data-toggle=\"tooltip\"]")));
+                    popover(Array.from(containerRef.value.querySelectorAll(".rockbadge[data-toggle=\"popover\"]")));
+                });
             }
             else {
                 console.error(`Error loading badges: ${result.errorMessage || "Unknown error"}`);
                 badges.value = [];
             }
         };
+
+        // #endregion
 
         watch([() => props.badgeTypeGuids, () => props.entityKey, () => props.entityTypeGuid], () => {
             loadBadges();
@@ -97,12 +119,13 @@ export default defineComponent({
         loadBadges();
 
         return {
-            badges
+            badges,
+            containerRef
         };
     },
 
     template: `
-<div style="display: flex;">
+<div ref="containerRef" style="display: flex;">
     <div v-for="badge in badges" v-html="badge" />
 </div>
 `

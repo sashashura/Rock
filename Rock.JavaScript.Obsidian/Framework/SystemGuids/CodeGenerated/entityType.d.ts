@@ -111,6 +111,8 @@ export const enum EntityType {
     HttpModuleComponent = "EDE69F48-5E05-4260-B360-DA37DFD1AB83",
     /** The guid for Rock.Model.Interaction */
     Interaction = "3BB4B095-2DE4-4009-8FA2-705BF284F7B7",
+    /** The guid for the Rock.Model.MediaAccount entity */
+    MediaAccount = "3723425F-6BB3-4F5C-8BD6-0B0B9D22EF70",
     /** The guid for the Rock.Model.MetricCategory entity */
     Metriccategory = "3D35C859-DF37-433F-A20A-0FFD0FCB9862",
     /** The guid for the Rock.Model.MergeTemplate entity */
@@ -243,6 +245,8 @@ export const enum EntityType {
     ServiceJob = "52766196-A72F-4F60-997A-78E19508843D",
     /** The Signal Type entity type */
     SignalType = "0BA03B9B-E974-4526-9B21-5037424B6D16",
+    /** The Step Flow entity type */
+    StepFlow = "308D8252-7712-4A45-8DE4-737C3EEAEA8F",
     /** The guid for the database storage provider entity */
     StorageProviderDatabase = "0AA42802-04FD-4AEC-B011-FEB127FC85CD",
     /** The guid for Rock.Model.Streak */
@@ -291,4 +295,6 @@ export const enum EntityType {
     StepProgramAchievementComponent = "7140BAE3-89E9-423E-A691-6E13544203CA",
     /** The EntityType Guid for Rock.Achievement.Component.InteractionSourcedAccumulativeAchievement  */
     InteractionSourcedAchievementComponent = "1F2B13BE-EFAA-4D4E-B2D2-D221B51AEA67",
+    /** The lava shortcode category */
+    LavaShortcodeCategory = "6CFE20AD-F883-4F53-A678-0D048406299D",
 }

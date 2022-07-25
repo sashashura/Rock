@@ -27,14 +27,16 @@ using Rock.ClientService.Core.Category.Options;
 using Rock.Communication;
 using Rock.Data;
 using Rock.Extension;
+using Rock.Financial;
 using Rock.Model;
 using Rock.Rest.Filters;
 using Rock.Security;
 using Rock.ViewModels.Controls;
-using Rock.ViewModels.CRM;
+using Rock.ViewModels.Crm;
 using Rock.ViewModels.Rest.Controls;
 using Rock.ViewModels.Utility;
 using Rock.Web.Cache;
+using Rock.Utility;
 
 namespace Rock.Rest.v2
 {
@@ -45,6 +47,101 @@ namespace Rock.Rest.v2
     [Rock.SystemGuid.RestControllerGuid( "815B51F0-B552-47FD-8915-C653EEDD5B67")]
     public class ControlsController : ApiControllerBase
     {
+
+        #region Achievement Type Picker
+
+        /// <summary>
+        /// Gets the achievement types that can be displayed in the achievement type picker.
+        /// </summary>
+        /// <param name="options">The options that describe which items to load.</param>
+        /// <returns>A List of <see cref="ListItemBag"/> objects that represent the achievement types.</returns>
+        [HttpPost]
+        [System.Web.Http.Route( "AchievementTypePickerGetAchievementTypes" )]
+        [Authenticate]
+        [Rock.SystemGuid.RestActionGuid( "F98E3033-C652-4031-94B3-E7C44ECA51AA" )]
+        public IHttpActionResult AchievementTypePickerGetAchievementTypes( [FromBody] AchievementTypePickerGetAchievementTypesOptionsBag options )
+        {
+            using ( var rockContext = new RockContext() )
+            {
+                var items = AchievementTypeCache.All( rockContext )
+                    .Select( t => new ListItemBag
+                    {
+                        Value = t.Guid.ToString(),
+                        Text = t.Name,
+                        Category = t.Category?.Name
+                    } )
+                    .ToList();
+
+                return Ok( items );
+            }
+        }
+
+        #endregion
+
+        #region Assessment Type Picker
+
+        /// <summary>
+        /// Gets the assessment types that can be displayed in the assessment type picker.
+        /// </summary>
+        /// <param name="options">The options that describe which items to load.</param>
+        /// <returns>A List of <see cref="ListItemBag"/> objects that represent the assessment types.</returns>
+        [HttpPost]
+        [System.Web.Http.Route( "AssessmentTypePickerGetAssessmentTypes" )]
+        [Authenticate]
+        [Rock.SystemGuid.RestActionGuid( "B47DCE1B-89D7-4DD5-88A7-B3C393D49A7C" )]
+        public IHttpActionResult AssessmentTypePickerGetEntityTypes( [FromBody] AssessmentTypePickerGetAssessmentTypesOptionsBag options )
+        {
+            using ( var rockContext = new RockContext() )
+            {
+                var items = AssessmentTypeCache.All( rockContext )
+                    .Where( at => options.isInactiveIncluded == true || at.IsActive )
+                    .OrderBy( at => at.Title )
+                    .ThenBy( at => at.Id )
+                    .Select( at => new ListItemBag
+                    {
+                        Value = at.Guid.ToString(),
+                        Text = at.Title
+                    } )
+                    .ToList();
+
+                return Ok( items );
+            }
+        }
+
+        #endregion
+
+        #region Asset Storage Provider Picker
+
+        /// <summary>
+        /// Gets the asset storage providers that can be displayed in the asset storage provider picker.
+        /// </summary>
+        /// <param name="options">The options that describe which items to load.</param>
+        /// <returns>A List of <see cref="ListItemBag"/> objects that represent the asset storage providers.</returns>
+        [HttpPost]
+        [System.Web.Http.Route( "AssetStorageProviderPickerGetAssetStorageProviders" )]
+        [Authenticate]
+        [Rock.SystemGuid.RestActionGuid( "665EDE0C-1FEA-4421-B355-4D4F72B7E26E" )]
+        public IHttpActionResult AssetStorageProviderPickerGetAssetStorageProviders( [FromBody] AssetStorageProviderPickerGetAssetStorageProvidersOptionsBag options )
+        {
+            using ( var rockContext = new RockContext() )
+            {
+                var items = new AssetStorageProviderService( rockContext )
+                    .Queryable().AsNoTracking()
+                    .Where( g => g.EntityTypeId.HasValue && g.IsActive )
+                    .OrderBy( g => g.Name )
+                    .Select( t => new ListItemBag
+                    {
+                        Value = t.Guid.ToString(),
+                        Text = t.Name
+                    } )
+                    .ToList();
+
+                return Ok( items );
+            }
+        }
+
+        #endregion
+
         #region Audit Detail
 
         /// <summary>
@@ -55,7 +152,7 @@ namespace Rock.Rest.v2
         [HttpPost]
         [Authenticate]
         [System.Web.Http.Route( "AuditDetailGetAuditDetails" )]
-        [Rock.SystemGuid.RestActionGuid( "714d83c9-96e4-49d7-81af-2eed7d5ccd56" )]
+        [Rock.SystemGuid.RestActionGuid( "714D83C9-96E4-49D7-81AF-2EED7D5CCD56" )]
         public IHttpActionResult AuditDetailGetAuditDetails( [FromBody] AuditDetailGetAuditDetailsOptionsBag options )
         {
             using ( var rockContext = new RockContext() )
@@ -95,6 +192,32 @@ namespace Rock.Rest.v2
 
         #endregion
 
+        #region Badge Component Picker
+
+        /// <summary>
+        /// Gets the badge components that can be displayed in the badge component picker.
+        /// </summary>
+        /// <param name="options">The options that describe which items to load.</param>
+        /// <returns>A List of <see cref="ListItemBag"/> objects that represent the badge components.</returns>
+        [HttpPost]
+        [System.Web.Http.Route( "BadgeComponentPickerGetBadgeComponents" )]
+        [Authenticate]
+        [Rock.SystemGuid.RestActionGuid( "ABDFC10F-BCCC-4AF1-8DB3-88A26862485D" )]
+        public IHttpActionResult BadgeComponentPickerGetEntityTypes( [FromBody] BadgeComponentPickerGetBadgeComponentsOptionsBag options )
+        {
+            var componentsList = GetComponentListItems( "Rock.Badge.BadgeContainer, Rock", ( Component component ) =>
+            {
+                var badgeComponent = component as BadgeComponent;
+                var entityType = EntityTypeCache.Get( options.EntityTypeGuid.GetValueOrDefault() )?.Name;
+
+                return badgeComponent != null && badgeComponent.DoesApplyToEntityType( entityType );
+            } );
+
+            return Ok( componentsList );
+        }
+
+        #endregion
+
         #region Badge List
 
         /// <summary>
@@ -104,7 +227,7 @@ namespace Rock.Rest.v2
         /// <returns>A collection of <see cref="RenderedBadgeBag"/> objects.</returns>
         [HttpPost]
         [System.Web.Http.Route( "BadgeListGetBadges" )]
-        [Rock.SystemGuid.RestActionGuid( "34387b98-bf7e-4000-a28a-24ea08605285" )]
+        [Rock.SystemGuid.RestActionGuid( "34387B98-BF7E-4000-A28A-24EA08605285" )]
         public IHttpActionResult BadgeListGetBadges( [FromBody] BadgeListGetBadgesOptionsBag options )
         {
             using ( var rockContext = new RockContext() )
@@ -174,6 +297,69 @@ namespace Rock.Rest.v2
 
         #endregion
 
+        #region Binary File Picker
+
+        /// <summary>
+        /// Gets the binary files that can be displayed in the binary file picker.
+        /// </summary>
+        /// <param name="options">The options that describe which items to load.</param>
+        /// <returns>A List of <see cref="ListItemBag"/> objects that represent the binary files.</returns>
+        [HttpPost]
+        [System.Web.Http.Route( "BinaryFilePickerGetBinaryFiles" )]
+        [Authenticate]
+        [Rock.SystemGuid.RestActionGuid( "9E5F190E-91FD-4E50-9F00-8B4F9DBD874C" )]
+        public IHttpActionResult BinaryFilePickerGetBinaryFiles( [FromBody] BinaryFilePickerGetBinaryFilesOptionsBag options )
+        {
+            using ( var rockContext = new RockContext() )
+            {
+                var items = new BinaryFileService( new RockContext() )
+                    .Queryable()
+                    .Where( f => f.BinaryFileType.Guid == options.BinaryFileTypeGuid && !f.IsTemporary )
+                    .OrderBy( f => f.FileName )
+                    .Select( t => new ListItemBag
+                    {
+                        Value = t.Guid.ToString(),
+                        Text = t.FileName
+                    } )
+                    .ToList();
+
+                return Ok( items );
+            }
+        }
+
+        #endregion
+
+        #region Binary File Type Picker
+
+        /// <summary>
+        /// Gets the binary file types that can be displayed in the binary file type picker.
+        /// </summary>
+        /// <param name="options">The options that describe which items to load.</param>
+        /// <returns>A List of <see cref="ListItemBag"/> objects that represent the binary file types.</returns>
+        [HttpPost]
+        [System.Web.Http.Route( "BinaryFileTypePickerGetBinaryFileTypes" )]
+        [Authenticate]
+        [Rock.SystemGuid.RestActionGuid( "C93E5A06-82DE-4475-88B8-B173C03BFB50" )]
+        public IHttpActionResult BinaryFileTypePickerGetBinaryFileTypes( [FromBody] BinaryFileTypePickerGetBinaryFileTypesOptionsBag options )
+        {
+            using ( var rockContext = new RockContext() )
+            {
+                var items = new BinaryFileTypeService( rockContext )
+                    .Queryable()
+                    .OrderBy( f => f.Name )
+                    .Select( t => new ListItemBag
+                    {
+                        Value = t.Guid.ToString(),
+                        Text = t.Name
+                    } )
+                    .ToList();
+
+                return Ok( items );
+            }
+        }
+
+        #endregion
+
         #region Category Picker
 
         private static readonly Regex QualifierValueLookupRegex = new Regex( "^{EL:((?:[a-f\\d]{8})-(?:[a-f\\d]{4})-(?:[a-f\\d]{4})-(?:[a-f\\d]{4})-(?:[a-f\\d]{12})):((?:[a-f\\d]{8})-(?:[a-f\\d]{4})-(?:[a-f\\d]{4})-(?:[a-f\\d]{4})-(?:[a-f\\d]{12}))}$", RegexOptions.IgnoreCase );
@@ -206,6 +392,8 @@ namespace Rock.Rest.v2
                     IncludeCategoriesWithoutChildren = options.IncludeCategoriesWithoutChildren,
                     DefaultIconCssClass = options.DefaultIconCssClass,
                     IncludeInactiveItems = options.IncludeInactiveItems,
+                    ItemFilterPropertyName = options.ItemFilterPropertyName,
+                    ItemFilterPropertyValue = options.ItemFilterPropertyValue,
                     LazyLoad = options.LazyLoad,
                     SecurityGrant = grant
                 } );
@@ -254,14 +442,73 @@ namespace Rock.Rest.v2
 
         #endregion
 
+        #region Component Picker
+
+        /// <summary>
+        /// Gets the components that can be displayed in the component picker.
+        /// </summary>
+        /// <param name="options">The options that describe which items to load.</param>
+        /// <returns>A List of <see cref="ListItemBag"/> objects that represent the components.</returns>
+        [HttpPost]
+        [System.Web.Http.Route( "ComponentPickerGetComponents" )]
+        [Authenticate]
+        [Rock.SystemGuid.RestActionGuid( "75DA0671-38E2-4FF9-B334-CC0C88B559D0" )]
+        public IHttpActionResult ComponentPickerGetEntityTypes( [FromBody] ComponentPickerGetComponentsOptionsBag options )
+        {
+            var componentsList = GetComponentListItems( options.ContainerType );
+
+            return Ok( componentsList );
+        }
+
+        #endregion
+
+        #region Data View Picker
+
+        /// <summary>
+        /// Gets the data views and their categories that match the options sent in the request body.
+        /// This endpoint returns items formatted for use in a tree view control.
+        /// </summary>
+        /// <param name="options">The options that describe which data views to load.</param>
+        /// <returns>A List of <see cref="ListItemBag"/> objects that represent a tree of data views.</returns>
+        [HttpPost]
+        [System.Web.Http.Route( "DataViewPickerGetDataViews" )]
+        [Authenticate]
+        [Rock.SystemGuid.RestActionGuid( "1E079A57-9B44-4365-9C9C-2383A9A3F45B" )]
+        public IHttpActionResult DataViewPickerGetDataViews( [FromBody] DataViewPickerGetDataViewsOptionsBag options )
+        {
+            using ( var rockContext = new RockContext() )
+            {
+                var clientService = new CategoryClientService( rockContext, GetPerson( rockContext ) );
+                var grant = SecurityGrant.FromToken( options.SecurityGrantToken );
+
+                var items = clientService.GetCategorizedTreeItems( new CategoryItemTreeOptions
+                {
+                    ParentGuid = options.ParentGuid,
+                    GetCategorizedItems = options.GetCategorizedItems,
+                    EntityTypeGuid = EntityTypeCache.Get<Rock.Model.DataView>().Guid,
+                    IncludeUnnamedEntityItems = options.IncludeUnnamedEntityItems,
+                    IncludeCategoriesWithoutChildren = options.IncludeCategoriesWithoutChildren,
+                    DefaultIconCssClass = options.DefaultIconCssClass,
+                    ItemFilterPropertyName = options.EntityTypeGuidFilter.HasValue ? "EntityTypeId" : null,
+                    ItemFilterPropertyValue = options.EntityTypeGuidFilter.HasValue ? EntityTypeCache.GetId( options.EntityTypeGuidFilter.Value ).ToString() : "",
+                    LazyLoad = options.LazyLoad,
+                    SecurityGrant = grant
+                } );
+
+                return Ok( items );
+            }
+        }
+
+        #endregion
+
         #region Defined Value Picker
 
         /// <summary>
-        /// Gets the child items that match the options sent in the request body.
+        /// Gets the defined values and their categories that match the options sent in the request body.
         /// This endpoint returns items formatted for use in a tree view control.
         /// </summary>
         /// <param name="options">The options that describe which defined values to load.</param>
-        /// <returns>A collection of view models that represent the defined values.</returns>
+        /// <returns>A List of <see cref="ListItemBag"/> objects that represent a tree of defined values.</returns>
         [HttpPost]
         [System.Web.Http.Route( "DefinedValuePickerGetDefinedValues" )]
         [Authenticate]
@@ -306,7 +553,7 @@ namespace Rock.Rest.v2
         [HttpPost]
         [System.Web.Http.Route( "EntityTagListGetEntityTags" )]
         [Authenticate]
-        [Rock.SystemGuid.RestActionGuid( "7542d4b3-17dc-4640-acbd-f02784130401" )]
+        [Rock.SystemGuid.RestActionGuid( "7542D4B3-17DC-4640-ACBD-F02784130401" )]
         public IHttpActionResult EntityTagListGetEntityTags( [FromBody] EntityTagListGetEntityTagsOptionsBag options )
         {
             using ( var rockContext = new RockContext() )
@@ -341,7 +588,7 @@ namespace Rock.Rest.v2
         [HttpPost]
         [System.Web.Http.Route( "EntityTagListGetAvailableTags" )]
         [Authenticate]
-        [Rock.SystemGuid.RestActionGuid( "91890d39-6e3e-4623-aad7-f32e686c784e" )]
+        [Rock.SystemGuid.RestActionGuid( "91890D39-6E3E-4623-AAD7-F32E686C784E" )]
         public IHttpActionResult EntityTagListGetAvailableTags( [FromBody] EntityTagListGetAvailableTagsOptionsBag options )
         {
             using ( var rockContext = new RockContext() )
@@ -376,7 +623,7 @@ namespace Rock.Rest.v2
         [HttpPost]
         [System.Web.Http.Route( "EntityTagListCreatePersonalTag" )]
         [Authenticate]
-        [Rock.SystemGuid.RestActionGuid( "8ccb7b8d-5d5c-4aa6-a12c-ed062c7afa05" )]
+        [Rock.SystemGuid.RestActionGuid( "8CCB7B8D-5D5C-4AA6-A12C-ED062C7AFA05" )]
         public IHttpActionResult EntityTagListCreatePersonalTag( [FromBody] EntityTagListCreatePersonalTagOptionsBag options )
         {
             if ( RockRequestContext.CurrentPerson == null )
@@ -452,7 +699,7 @@ namespace Rock.Rest.v2
         [HttpPost]
         [System.Web.Http.Route( "EntityTagListAddEntityTag" )]
         [Authenticate]
-        [Rock.SystemGuid.RestActionGuid( "c9cacc7f-68de-4765-8967-b50ee2949062" )]
+        [Rock.SystemGuid.RestActionGuid( "C9CACC7F-68DE-4765-8967-B50EE2949062" )]
         public IHttpActionResult EntityTagListAddEntityTag( [FromBody] EntityTagListAddEntityTagOptionsBag options )
         {
             using ( var rockContext = new RockContext() )
@@ -504,7 +751,7 @@ namespace Rock.Rest.v2
         [HttpPost]
         [System.Web.Http.Route( "EntityTagListRemoveEntityTag" )]
         [Authenticate]
-        [Rock.SystemGuid.RestActionGuid( "6a78d538-87db-43fe-9150-4e9a3f276afe" )]
+        [Rock.SystemGuid.RestActionGuid( "6A78D538-87DB-43FE-9150-4E9A3F276AFE" )]
         public IHttpActionResult EntityTagListRemoveEntityTag( [FromBody] EntityTagListRemoveEntityTagOptionsBag options )
         {
             using ( var rockContext = new RockContext() )
@@ -571,7 +818,7 @@ namespace Rock.Rest.v2
         /// Gets the entity types that can be displayed in the entity type picker.
         /// </summary>
         /// <param name="options">The options that describe which items to load.</param>
-        /// <returns>A collection of view models that represent the tree items.</returns>
+        /// <returns>A List of <see cref="ListItemBag"/> objects that represent the entity types.</returns>
         [HttpPost]
         [System.Web.Http.Route( "EntityTypePickerGetEntityTypes" )]
         [Authenticate]
@@ -593,6 +840,40 @@ namespace Rock.Rest.v2
                     .ToList();
 
                 return Ok( items );
+            }
+        }
+
+        #endregion
+
+        #region Event Item Picker
+
+        /// <summary>
+        /// Gets the event items that can be displayed in the event item picker.
+        /// </summary>
+        /// <param name="options">The options that describe which items to load.</param>
+        /// <returns>A List of <see cref="ListItemBag"/> objects that represent the event items.</returns>
+        [HttpPost]
+        [System.Web.Http.Route( "EventItemPickerGetEventItems" )]
+        [Authenticate]
+        [Rock.SystemGuid.RestActionGuid( "1D558F8A-08C9-4B62-A3A9-853C9F66B748" )]
+        public IHttpActionResult EventItemPickerGetEventItems( [FromBody] EventItemPickerGetEventItemsOptionsBag options )
+        {
+            using ( var rockContext = new RockContext() )
+            {
+
+                var eventItems = new EventCalendarItemService( rockContext ).Queryable()
+                    .Where( i => options.IncludeInactive ? true : i.EventItem.IsActive )
+                    .Select( i => new ListItemBag
+                    {
+                        Category = i.EventCalendar.Name,
+                        Value = i.EventItem.Guid.ToString(),
+                        Text = i.EventItem.Name
+                    } )
+                    .OrderBy( i => i.Category )
+                    .ThenBy( i => i.Text )
+                    .ToList();
+
+                return Ok( eventItems );
             }
         }
 
@@ -672,6 +953,101 @@ namespace Rock.Rest.v2
 
         #endregion
 
+        #region Field Type Picker
+
+        /// <summary>
+        /// Gets the field types that can be displayed in the field type picker.
+        /// </summary>
+        /// <returns>A List of <see cref="ListItemBag"/> objects that represent the field types.</returns>
+        [HttpPost]
+        [System.Web.Http.Route( "FieldTypePickerGetFieldTypes" )]
+        [Authenticate]
+        [Rock.SystemGuid.RestActionGuid( "AB53509A-C8A9-481B-839F-DA53232A698A" )]
+        public IHttpActionResult FieldTypePickerGetFieldTypes()
+        {
+            List<ListItemBag> items = new List<ListItemBag> { };
+
+            foreach ( var item in FieldTypeCache.All() )
+            {
+                items.Add( new ListItemBag { Text = item.Name, Value = item.Guid.ToString() } );
+            }
+
+            return Ok( items );
+        }
+
+        #endregion
+
+        #region Financial Gateway Picker
+
+        /// <summary>
+        /// Gets the financial gateways that can be displayed in the financial gateway picker.
+        /// </summary>
+        /// <returns>A List of <see cref="ListItemBag"/> objects that represent the financial gateways.</returns>
+        [HttpPost]
+        [System.Web.Http.Route( "FinancialGatewayPickerGetFinancialGateways" )]
+        [Authenticate]
+        [Rock.SystemGuid.RestActionGuid( "DBF12D3D-09BF-419F-A315-E3B6C0206344" )]
+        public IHttpActionResult FinancialGatewayPickerGetFinancialGateways( [FromBody] FinancialGatewayPickerGetFinancialGatewaysOptionsBag options )
+        {
+
+            using ( var rockContext = new RockContext() )
+            {
+                List<ListItemBag> items = new List<ListItemBag> { };
+
+                foreach ( var gateway in new FinancialGatewayService( rockContext )
+                    .Queryable().AsNoTracking()
+                    .Where( g => g.EntityTypeId.HasValue )
+                    .OrderBy( g => g.Name )
+                    .ToList() )
+                {
+                    var entityType = EntityTypeCache.Get( gateway.EntityTypeId.Value );
+                    GatewayComponent component = GatewayContainer.GetComponent( entityType.Name );
+
+                    if ( options.ShowAll || ( gateway.IsActive && component != null && component.IsActive && component.SupportsRockInitiatedTransactions ) )
+                    {
+                        items.Add( new ListItemBag { Text = gateway.Name, Value = gateway.Guid.ToString() } );
+                    }
+                }
+
+                return Ok( items );
+            }
+
+        }
+
+        #endregion
+
+        #region Financial Statement Template Picker
+
+        /// <summary>
+        /// Gets the financial statement templates that can be displayed in the financial statement template picker.
+        /// </summary>
+        /// <returns>A List of <see cref="ListItemBag"/> objects that represent the financial statement templates.</returns>
+        [HttpPost]
+        [System.Web.Http.Route( "FinancialStatementTemplatePickerGetFinancialStatementTemplates" )]
+        [Authenticate]
+        [Rock.SystemGuid.RestActionGuid( "4E10F2DC-BD7C-4F75-919C-B3F71868ED24" )]
+        public IHttpActionResult FinancialStatementTemplatePickerGetFinancialStatementTemplates()
+        {
+
+            using ( var rockContext = new RockContext() )
+            {
+                List<ListItemBag> items = new FinancialStatementTemplateService( rockContext )
+                    .Queryable()
+                    .Where( s => s.IsActive == true )
+                    .Select( i => new ListItemBag
+                    {
+                        Value = i.Guid.ToString(),
+                        Text = i.Name
+                    } )
+                    .OrderBy( a => a.Text )
+                    .ToList();
+
+                return Ok( items );
+            }
+        }
+
+        #endregion
+
         #region Following
 
         /// <summary>
@@ -682,7 +1058,7 @@ namespace Rock.Rest.v2
         [HttpPost]
         [Authenticate]
         [System.Web.Http.Route( "FollowingGetFollowing" )]
-        [Rock.SystemGuid.RestActionGuid( "fa1cc136-a994-4870-9507-818ea7a70f01" )]
+        [Rock.SystemGuid.RestActionGuid( "FA1CC136-A994-4870-9507-818EA7A70F01" )]
         public IHttpActionResult FollowingGetFollowing( [FromBody] FollowingGetFollowingOptionsBag options )
         {
             using ( var rockContext = new RockContext() )
@@ -745,7 +1121,7 @@ namespace Rock.Rest.v2
         [HttpPost]
         [Authenticate]
         [System.Web.Http.Route( "FollowingSetFollowing" )]
-        [Rock.SystemGuid.RestActionGuid( "8ca2eafb-e577-4f65-8d96-f42d8d5aae7a" )]
+        [Rock.SystemGuid.RestActionGuid( "8CA2EAFB-E577-4F65-8D96-F42D8D5AAE7A" )]
         public IHttpActionResult FollowingSetFollowing( [FromBody] FollowingSetFollowingOptionsBag options )
         {
             using ( var rockContext = new RockContext() )
@@ -834,6 +1210,206 @@ namespace Rock.Rest.v2
 
                 return Ok();
             }
+        }
+
+        #endregion
+
+        #region Grade Picker
+
+        /// <summary>
+        /// Gets the school grades that can be displayed in the grade picker.
+        /// </summary>
+        /// <param name="options">The options that describe which items to load.</param>
+        /// <returns>A List of <see cref="ListItemBag"/> objects that represent the grades.</returns>
+        [HttpPost]
+        [System.Web.Http.Route( "GradePickerGetGrades" )]
+        [Authenticate]
+        [Rock.SystemGuid.RestActionGuid( "2C8F0B8E-F54D-460D-91DB-97B34A9AA174" )]
+        public IHttpActionResult GradePickerGetGrades( GradePickerGetGradesOptionsBag options )
+        {
+            var schoolGrades = DefinedTypeCache.Get( Rock.SystemGuid.DefinedType.SCHOOL_GRADES.AsGuid() );
+
+            if ( schoolGrades == null)
+            {
+                return NotFound();
+            }
+
+            var list = new List<ListItemBag>();
+
+            foreach ( var schoolGrade in schoolGrades.DefinedValues.OrderByDescending( a => a.Value.AsInteger() ) )
+            {
+                ListItemBag listItem = new ListItemBag();
+                if ( options.UseAbbreviation )
+                {
+                    string abbreviation = schoolGrade.GetAttributeValue( "Abbreviation" );
+                    listItem.Text = string.IsNullOrWhiteSpace( abbreviation ) ? schoolGrade.Description : abbreviation;
+                }
+                else
+                {
+                    listItem.Text = schoolGrade.Description;
+                }
+
+                listItem.Value = options.UseGradeOffsetAsValue ? schoolGrade.Value : schoolGrade.Guid.ToString();
+
+                list.Add( listItem );
+            }
+
+            return Ok( list );
+        }
+
+        #endregion
+
+        #region Group Member Picker
+
+        /// <summary>
+        /// Gets the group members that can be displayed in the group member picker.
+        /// </summary>
+        /// <param name="options">The options that describe which items to load.</param>
+        /// <returns>A List of <see cref="ListItemBag"/> objects that represent the group members.</returns>
+        [HttpPost]
+        [System.Web.Http.Route( "GroupMemberPickerGetGroupMembers" )]
+        [Authenticate]
+        [Rock.SystemGuid.RestActionGuid( "E0A893FD-0275-4251-BA6E-F669F110D179" )]
+        public IHttpActionResult GroupMemberPickerGetGroupMembers( GroupMemberPickerGetGroupMembersOptionsBag options )
+        {
+            Rock.Model.Group group;
+
+            if ( !options.GroupGuid.HasValue)
+            {
+                return NotFound();
+            }
+
+            group = new GroupService( new RockContext() ).Get( options.GroupGuid.Value );
+
+            if ( group == null && !group.Members.Any() )
+            {
+                return NotFound();
+            }
+
+            var list = new List<ListItemBag>();
+
+            foreach ( var groupMember in group.Members.OrderBy( m => m.Person.FullName ) )
+            {
+                var li = new ListItemBag {
+                    Text = groupMember.Person.FullName,
+                    Value = groupMember.Guid.ToString()
+                };
+
+                list.Add( li );
+            }
+
+            return Ok( list );
+        }
+
+        #endregion
+
+        #region Interaction Channel Picker
+
+        /// <summary>
+        /// Gets the interaction channels that can be displayed in the interaction channel picker.
+        /// </summary>
+        /// <returns>A List of <see cref="ListItemBag"/> objects that represent the interaction channels.</returns>
+        [HttpPost]
+        [System.Web.Http.Route( "InteractionChannelPickerGetInteractionChannels" )]
+        [Authenticate]
+        [Rock.SystemGuid.RestActionGuid( "2F855DC7-7C20-4C09-9CB1-FFC1E022385B" )]
+        public IHttpActionResult InteractionChannelPickerGetInteractionChannels( )
+        {
+            var items = new List<ListItemBag>();
+            var rockContext = new RockContext();
+            var interactionChannelService = new InteractionChannelService( rockContext );
+            var channels = interactionChannelService.Queryable().AsNoTracking()
+                .Include( "ChannelTypeMediumValue" )
+                .Where( ic => ic.IsActive )
+                .OrderBy( ic => ic.Name )
+                .Select( ic => new
+                {
+                    ic.Name,
+                    ic.Guid,
+                    Medium = ic.ChannelTypeMediumValue.Value
+                } )
+                .ToList();
+
+            foreach ( var channel in channels )
+            {
+                ListItemBag li;
+
+                if ( channel.Medium.IsNullOrWhiteSpace() )
+                {
+                    li = new ListItemBag { Text = channel.Name, Value = channel.Guid.ToString() };
+                }
+                else
+                {
+                    li = new ListItemBag { Text = $"{channel.Name} ({ channel.Medium ?? string.Empty })", Value = channel.Guid.ToString() };
+                }
+
+                items.Add( li );
+            }
+
+            return Ok( items );
+        }
+
+        #endregion
+
+        #region Interaction Component Picker
+
+        /// <summary>
+        /// Gets the interection components that can be displayed in the interection component picker.
+        /// </summary>
+        /// <param name="options">The options that describe which items to load.</param>
+        /// <returns>A List of <see cref="ListItemBag"/> objects that represent the interection components.</returns>
+        [HttpPost]
+        [System.Web.Http.Route( "InteractionComponentPickerGetInteractionComponents" )]
+        [Authenticate]
+        [Rock.SystemGuid.RestActionGuid( "BD61A390-39F9-4FDE-B9AD-02E53B5F2073" )]
+        public IHttpActionResult InteractionComponentPickerGetInteractionComponents( [FromBody] InteractionComponentPickerGetInteractionComponentsOptionsBag options)
+        {
+            if ( !options.InteractionChannelGuid.HasValue )
+            {
+                return NotFound();
+            }
+
+            int interactionChannelId = InteractionChannelCache.GetId( options.InteractionChannelGuid.Value ) ?? 0;
+            var rockContext = new RockContext();
+            var interactionComponentService = new InteractionComponentService( rockContext );
+
+            var components = interactionComponentService.Queryable().AsNoTracking()
+                .Where( ic => ic.InteractionChannelId == interactionChannelId )
+                .OrderBy( ic => ic.Name )
+                .Select(ic => new ListItemBag
+                {
+                    Text = ic.Name,
+                    Value = ic.Guid.ToString()
+                } )
+                .ToList();
+
+            return Ok( components );
+        }
+
+        #endregion
+
+        #region Lava Command Picker
+
+        /// <summary>
+        /// Gets the lava commands that can be displayed in the lava command picker.
+        /// </summary>
+        /// <returns>A List of <see cref="ListItemBag"/> objects that represent the lava commands.</returns>
+        [HttpPost]
+        [System.Web.Http.Route( "LavaCommandPickerGetLavaCommands" )]
+        [Authenticate]
+        [Rock.SystemGuid.RestActionGuid( "9FD03EE7-49E8-4C64-AC25-648422579F28" )]
+        public IHttpActionResult LavaCommandPickerGetLavaCommands()
+        {
+            var items = new List<ListItemBag>();
+
+            items.Add( new ListItemBag { Text = "All", Value = "All" } );
+
+            foreach ( var command in Rock.Lava.LavaHelper.GetLavaCommands() )
+            {
+                items.Add( new ListItemBag { Text = command.SplitCase(), Value = command } );
+            }
+
+            return Ok( items );
         }
 
         #endregion
@@ -941,6 +1517,39 @@ namespace Rock.Rest.v2
 
             // Chain to the v1 controller.
             return Rock.Rest.Controllers.PeopleController.SearchForPeople( rockContext, options.Name, options.Address, options.Phone, options.Email, options.IncludeDetails, options.IncludeBusinesses, options.IncludeDeceased, false );
+        }
+
+        #endregion
+
+        #region Remote Auths Picker
+
+        /// <summary>
+        /// Gets the remote auths that can be displayed in the remote auths picker.
+        /// </summary>
+        /// <returns>A List of <see cref="ListItemBag"/> objects that represent the remote auths.</returns>
+        [HttpPost]
+        [System.Web.Http.Route( "RemoteAuthsPickerGetRemoteAuths" )]
+        [Authenticate]
+        [Rock.SystemGuid.RestActionGuid( "844D17E3-45FF-4A63-8BC7-32956A11CC94" )]
+        public IHttpActionResult RemoteAuthsPickerGetRemoteAuths()
+        {
+            var items = new List<ListItemBag>();
+
+            foreach ( var serviceEntry in AuthenticationContainer.Instance.Components )
+            {
+                var component = serviceEntry.Value.Value;
+
+                if ( component.IsActive && component.RequiresRemoteAuthentication )
+                {
+                    var entityType = EntityTypeCache.Get( component.GetType() );
+                    if ( entityType != null )
+                    {
+                        items.Add( new ListItemBag { Text = entityType.FriendlyName, Value = entityType.Guid.ToString() } );
+                    }
+                }
+            }
+
+            return Ok( items );
         }
 
         #endregion
@@ -1113,130 +1722,184 @@ namespace Rock.Rest.v2
 
         #endregion
 
-        #region Achievement Type Picker
+        #region Step Program Picker
 
         /// <summary>
-        /// Gets the achievement types that can be displayed in the achievement type picker.
+        /// Gets the step programs that can be displayed in the step program picker.
         /// </summary>
-        /// <param name="options">The options that describe which items to load.</param>
-        /// <returns>A collection of view models that represent the tree items.</returns>
+        /// <returns>A List of <see cref="ListItemBag"/> objects that represent the step programs.</returns>
         [HttpPost]
-        [System.Web.Http.Route( "AchievementTypePickerGetAchievementTypes" )]
+        [System.Web.Http.Route( "StepProgramPickerGetStepPrograms" )]
         [Authenticate]
-        [Rock.SystemGuid.RestActionGuid( "F98E3033-C652-4031-94B3-E7C44ECA51AA" )]
-        public IHttpActionResult AchievementTypePickerGetEntityTypes( [FromBody] AchievementTypePickerGetAchievementTypesOptionsBag options )
+        [Rock.SystemGuid.RestActionGuid( "6C7816B0-D41D-4081-B998-0B42B542111F" )]
+        public IHttpActionResult StepProgramPickerGetStepPrograms()
         {
-            using ( var rockContext = new RockContext() )
-            {
-                var items = AchievementTypeCache.All( rockContext )
-                    .Select( t => new ListItemBag
-                    {
-                        Value = t.Guid.ToString(),
-                        Text = t.Name,
-                        Category = t.Category?.Name
-                    } )
-                    .ToList();
+            var items = new List<ListItemBag>();
 
-                return Ok( items );
+            var stepProgramService = new StepProgramService( new RockContext() );
+            var stepPrograms = stepProgramService.Queryable().AsNoTracking()
+                .Where( sp => sp.IsActive )
+                .OrderBy( sp => sp.Order )
+                .ThenBy( sp => sp.Name )
+                .ToList();
+
+            foreach ( var stepProgram in stepPrograms )
+            {
+                var li = new ListItemBag { Text = stepProgram.Name, Value = stepProgram.Guid.ToString() };
+                items.Add( li );
             }
+
+            return Ok( items );
         }
 
         #endregion
 
-        #region Assessment Type Picker
+        #region Step Status Picker
 
         /// <summary>
-        /// Gets the achievement types that can be displayed in the achievement type picker.
+        /// Gets the step statuses that can be displayed in the step status picker.
         /// </summary>
         /// <param name="options">The options that describe which items to load.</param>
-        /// <returns>A collection of view models that represent the tree items.</returns>
+        /// <returns>A List of <see cref="ListItemBag"/> objects that represent the step statuses.</returns>
         [HttpPost]
-        [System.Web.Http.Route( "AssessmentTypePickerGetAssessmentTypes" )]
+        [System.Web.Http.Route( "StepStatusPickerGetStepStatuses" )]
         [Authenticate]
-        [Rock.SystemGuid.RestActionGuid( "B47DCE1B-89D7-4DD5-88A7-B3C393D49A7C  " )]
-        public IHttpActionResult AssessmentTypePickerGetEntityTypes( [FromBody] AssessmentTypePickerGetAssessmentTypesOptionsBag options )
+        [Rock.SystemGuid.RestActionGuid( "5B4E7419-266C-4235-93B7-8D0DE0E80D2B" )]
+        public IHttpActionResult StepStatusPickerGetStepStatuses( [FromBody] StepStatusPickerGetStepStatusesOptionsBag options )
         {
-            using ( var rockContext = new RockContext() )
+            if ( !options.StepProgramGuid.HasValue )
             {
-                var items = AssessmentTypeCache.All( rockContext )
-                    .Where( at =>
-                    {
-                        if (options.isInactiveIncluded == true)
-                        {
-                            return true;
-                        }
-
-                        return at.IsActive;
-                    } )
-                    .OrderBy( at => at.Title )
-                    .ThenBy( at => at.Id )
-                    .Select( at => new ListItemBag
-                    {
-                        Value = at.Guid.ToString(),
-                        Text = at.Title
-                    } )
-                    .ToList();
-
-                return Ok( items );
+                return NotFound();
             }
+
+            var items = new List<ListItemBag>();
+            int stepProgramId = StepProgramCache.GetId( options.StepProgramGuid.Value ) ?? 0;
+
+            var stepStatusService = new StepStatusService( new RockContext() );
+            var statuses = stepStatusService.Queryable().AsNoTracking()
+                .Where( ss =>
+                    ss.StepProgramId == stepProgramId &&
+                    ss.IsActive )
+                .OrderBy( ss => ss.Order )
+                .ThenBy( ss => ss.Name )
+                .ToList();
+
+            foreach ( var status in statuses )
+            {
+                var li = new ListItemBag { Text = status.Name, Value = status.Guid.ToString() };
+                items.Add( li );
+            }
+
+            return Ok( items );
         }
 
         #endregion
 
-        #region Asset Storage Provider Picker
+        #region Step Type Picker
 
         /// <summary>
-        /// Gets the asset storage providers that can be displayed in the asset storage provider picker.
+        /// Gets the step types that can be displayed in the step type picker.
         /// </summary>
         /// <param name="options">The options that describe which items to load.</param>
-        /// <returns>A collection of view models that represent the tree items.</returns>
+        /// <returns>A List of <see cref="ListItemBag"/> objects that represent the step types.</returns>
         [HttpPost]
-        [System.Web.Http.Route( "AssetStorageProviderPickerGetAssetStorageProviders" )]
+        [System.Web.Http.Route( "StepTypePickerGetStepTypes" )]
         [Authenticate]
-        [Rock.SystemGuid.RestActionGuid( "665EDE0C-1FEA-4421-B355-4D4F72B7E26E" )]
-        public IHttpActionResult AssetStorageProviderPickerGetAssetStorageProviders( [FromBody] AssetStorageProviderPickerGetAssetStorageProvidersOptionsBag options )
+        [Rock.SystemGuid.RestActionGuid( "9BC4C3BA-573E-4FB4-A4FC-938D40BED2BE" )]
+        public IHttpActionResult StepTypePickerGetStepTypes( [FromBody] StepTypePickerGetStepTypesOptionsBag options )
         {
-            using ( var rockContext = new RockContext() )
+            if ( !options.StepProgramGuid.HasValue )
             {
-                var items = new AssetStorageProviderService( rockContext )
-                    .Queryable().AsNoTracking()
-                    .Where( g => g.EntityTypeId.HasValue && g.IsActive )
-                    .OrderBy( g => g.Name )
-                    .Select( t => new ListItemBag
-                    {
-                        Value = t.Guid.ToString(),
-                        Text = t.Name
-                    } )
-                    .ToList();
-
-                return Ok( items );
+                return NotFound();
             }
+
+            var items = new List<ListItemBag>();
+            int stepProgramId = StepProgramCache.GetId( options.StepProgramGuid.Value ) ?? 0;
+
+            var stepTypeService = new StepTypeService( new RockContext() );
+            var stepTypes = stepTypeService.Queryable().AsNoTracking()
+                .Where( st =>
+                    st.StepProgramId == stepProgramId &&
+                    st.IsActive )
+                .OrderBy( st => st.Order )
+                .ThenBy( st => st.Name )
+                .ToList();
+
+            foreach ( var stepType in stepTypes )
+            {
+                var li = new ListItemBag { Text = stepType.Name, Value = stepType.Guid.ToString() };
+                items.Add( li );
+            }
+
+            return Ok( items );
         }
 
         #endregion
 
-        #region Badge Component Picker
+        #region Streak Type Picker
 
         /// <summary>
-        /// Gets the badge components that can be displayed in the badge component picker.
+        /// Gets the streak types that can be displayed in the streak type picker.
         /// </summary>
-        /// <param name="options">The options that describe which items to load.</param>
-        /// <returns>A collection of list items that represent the badge components.</returns>
+        /// <returns>A List of <see cref="ListItemBag"/> objects that represent the streak types.</returns>
         [HttpPost]
-        [System.Web.Http.Route( "BadgeComponentPickerGetBadgeComponents" )]
+        [System.Web.Http.Route( "StreakTypePickerGetStreakTypes" )]
         [Authenticate]
-        [Rock.SystemGuid.RestActionGuid( "ABDFC10F-BCCC-4AF1-8DB3-88A26862485D" )]
-        public IHttpActionResult BadgeComponentPickerGetEntityTypes( [FromBody] BadgeComponentPickerGetBadgeComponentsOptionsBag options )
+        [Rock.SystemGuid.RestActionGuid( "78D0A6D1-317E-4CB7-98BB-AF9194AD3C94" )]
+        public IHttpActionResult StreakTypePickerGetStreakTypes()
         {
-            var componentsList = GetComponentListItems( "Rock.Badge.BadgeContainer, Rock", ( Component component ) =>
+            var items = new List<ListItemBag>();
+
+            var streakTypes = StreakTypeCache.All()
+                .Where( st => st.IsActive )
+                .OrderBy( st => st.Name )
+                .ThenBy( st => st.Id )
+                .ToList();
+
+            foreach ( var streakType in streakTypes )
             {
-                var badgeComponent = component as BadgeComponent;
-                var entityType = EntityTypeCache.Get( options.EntityTypeGuid.GetValueOrDefault() )?.Name;
+                var li = new ListItemBag { Text = streakType.Name, Value = streakType.Guid.ToString() };
+                items.Add( li );
+            }
 
-                return badgeComponent != null && badgeComponent.DoesApplyToEntityType(entityType);
-            } );
+            return Ok( items );
+        }
 
-            return Ok( componentsList );
+        #endregion
+
+        #region Workflow Type Picker
+
+        /// <summary>
+        /// Gets the workflow types and their categories that match the options sent in the request body.
+        /// This endpoint returns items formatted for use in a tree view control.
+        /// </summary>
+        /// <param name="options">The options that describe which workflow types to load.</param>
+        /// <returns>A List of <see cref="ListItemBag"/> objects that represent a tree of workflow types.</returns>
+        [HttpPost]
+        [System.Web.Http.Route( "WorkflowTypePickerGetWorkflowTypes" )]
+        [Authenticate]
+        [Rock.SystemGuid.RestActionGuid( "622EE929-7A18-46BE-9AEA-9E0725293612" )]
+        public IHttpActionResult WorkflowTypePickerGetWorkflowTypes( [FromBody] WorkflowTypePickerGetWorkflowTypesOptionsBag options )
+        {
+            using ( var rockContext = new RockContext() )
+            {
+                var clientService = new CategoryClientService( rockContext, GetPerson( rockContext ) );
+                var grant = SecurityGrant.FromToken( options.SecurityGrantToken );
+
+                var items = clientService.GetCategorizedTreeItems( new CategoryItemTreeOptions
+                {
+                    ParentGuid = options.ParentGuid,
+                    GetCategorizedItems = true,
+                    EntityTypeGuid = Rock.SystemGuid.EntityType.WORKFLOW_TYPE.AsGuid(),
+                    IncludeUnnamedEntityItems = true,
+                    IncludeCategoriesWithoutChildren = false,
+                    IncludeInactiveItems = options.IncludeInactiveItems,
+                    LazyLoad = false,
+                    SecurityGrant = grant
+                } );
+
+                return Ok( items );
+            }
         }
 
         #endregion
@@ -1248,26 +1911,26 @@ namespace Rock.Rest.v2
         /// </summary>
         /// <param name="containerType"></param>
         /// <returns>A list of ListItems representing components</returns>
-        protected List<ListItemBag> GetComponentListItems( string containerType )
+        private List<ListItemBag> GetComponentListItems( string containerType )
         {
             return GetComponentListItems( containerType, (x) => true );
         }
 
         /// <summary>
-        /// Retrieve a list of ListItems representing components for the given container type. Filters any components
+        /// Retrieve a list of ListItemBags representing components for the given container type. Filters any components
         /// out that don't pass the given validator
         /// </summary>
         /// <param name="containerType"></param>
         /// <param name="isValidComponentChecker"></param>
-        /// <returns>A list of ListItems representing components</returns>
-        protected List<ListItemBag> GetComponentListItems( string containerType, Func<Component, bool> isValidComponentChecker )
+        /// <returns>A list of ListItemBags representing components</returns>
+        private List<ListItemBag> GetComponentListItems( string containerType, Func<Component, bool> isValidComponentChecker )
         {
             if ( containerType.IsNullOrWhiteSpace() )
             {
                 return null;
             }
 
-            var resolvedContainerType = Type.GetType( containerType );
+            var resolvedContainerType = Container.ResolveContainer( containerType );
 
             if ( resolvedContainerType == null )
             {

@@ -56,6 +56,9 @@ namespace Rock.Web.Cache
             }
         }
 
+        /// <inheritdoc cref="IEntity.IdKey"/>
+        [DataMember]
+        public virtual string IdKey { get; protected set; }
 
         #region Lifespan
 
@@ -82,6 +85,7 @@ namespace Rock.Web.Cache
             ForeignId = entity.ForeignId;
             ForeignGuid = entity.ForeignGuid;
             ForeignKey = entity.ForeignKey;
+            IdKey = entity.IdKey;
         }
 
         /// <summary>
@@ -205,6 +209,18 @@ namespace Rock.Web.Cache
             UpdateCacheItem( entity.Id.ToString(), value );
 
             return value;
+        }
+
+        /// <summary>
+        /// Attempts to get an item from the cache without adding it if it does
+        /// not already exist.
+        /// </summary>
+        /// <param name="id">The identifier of the cached item to be loaded.</param>
+        /// <param name="item">On return will contain the item.</param>
+        /// <returns><c>true</c> if the item was found in cache, <c>false</c> otherwise.</returns>
+        public static bool TryGet( int id, out T item )
+        {
+            return ItemCache<T>.TryGet( id.ToString(), out item );
         }
 
         /// <summary>
