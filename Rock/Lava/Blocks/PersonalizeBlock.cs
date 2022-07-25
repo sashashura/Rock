@@ -25,7 +25,7 @@ namespace Rock.Lava.Blocks
 {
     /// <summary>
     /// A Lava Block that provides a means of rendering content based on a set of personalization filters.
-    /// Segments and filters can be used to determine the visibility of the block for the current user and request.
+    /// Segments and RequestFilters can be used to determine the visibility of the block for the current individual and request.
     /// </summary>
     public class PersonalizeBlock : LavaBlockBase
     {
