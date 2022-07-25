@@ -160,19 +160,29 @@ export function translateVue(source: string, filename: string): string | undefin
 
     const hasScoped = descriptor.styles.some((s) => s.scoped);
     const { code: scriptCode, result: scriptResult } = compileScript(descriptor, id);
-    const template = compileTemplate(descriptor, id, scriptResult);
-    const style = compileStyle(descriptor, id);
+    let templateCode = "";
 
-    if (!template) {
-        return undefined;
+    if (descriptor.template) {
+        const template = compileTemplate(descriptor, id, scriptResult);
+
+        if (!template) {
+            return undefined;
+        }
+    
+        // Insert "@ts-ignore" before each line so TypeScript doesn't complain.
+        templateCode = (template.code ?? "").replace("\r\n", "\n").split("\n").map(l => `// @ts-ignore\n${l}`).join("\n");
     }
 
-    // Insert "@ts-ignore" before each line so TypeScript doesn't complain.
-    const templateCode = (template.code ?? "").replace("\r\n", "\n").split("\n").map(l => `// @ts-ignore\n${l}`).join("\n");
+    const style = compileStyle(descriptor, id);
 
     // Start defining the output code and properties.
     const output: string[] = [scriptCode, templateCode];
     const attachedProps: [string, string][] = [];
+
+    // If we have a template then attach it.
+    if (descriptor.template) {
+        attachedProps.push(["render", "render"]);
+    }
 
     // If we are scoped then we need to insert the scope identifier.
     if (hasScoped) {
@@ -192,10 +202,11 @@ document.head.appendChild(__sfc_style);`);
     }
     else {
         output.push(`const exportHelper = _sfc_main;
-  for (const [key, val] of [${attachedProps.map(([key, val]) => `["${key}",${val}]`).join(",")}]) {
-    exportHelper[key] = val;
-  }
-  export default exportHelper;`);
+for (const [key, val] of [${attachedProps.map(([key, val]) => `["${key}",${val}]`).join(",")}]) {
+  // @ts-ignore
+  exportHelper[key] = val;
+}
+export default exportHelper;`);
     }
 
     const finalCode = output.join("\n");

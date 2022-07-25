@@ -11,8 +11,6 @@ const formatHost: ts.FormatDiagnosticsHost = {
 // Inform TypeScript that .vue files are allowed.
 (ts as unknown as { supportedTSExtensions: string[][] }).supportedTSExtensions[0].push(".vue");
 (ts as unknown as { supportedTSExtensionsFlat: string[] }).supportedTSExtensionsFlat.push(".vue");
-console.log((ts as any).supportedTSExtensions);
-console.log((ts as any).supportedTSExtensionsFlat);
 
 /**
  * Report a diagnostic message.
