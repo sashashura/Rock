@@ -35,10 +35,8 @@ function getBuilderSystem(): ts.System {
         ...ts.sys,
 
         readFile(path: string, encoding?: string | undefined): string | undefined {
-            console.log("readFile", path);
             // If this is a vue file then translate it into pure TypeScript/JavaScript.
             if (path.endsWith(".vue")) {
-                console.log("Read vue");
                 const content = origReadFile(path, encoding);
 
                 return content ? translateVue(content, path) : undefined;
