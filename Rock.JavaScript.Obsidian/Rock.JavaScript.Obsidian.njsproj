@@ -346,7 +346,6 @@
     <TypeScriptCompile Include="Framework\Utility\numberUtils.ts" />
     <TypeScriptCompile Include="Framework\Utility\stringUtils.ts" />
     <TypeScriptCompile Include="Framework\Utility\url.ts" />
-    <TypeScriptCompile Include="Framework\shims-vue.d.ts" />
     <TypeScriptCompile Include="Framework\PageState\index.ts" />
     <TypeScriptCompile Include="Framework\PageState\state.ts" />
     <TypeScriptCompile Include="Framework\SystemGuids\CodeGenerated\achievementType.d.ts" />
