@@ -1161,6 +1161,7 @@ namespace RockWeb.Blocks.Cms
             var requestFilterService = new RequestFilterService( new RockContext() );
             var requestFilters = requestFilterService
                 .Queryable()
+                .OrderBy( a => a.Name )
                 .ToList();
             lbRequestFilters.DataSource = requestFilters;
             lbRequestFilters.DataBind();
@@ -1179,6 +1180,7 @@ namespace RockWeb.Blocks.Cms
             var personalizationSegmentService = new PersonalizationSegmentService( new RockContext() );
             var segments = new PersonalizationSegmentService( new RockContext() )
                 .Queryable()
+                .OrderBy( a => a.Name )
                 .ToList();
             lbSegments.DataSource = segments;
             lbSegments.DataBind();
