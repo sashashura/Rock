@@ -1,4 +1,20 @@
-﻿using System;
+﻿// <copyright>
+// Copyright by the Spark Development Network
+//
+// Licensed under the Rock Community License (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.rockrms.com/license
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+// </copyright>
+//
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
@@ -37,45 +53,48 @@ namespace RockWeb.Blocks.CVSImport
         /// <summary>
         /// The properties that should be mapped to by fields in the csv. Not having one of these fields mapped to a csv column will result in an error
         /// </summary>
-        /// Is there a way to declare this as a global constant? They are in the Rock.Slingshot.PersonCSVMapper
-        private static readonly string[] requiredFields = { "Id", "Family Id", "Family Role", "First Name", "Last Name" };
+        private static readonly string[] requiredFields = { "Family Id", "Family Role", "First Name", "Id", "Last Name" };
 
         /// <summary>
         /// It is optional to map these properties to a column in the csv.
         /// </summary>
         /// Is there a way to declare this as a global constant? They are in the Rock.Slingshot.PersonCSVMapper
-        private static readonly string[] optionalFields = { "Nick Name",
-            "Middle Name",
-            "Suffix",
-            "TitleValueId",
-            "Home Phone",
-            "Mobile Phone",
-            "Is SMS Enabled",
+        private static readonly string[] optionalFields = { "Anniversary Date",
+            "Birthdate",
+            "Campus Id",
+            "Campus Name",
+            "Connection Status",
+            "Created Date Time",
             "Email",
             "Email Preference",
             "Gender",
-            "Marital Status",
-            "Birthdate",
-            "Anniversary Date",
-            "Record Status",
-            "Inactive Reason",
-            "Is Deceased",
-            "Connection Status",
+            "Give Individually",
             "Grade",
+            "Home Address City",
+            "Home Address Country",
+            "Home Address Postal Code",
+            "Home Address State",
             "Home Address Street 1",
             "Home Address Street 2",
-            "Home Address City",
-            "Home Address State",
-            "Home Address Postal Code",
-            "Home Address Country",
-            "Created Date Time",
+            "Home Phone",
+            "Inactive Reason",
+            "Is Deceased",
+            "Is SMS Enabled",
+            "Marital Status",
+            "Middle Name",
+            "Mobile Phone",
             "Modified Date Time",
             "Note",
-            "Campus Id",
-            "Campus Name",
-            "Give Individually" };
+            "Record Status",
+            "Suffix",
+            "TitleValueId",
+            "Nick Name" };
 
-        private static readonly string[] allowedPeronsAttributeFieldTypes = { "Text", "Boolean", "Integer", "Date" };
+        private static readonly HashSet<string> allowedPeronsAttributeFieldTypeClassNames = new HashSet<string> { "Rock.Field.Types.TextFieldType",
+            "Rock.Field.Types.BooleanFieldType",
+            "Rock.Field.Types.IntegerFieldType",
+            "Rock.Field.Types.DateFieldType"
+        };
 
         /// <summary>
         /// This holds the reference to the RockMessageHub SignalR Hub context.
@@ -92,7 +111,7 @@ namespace RockWeb.Blocks.CVSImport
         {
             get
             {
-                return string.Format( "CSVImport_BlockId:{0}_SessionId:{1}", this.BlockId, Session.SessionID );
+                return $"CSVImport_BlockId:{ this.BlockId }_SessionId:{ Session.SessionID }";
             }
         }
 
@@ -114,44 +133,43 @@ namespace RockWeb.Blocks.CVSImport
                 ddlDataType.Items.Add( peopleDataTypeItem );
 
                 RockContext rockContext = new RockContext();
+
                 ListItem[] sourceDescriptionItems = new PersonService( new RockContext() )
                     .GetForeignKeys()
                     .Select( foreignKey => new ListItem( foreignKey ) )
                     .ToArray();
-                if ( sourceDescriptionItems.Count() == 0 )
+                rblpreviousSourceDescription.Items.AddRange( sourceDescriptionItems );
+
+                bool noPreviousForeignKeyPresent = sourceDescriptionItems.Count() == 0;
+                if ( noPreviousForeignKeyPresent )
                 {
-                    // switch to taking text input if no foreign key is present
-                    rblpreviousSourceDescription.Required = true;
+                    rblpreviousSourceDescription.Required = false;
                     rblpreviousSourceDescription.Visible = false;
                     lbToggleSourceDescription.Visible = false;
                     tbpreviousSourceDescription.Visible = true;
                     tbpreviousSourceDescription.Required = true;
                 }
-                else
-                {
-                    rblpreviousSourceDescription.Items.AddRange( sourceDescriptionItems );
-                }
 
                 Guid suffixGUID = Rock.SystemGuid.DefinedType.PERSON_SUFFIX.AsGuid();
-                lsuffixlist.Text = $"({string.Join( ", ", DefinedTypeCache.GetValues( suffixGUID ) )})";
+                lsuffixlist.Text = DefinedTypeCache.Get( suffixGUID ).DefinedValues.Select( dv => dv.Value ).ToList().AsDelimited( ", " );
 
                 Guid connectionStatusGUID = Rock.SystemGuid.DefinedType.PERSON_CONNECTION_STATUS.AsGuid();
-                lconnectionStatusList.Text = $"({string.Join( ", ", DefinedTypeCache.GetValues( connectionStatusGUID ) )})";
+                lconnectionStatusList.Text = DefinedTypeCache.Get( connectionStatusGUID ).DefinedValues.Select( dv => dv.Value ).ToList().AsDelimited( ", " );
 
                 Guid gradeGUID = Rock.SystemGuid.DefinedType.SCHOOL_GRADES.AsGuid();
-                lgrade.Text = $"({string.Join( ", ", DefinedValueCache.GetDescriptions( gradeGUID ) )})";
+                lgrade.Text = DefinedTypeCache.Get( gradeGUID ).DefinedValues.Select( definedValue => definedValue.Description ).ToList().AsDelimited( ", " );
 
-                var emailPreferenceNames = Enum.GetNames( typeof( Slingshot.Core.Model.EmailPreference ) );
-                lemailPreferenceList.Text = $"({string.Join( ", ", emailPreferenceNames )})";
+                var emailPreferenceNames = Enum.GetNames( typeof( Slingshot.Core.Model.EmailPreference ) ).ToList();
+                lemailPreferenceList.Text = emailPreferenceNames.AsDelimited( ", " );
 
-                var genderNames = Enum.GetNames( typeof( Slingshot.Core.Model.Gender ) );
-                lgenderList.Text = $"({string.Join( ", ", genderNames )})";
+                var genderNames = Enum.GetNames( typeof( Slingshot.Core.Model.Gender ) ).ToList();
+                lgenderList.Text = genderNames.AsDelimited( ", " );
 
-                var maritalStatusNames = Enum.GetNames( typeof( Slingshot.Core.Model.MaritalStatus ) );
-                lmaritalStatusList.Text = $"({string.Join( ", ", maritalStatusNames )})";
+                var maritalStatusNames = Enum.GetNames( typeof( Slingshot.Core.Model.MaritalStatus ) ).ToList();
+                lmaritalStatusList.Text = maritalStatusNames.AsDelimited( ", " );
 
-                var recordStatusNames = Enum.GetNames( typeof( Slingshot.Core.Model.RecordStatus ) );
-                lrecordStatusList.Text = $"({string.Join( ", ", recordStatusNames )})";
+                var recordStatusNames = Enum.GetNames( typeof( Slingshot.Core.Model.RecordStatus ) ).ToList();
+                lrecordStatusList.Text = recordStatusNames.AsDelimited( ", " );
             }
         }
 
@@ -285,7 +303,7 @@ namespace RockWeb.Blocks.CVSImport
 
         protected void lbToggleSourceDescription_Click( object sender, EventArgs e )
         {
-            rblpreviousSourceDescription.Required = true;
+            rblpreviousSourceDescription.Required = false;
             rblpreviousSourceDescription.Visible = false;
             lbToggleSourceDescription.Visible = false;
             tbpreviousSourceDescription.Visible = true;
@@ -294,7 +312,7 @@ namespace RockWeb.Blocks.CVSImport
 
         private ListItem[] CreateListItemsDropDown()
         {
-            ListItem[] rockAttributeArray = AttributeService.GetPersonAttributes( allowedPeronsAttributeFieldTypes )
+            ListItem[] rockAttributeArray = AttributeCache.GetPersonAttributes( allowedPeronsAttributeFieldTypeClassNames )
                 .Select( attribute => new ListItem( attribute.Name ) )
                 .ToArray();
             foreach ( ListItem rockAttribute in rockAttributeArray )

@@ -184,6 +184,18 @@
     <Compile Include="Migrations\202207261710563_AddContentLibrarySystemPages.designer.cs">
       <DependentUpon>202207261710563_AddContentLibrarySystemPages.cs</DependentUpon>
     </Compile>
+    <Compile Include="Migrations\202207271521541_DeepLinking.cs" />
+    <Compile Include="Migrations\202207271521541_DeepLinking.designer.cs">
+      <DependentUpon>202207271521541_DeepLinking.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\202207271757361_CSVImportErrorNote.cs" />
+    <Compile Include="Migrations\202207271757361_CSVImportErrorNote.designer.cs">
+      <DependentUpon>202207271757361_CSVImportErrorNote.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\202207271811590_CodeGenerated_20220727.cs" />
+    <Compile Include="Migrations\202207271811590_CodeGenerated_20220727.designer.cs">
+      <DependentUpon>202207271811590_CodeGenerated_20220727.cs</DependentUpon>
+    </Compile>
     <Compile Include="Migrations\Version 13.0\Version 1.13.3\202203101710039_AddFormBuilderBlocksAndPages.cs" />
     <Compile Include="Migrations\Version 13.0\Version 1.13.3\202203101710039_AddFormBuilderBlocksAndPages.Designer.cs">
       <DependentUpon>202203101710039_AddFormBuilderBlocksAndPages.cs</DependentUpon>
@@ -1339,6 +1351,15 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Migrations\202207261710563_AddContentLibrarySystemPages.resx">
       <DependentUpon>202207261710563_AddContentLibrarySystemPages.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\202207271521541_DeepLinking.resx">
+      <DependentUpon>202207271521541_DeepLinking.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\202207271757361_CSVImportErrorNote.resx">
+      <DependentUpon>202207271757361_CSVImportErrorNote.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\202207271811590_CodeGenerated_20220727.resx">
+      <DependentUpon>202207271811590_CodeGenerated_20220727.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Migrations\Version 13.0\Version 1.13.3\202203101710039_AddFormBuilderBlocksAndPages.resx">
       <DependentUpon>202203101710039_AddFormBuilderBlocksAndPages.cs</DependentUpon>

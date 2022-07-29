@@ -1,4 +1,20 @@
-﻿using System;
+﻿// <copyright>
+// Copyright by the Spark Development Network
+//
+// Licensed under the Rock Community License (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.rockrms.com/license
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+// </copyright>
+//
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -139,48 +155,42 @@ namespace Rock.Slingshot
                     # region Create Error CSV File
 
                     // check if basic data is present to add the person to the database
-                    try
                     {
-                        dataValidator.ValidatePerson( person );
-                    }
-                    catch ( UploadedPersonCSVInvalidException exception )
-                    {
-                        string errorMessage = exception.Message + $": The {headerMapper["Id"]} Column and the {headerMapper["Family Id"]} column should not contain 0 or empty values";
-                        csvEntryLookup.Values
-                            .ToList()
-                            .ForEach( field => uploadedPersonCsvErrorsWriter.WriteField( field ) );
-                        uploadedPersonCsvErrorsWriter.WriteField( false );
-                        uploadedPersonCsvErrorsWriter.WriteField( errorMessage );
-                        uploadedPersonCsvErrorsWriter.NextRecord();
-                        HasErrors = true;
-                        continue;
+                        if ( !dataValidator.ValidatePerson( person, out string errorMessage ) )
+                        {
+                            csvEntryLookup.Values
+                                .ToList()
+                                .ForEach( field => uploadedPersonCsvErrorsWriter.WriteField( field ) );
+                            uploadedPersonCsvErrorsWriter.WriteField( false );
+                            uploadedPersonCsvErrorsWriter.WriteField( errorMessage );
+                            uploadedPersonCsvErrorsWriter.NextRecord();
+                            HasErrors = true;
+                            continue;
+                        }
                     }
 
                     var errorMessages = new List<string>();
 
                     // check address is valid
-                    try
                     {
-                        dataValidator.ValidateAddress( personAddress );
-                    }
-                    catch ( UploadedPersonCSVInvalidException exception )
-                    {
-                        errorMessages.Add( exception.Message );
-                        personAddress = new SlingshotCore.Model.PersonAddress(); // nullify the entry for address to the slingshot
+                        var addressInvalidErrorMessage = string.Empty;
+                        if ( !dataValidator.ValidateAddress( personAddress, out addressInvalidErrorMessage ) )
+                        {
+                            errorMessages.Add( addressInvalidErrorMessage );
+                            personAddress = new SlingshotCore.Model.PersonAddress(); // nullify the entry for address to the slingshot
+                        }
                     }
 
                     // check campus is valid
-                    try
                     {
-                        dataValidator.ValidateCampus( person );
-                    }
-                    catch ( UploadedPersonCSVInvalidException exception )
-                    {
-                        errorMessages.Add( exception.Message );
+                        if ( !dataValidator.ValidateCampus( person, out string errorMessage ) )
+                        {
+                            errorMessages.Add( errorMessage );
 
-                        // pass no campus for the person to the slingshot if it is invalid
-                        person.Campus.CampusId = 0;
-                        person.Campus.CampusName = "";
+                            // pass no campus for the person to the slingshot if it is invalid
+                            person.Campus.CampusId = 0;
+                            person.Campus.CampusName = "";
+                        }
                     }
 
                     // Add the final message to the error column of errors.csv
@@ -217,15 +227,14 @@ namespace Rock.Slingshot
                     } );
                 }
             }
-            HasErrors = personImportErrorMessageStructs.Count > 0;
+            HasErrors = HasErrors || personImportErrorMessageStructs.Count > 0;
         }
 
         public void ClearRedundantFilesAfterImport()
         {
             File.Delete( SlingshotFileName );
             // delete all files except the errors.csv file
-            Array.ForEach( Directory.GetFiles( SlingshotDirectoryName ), delegate ( string path )
-            { File.Delete( path ); } );
+            Array.ForEach( Directory.GetFiles( SlingshotDirectoryName ), delegate ( string path ) { File.Delete( path ); } );
 
         }
 

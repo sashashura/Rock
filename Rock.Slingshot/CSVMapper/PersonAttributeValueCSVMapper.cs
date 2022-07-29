@@ -1,4 +1,20 @@
-﻿using System.Collections.Generic;
+﻿// <copyright>
+// Copyright by the Spark Development Network
+//
+// Licensed under the Rock Community License (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.rockrms.com/license
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+// </copyright>
+//
+using System.Collections.Generic;
 using System.Linq;
 using Rock;
 using Rock.Data;
@@ -11,21 +27,14 @@ public class PersonAttributeValueCSVMapper
     {
         var personAttributeValues = new List<Slingshot.Core.Model.PersonAttributeValue>();
 
-        string csvColumnId = csvHeaderMapper["Id"];
-        int personId = csvEntryLookup[csvColumnId].ToIntSafe();
+        int personId = csvEntryLookup[csvHeaderMapper["Id"]].ToIntSafe();
 
-        // This is duplicated from CSVImport.ascx.cs
-        RockContext rockContext = new RockContext();
-        int entityTypeIdPerson = EntityTypeCache.GetId<Person>().Value;
-        AttributeService attributeService = new AttributeService( rockContext );
+        IEnumerable<string> rockPersonAttributeKeys = AttributeCache.GetPersonAttributes()
+            .Select( a => a.Name );
 
-        string[] rockAttributeKeys = attributeService.GetByEntityTypeId( entityTypeIdPerson )
-            .Select( a => a.Name )
-            .ToArray();
-
-        foreach ( var rockAttributeKey in rockAttributeKeys )
+        foreach ( var rockPersonAttributeKey in rockPersonAttributeKeys )
         {
-            if ( !csvHeaderMapper.TryGetValue( rockAttributeKey, out string csvColumnRockAttributeKey ) )
+            if ( !csvHeaderMapper.TryGetValue( rockPersonAttributeKey, out string csvColumnRockAttributeKey ) )
             {
                 continue;
             }
@@ -35,7 +44,7 @@ public class PersonAttributeValueCSVMapper
 
             var personAttributeValue = new Slingshot.Core.Model.PersonAttributeValue
             {
-                AttributeKey = rockAttributeKey,
+                AttributeKey = rockPersonAttributeKey,
                 AttributeValue = attributeValue,
                 PersonId = personId
             };
