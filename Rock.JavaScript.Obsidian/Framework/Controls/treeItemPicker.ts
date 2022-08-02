@@ -113,7 +113,8 @@ export default defineComponent({
     },
 
     emits: {
-        "update:modelValue": (_value: ListItemBag | ListItemBag[] | null) => true
+        "update:modelValue": (_value: ListItemBag | ListItemBag[] | null) => true,
+        "valueSelected": () => true
     },
 
     setup(props, { emit }) {
@@ -229,6 +230,7 @@ export default defineComponent({
         const onSelect = (): void => {
             updateModelValue();
             showPopup.value = false;
+            emit("valueSelected"); // inform that a value was selected, even if it didn't change
         };
 
         // Watch for changes to the selected values from the parent control and
@@ -292,6 +294,9 @@ export default defineComponent({
                     <div class="picker-actions">
                         <a class="btn btn-xs btn-primary picker-btn" @click.prevent.stop="onSelect">Select</a>
                         <a class="btn btn-xs btn-link picker-cancel" @click.prevent.stop="onCancel">Cancel</a>
+                        <div v-if="$slots.customPickerActions" class="pull-right">
+                            <slot name="customPickerActions" />
+                        </div>
                     </div>
                 </div>
             </div>

@@ -61,7 +61,7 @@ const treeItem = defineComponent({
         const hasChildren = computed((): boolean => children.value.length > 0);
 
         /** Determines if this item is a folder that can contain children. */
-        const isFolder = computed((): boolean => props.item.isFolder && props.item.hasChildren);
+        const isFolder = computed((): boolean => props.item.isFolder || props.item.hasChildren);
 
         /** The display name of the current item. */
         const itemName = computed((): string => props.item.text ?? "");
@@ -100,6 +100,14 @@ const treeItem = defineComponent({
 
             return classes.join(" ");
         });
+
+        // Automatically expand to show selected value deep in the tree
+        watch(() => [props.item, props.modelValue], () => {
+            if (hasChildren.value == false) {
+                return;
+            }
+            console.log("Auto expand - value:", props.modelValue, "item:", props.item);
+        }, { immediate: true });
 
         /**
          * Event handler for when the folder arrow is clicked.

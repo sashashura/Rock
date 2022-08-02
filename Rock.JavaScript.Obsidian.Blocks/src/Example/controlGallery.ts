@@ -110,6 +110,7 @@ import StepProgramPicker from "@Obsidian/Controls/stepProgramPicker";
 import StepStatusPicker from "@Obsidian/Controls/stepStatusPicker";
 import StepTypePicker from "@Obsidian/Controls/stepTypePicker";
 import StreakTypePicker from "@Obsidian/Controls/streakTypePicker";
+import PagePicker from "@Obsidian/Controls/pagePicker";
 
 // #region Gallery Support
 
@@ -147,10 +148,10 @@ function convertComponentName(name: string | undefined | null): string {
  * Takes an element name and a collection of attribute keys and values and
  * constructs the example code. This can be used inside a computed call to
  * have the example code dynamically match the selected settings.
- * 
+ *
  * @param elementName The name of the element to use in the example code.
  * @param attributes The attribute names and values to append to the element name.
- * 
+ *
  * @returns A string of valid HTML content for how to use the component.
  */
 function buildExampleCode(elementName: string, attributes: Record<string, Ref<unknown> | unknown>): string {
@@ -4348,7 +4349,7 @@ const codeEditorGallery = defineComponent({
             { value: "mono_industrial", text: "mono_industrial" },
             { value: "monokai", text: "monokai" },
             { value: "pastel_on_dark", text: "pastel_on_dark" },
-            { value: "solarized_on_dark", text: "solarized_on_dark" },
+            { value: "solarized_dark", text: "solarized_dark" },
             { value: "terminal", text: "terminal" },
             { value: "tomorrow_night", text: "tomorrow_night" },
             { value: "tomorrow_night_blue", text: "tomorrow_night_blue" },
@@ -4419,6 +4420,43 @@ const codeEditorGallery = defineComponent({
 </GalleryAndResult>`
 });
 
+
+/** Demonstrates page picker */
+const pagePickerGallery = defineComponent({
+    name: "PagePickerGallery",
+    components: {
+        GalleryAndResult,
+        CheckBox,
+        PagePicker,
+        RockButton
+    },
+    setup() {
+        return {
+            multiple: ref(false),
+            value: ref({
+                "value": "9593f41c-23a2-4f65-bbd4-634a06380e2e",
+                "text": "Following Suggestion"
+            }),
+            someVal: ref(1),
+            importCode: getControlImportPath("pagePicker"),
+            exampleCode: `<PagePicker label="Page" v-model="value" :multiple="false" />`
+        };
+    },
+    template: `
+<GalleryAndResult
+    :value="value"
+    :importCode="importCode"
+    :exampleCode="exampleCode"
+    enableReflection >
+    <PagePicker label="Page" v-model="value" :multiple="multiple" :someVal="someVal" />
+
+    <template #settings>
+        <CheckBox label="Multiple" v-model="multiple" />
+        <RockButton @click="someVal++">Refresh</RockButton>
+        <p class="text-semibold font-italic">Not all options have been implemented yet.</p>
+    </template>
+</GalleryAndResult>`
+});
 
 
 const controlGalleryComponents: Record<string, Component> = [
@@ -4497,6 +4535,7 @@ const controlGalleryComponents: Record<string, Component> = [
     stepStatusPickerGallery,
     stepTypePickerGallery,
     streakTypePickerGallery,
+    pagePickerGallery,
 ]
     // Sort list by component name
     .sort((a, b) => a.name.localeCompare(b.name))

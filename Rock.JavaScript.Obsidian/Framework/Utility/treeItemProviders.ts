@@ -23,6 +23,8 @@ import { CategoryPickerChildTreeItemsOptionsBag } from "@Obsidian/ViewModels/Res
 import { LocationPickerGetActiveChildrenOptionsBag } from "@Obsidian/ViewModels/Rest/Controls/locationPickerGetActiveChildrenOptionsBag";
 import { DataViewPickerGetDataViewsOptionsBag } from "@Obsidian/ViewModels/Rest/Controls/dataViewPickerGetDataViewsOptionsBag";
 import { WorkflowTypePickerGetWorkflowTypesOptionsBag } from "@Obsidian/ViewModels/Rest/Controls/workflowTypePickerGetWorkflowTypesOptionsBag";
+import { PagePickerGetChildrenOptionsBag } from "@Obsidian/ViewModels/Rest/Controls/pagePickerGetChildrenOptionsBag";
+import { PagePickerGetSelectedPageHierarchyOptionsBag } from "@Obsidian/ViewModels/Rest/Controls/PagePickerGetSelectedPageHierarchyOptionsBag";
 
 /**
  * The methods that must be implemented by tree item providers. These methods
@@ -284,6 +286,136 @@ export class WorkflowTypeTreeItemProvider implements ITreeItemProvider {
      */
     async getRootItems(): Promise<TreeItemBag[]> {
         return await this.getItems();
+    }
+
+    /**
+     * @inheritdoc
+     */
+    async getChildItems(item: TreeItemBag): Promise<TreeItemBag[]> {
+        return this.getItems(item.value);
+    }
+}
+
+
+
+/**
+ * Tree Item Provider for retrieving pages from the server and displaying
+ * them inside a tree list.
+ */
+export class PageTreeItemProvider implements ITreeItemProvider {
+    /**
+     * The security grant token that will be used to request additional access
+     * to the category list.
+     */
+    public securityGrantToken?: string | null;
+
+    /**
+     * List of GUIDs or pages to exclude from the list.
+     */
+    public hidePageGuids?: Guid[] | null;
+
+    /**
+     * Currently selected page
+     */
+    public selectedPageGuid?: Guid | null;
+
+    /**
+     * Gets the child items from the server.
+     *
+     * @param parentGuid The parent item whose children are retrieved.
+     *
+     * @returns A collection of TreeItem objects as an asynchronous operation.
+     */
+    private async getItems(parentGuid?: Guid | null): Promise<TreeItemBag[]> {
+        console.debug(`getItems parentGuid:${parentGuid}`);
+        let result: TreeItemBag[];
+
+        const options: Partial<PagePickerGetChildrenOptionsBag> = {
+            guid: parentGuid ?? emptyGuid,
+            rootPageGuid: emptyGuid,
+            hidePageGuids: this.hidePageGuids?.join(","),
+            securityGrantToken: this.securityGrantToken
+        };
+        const url = "/api/v2/Controls/PagePickerGetChildren";
+        const response = await post<TreeItemBag[]>(url, undefined, options);
+
+        if (response.isSuccess && response.data) {
+            result = response.data;
+        }
+        else {
+            console.log("Error", response.errorMessage);
+            return [];
+        }
+
+        // If we're getting child nodes or if there is no selected page
+        if (parentGuid || !this.selectedPageGuid) {
+            return result;
+        }
+
+        // If we're getting the root elements and we have a selected page, we also want to grab
+        // all the parent pages so we can pre-load the entire hierarchy to the selected page
+        return this.getHierarchyToSelectedPage(result);
+    }
+
+    /**
+     * Get the hierarchical list of parent pages of the selectedPageGuid
+     *
+     * @returns A list of GUIDs of the parent pages
+     */
+    async getParentList(): Promise<Guid[]> {
+        console.debug("getParentList");
+
+        const options: PagePickerGetSelectedPageHierarchyOptionsBag = {
+            selectedPageGuid: this.selectedPageGuid
+        };
+        const url = "/api/v2/Controls/PagePickerGetSelectedPageHierarchy";
+        const response = await post<Guid[]>(url, undefined, options);
+
+        if (response.isSuccess && response.data) {
+            return response.data;
+        }
+        else {
+            console.log("Error", response.errorMessage);
+            return [];
+        }
+    }
+
+    /**
+     * Fill in pages to the depth of the selected page
+     *
+     * @param rootLayer The bottom layer of pages that we'll build depth upon
+     *
+     * @return The augmented `rootLayer` with the child pages
+     */
+    async getHierarchyToSelectedPage(rootLayer: TreeItemBag[]): Promise<TreeItemBag[]> {
+        console.debug("getHierarchyToSelectedPage", rootLayer);
+        const parents = await this.getParentList();
+
+        if (!parents || parents.length == 0) {
+            // Selected page has no parents, so we're done.
+            return rootLayer;
+        }
+
+        const childLists = await Promise.all(parents.map(guid => this.getItems(guid)));
+        let currentLevel = rootLayer;
+
+        parents.forEach((parentGuid, i) => {
+            const parentPage: TreeItemBag | undefined = currentLevel.find(page => page.value == parentGuid);
+            if (parentPage) {
+                parentPage.children = childLists[i];
+                currentLevel = childLists[i];
+            }
+        });
+
+        return rootLayer;
+    }
+
+
+    /**
+     * @inheritdoc
+     */
+    async getRootItems(): Promise<TreeItemBag[]> {
+        return await this.getItems(null);
     }
 
     /**

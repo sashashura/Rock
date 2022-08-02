@@ -36,6 +36,7 @@ using Rock.ViewModels.Crm;
 using Rock.ViewModels.Rest.Controls;
 using Rock.ViewModels.Utility;
 using Rock.Web.Cache;
+using Rock.Web.UI.Controls;
 using Rock.Utility;
 
 namespace Rock.Rest.v2
@@ -1511,6 +1512,128 @@ namespace Rock.Rest.v2
 
                 return Ok( locationNameList );
             }
+        }
+
+        #endregion
+
+        #region Page Picker
+
+        /// <summary>
+        /// Gets the tree list of pages
+        /// </summary>
+        /// <param name="options">The options that describe which pages to retrieve.</param>
+        /// <returns>A collection of <see cref="TreeItemBag"/> objects that represent the pages.</returns>
+        [Authenticate, Secured]
+        [HttpPost]
+        [System.Web.Http.Route( "PagePickerGetChildren" )]
+        [Rock.SystemGuid.RestActionGuid( "EE9AB2EA-EE01-4D0F-B626-02D1C8D1ABF4" )]
+        public IHttpActionResult PagePickerGetChildren( [FromBody] PagePickerGetChildrenOptionsBag options )
+        {
+            var service = new Service<Page>( new RockContext() ).Queryable().AsNoTracking();
+            IQueryable<Page> qry;
+            if ( options.Guid.IsEmpty() )
+            {
+                if ( options.RootPageGuid.IsEmpty() )
+                {
+                    qry = service.Where( a => a.ParentPage.Guid == null );
+                }
+                else
+                {
+                    qry = service.Where( a => a.ParentPage.Guid == options.RootPageGuid );
+                }
+            }
+            else
+            {
+                qry = service.Where( a => a.ParentPage.Guid == options.Guid );
+            }
+
+            if ( options.SiteType != null )
+            {
+                qry = qry.Where( p => ( int ) p.Layout.Site.SiteType == options.SiteType.Value );
+            }
+
+            List<Guid> hidePageGuidList = ( options.HidePageGuids ?? string.Empty ).Split( ',' ).Select( s => s.AsGuid() ).ToList();
+            List<Page> pageList = qry.Where( a => !hidePageGuidList.Contains( a.Guid ) ).OrderBy( a => a.Order ).ThenBy( a => a.InternalName ).ToList();
+            List<TreeItemBag> pageItemList = new List<TreeItemBag>();
+            foreach ( var page in pageList )
+            {
+                var pageItem = new TreeItemBag();
+                pageItem.Value = page.Guid.ToString();
+                pageItem.Text = page.InternalName;
+
+                pageItemList.Add( pageItem );
+            }
+
+            // try to quickly figure out which items have Children
+            List<int> resultIds = pageList.Select( a => a.Id ).ToList();
+
+            var qryHasChildren = service
+                .Where( p =>
+                    p.ParentPageId.HasValue &&
+                    resultIds.Contains( p.ParentPageId.Value ) )
+                .Select( p => p.ParentPage.Guid )
+                .Distinct()
+                .ToList();
+
+            foreach ( var g in pageItemList )
+            {
+                var hasChildren = qryHasChildren.Any( a => a.ToString() == g.Value );
+                g.HasChildren = hasChildren;
+                g.IsFolder = hasChildren;
+                g.IconCssClass = "fa fa-file-o";
+            }
+
+            return Ok(pageItemList.AsQueryable());
+        }
+
+        /// <summary>
+        /// Gets the list of pages in the hierarchy going from the root to the given page
+        /// </summary>
+        /// <param name="options">The options that describe which pages to retrieve.</param>
+        /// <returns>A collection of <see cref="Guid"/> that represent the pages.</returns>
+        [Authenticate, Secured]
+        [HttpPost]
+        [System.Web.Http.Route( "PagePickerGetSelectedPageHierarchy" )]
+        [Rock.SystemGuid.RestActionGuid( "e74611a0-1711-4a0b-b3bd-df242d344679" )]
+        public IHttpActionResult PagePickerGetSelectedPageHierarchy( [FromBody] PagePickerGetSelectedPageHierarchyOptionsBag options )
+        {
+            var page = PageCache.Get( options.SelectedPageGuid );
+
+            var parentPageGuids = new List<string>();
+            var parentPage = page.ParentPage;
+
+            while ( parentPage != null )
+            {
+                if ( !parentPageGuids.Contains( parentPage.Guid.ToString() ) )
+                {
+                    parentPageGuids.Insert( 0, parentPage.Guid.ToString() );
+                }
+                else
+                {
+                    // infinite recursion
+                    break;
+                }
+
+                parentPage = parentPage.ParentPage;
+            }
+
+            return Ok( parentPageGuids );
+        }
+
+        /// <summary>
+        /// Gets the list of pages in the hierarchy going from the root to the given page
+        /// </summary>
+        /// <param name="options">The options that describe which pages to retrieve.</param>
+        /// <returns>A collection of <see cref="Guid"/> that represent the pages.</returns>
+        [Authenticate, Secured]
+        [HttpPost]
+        [System.Web.Http.Route( "PagePickerGetPageName" )]
+        [Rock.SystemGuid.RestActionGuid( "20d219bd-3635-4cbc-b79f-250972ae6b97" )]
+        public IHttpActionResult PagePickerGetPageName( [FromBody] PagePickerGetPageNameOptionsBag options )
+        {
+            var page = PageCache.Get( options.PageGuid );
+
+            return Ok( page.InternalName );
         }
 
         #endregion
