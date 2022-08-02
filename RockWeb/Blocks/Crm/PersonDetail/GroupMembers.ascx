@@ -7,9 +7,9 @@
             <asp:Repeater ID="rptrGroups" runat="server" OnItemDataBound="rptrGroups_ItemDataBound" >
                 <ItemTemplate>
 
-                    <asp:Panel ID="pnlGroup" runat="server" CssClass="card card-profile group-hover card-family-member panel-widget">
+                    <asp:Panel ID="pnlGroup" runat="server" CssClass="card card-profile card-family-member panel-widget">
                         <asp:HiddenField ID="hfGroupId" runat="server" Value='<%# Eval("Id") %>' />
-                            <div class="card-header">
+                            <div class="card-header group-hover">
                                 <span class="card-title"><%# FormatAsHtmlTitle(Eval("Name").ToString()) %></span>
 
                                 <div class="panel-labels group-hover-item group-hover-show">
@@ -45,18 +45,28 @@
                             </div>
                         </asp:panel>
 
+                        <asp:Repeater ID="rptrAddresses" runat="server" OnItemDataBound="rptrAddresses_ItemDataBound" OnItemCommand="rptrAddresses_ItemCommand">
+                            <HeaderTemplate>
+                                <div class="card-section">
+                            </HeaderTemplate>
+                            <ItemTemplate>
+                                <asp:Literal ID="litAddress" runat="server"></asp:Literal>
 
-                            <asp:Repeater ID="rptrAddresses" runat="server" OnItemDataBound="rptrAddresses_ItemDataBound">
-                                <HeaderTemplate>
-                                    <div class="card-section">
-                                </HeaderTemplate>
-                                <ItemTemplate>
-                                    <asp:Literal ID="litAddress" runat="server"></asp:Literal>
-                                </ItemTemplate>
-                                <FooterTemplate>
-                                    </div>
-                                </FooterTemplate>
-                            </asp:Repeater>
+                                <div class="group-hover-item group-hover-show ml-auto">
+                                    <asp:LinkButton ID="lbVerify" runat="server" CssClass="btn btn-xs btn-square btn-default" CommandName="verify" ToolTip="Verify Address">
+                                        <i class="fa fa-globe"></i>
+                                    </asp:LinkButton>
+                                    <asp:LinkButton ID="lbLocationSettings" runat="server" CssClass="btn btn-xs btn-square btn-default" CommandName="settings" ToolTip="Configure Location">
+                                        <i class="fa fa-gear"></i>
+                                    </asp:LinkButton>
+                                </div>
+                                </div><%--This is the ending of the div that begins in litAddress--%>
+                            </ItemTemplate>
+                            <FooterTemplate>
+                                </div>
+                            </FooterTemplate>
+                        </asp:Repeater>
+
                         <asp:Literal ID="lGroupFooter" runat="server" />
 
                     </asp:Panel>

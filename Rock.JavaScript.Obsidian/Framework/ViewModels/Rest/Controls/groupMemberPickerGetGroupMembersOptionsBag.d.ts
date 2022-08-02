@@ -21,11 +21,13 @@
 // </copyright>
 //
 
+import { Guid } from "@Obsidian/Types";
+
 /**
  * The options that can be passed to the GetGroupMembers API action of
  * the GroupMemberPicker control.
  */
 export type GroupMemberPickerGetGroupMembersOptionsBag = {
-    /** Type of the container the components are within */
-    groupId?: number | null;
+    /** GUID of the group the member is part of. */
+    groupGuid?: Guid | null;
 };

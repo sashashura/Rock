@@ -26,8 +26,8 @@ namespace Rock.ViewModels.Rest.Controls
     public class InteractionComponentPickerGetInteractionComponentsOptionsBag
     {
         /// <summary>
-        /// Type of the container the components are within
+        /// GUID of the container the components are within.
         /// </summary>
-        public int? InteractionChannelId { get; set; }
+        public Guid? InteractionChannelGuid { get; set; }
     }
 }

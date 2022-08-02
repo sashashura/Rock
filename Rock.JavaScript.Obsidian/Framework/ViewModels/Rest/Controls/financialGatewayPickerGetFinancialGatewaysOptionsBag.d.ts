@@ -23,18 +23,20 @@
 
 /**
  * The options that can be passed to the GetFinancialGateways API action of
- * the inancialGatewayPicker control.
+ * the FinancialGatewayPicker control.
  */
 export type FinancialGatewayPickerGetFinancialGatewaysOptionsBag = {
     /**
-     * Whether or not to include payment gateways that are inactive or
-     * don't support Rock-initiated transactions.
+     * Gets or sets a value indicating whether inactive gateways should be included.
+     * This checks both the FinancialGateway model and the GatewayComponent.
      */
-    showAll: boolean;
+    showInactive: boolean;
 
     /**
-     * The current selected payment gateway. By passing this in, we ensure
-     * that this gateway is shown in the list even if it wouldn't normally.
+     * If set to true then gateways that do now support Rock initiated transactions will be included.
+     * These GatewayComponents are used to download externally created transactions and do not allow Rock
+     * to create the transaction.
+     * THIS DOES NOT CONSIDER THE "IsActive" PROPERTY.
      */
-    selectedItem?: number | null;
+    showAllGatewayComponents: boolean;
 };

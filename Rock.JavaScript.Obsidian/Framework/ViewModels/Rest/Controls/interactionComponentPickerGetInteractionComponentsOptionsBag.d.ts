@@ -21,11 +21,13 @@
 // </copyright>
 //
 
+import { Guid } from "@Obsidian/Types";
+
 /**
  * The options that can be passed to the GetInteractionComponents API action of
  * the InteractionComponentPicker control.
  */
 export type InteractionComponentPickerGetInteractionComponentsOptionsBag = {
-    /** Type of the container the components are within */
-    interactionChannelId?: number | null;
+    /** GUID of the container the components are within. */
+    interactionChannelGuid?: Guid | null;
 };

@@ -15,12 +15,13 @@
 // </copyright>
 //
 
-import { Component, computed, defineComponent, getCurrentInstance, onMounted, onUnmounted, PropType, ref, watch } from "vue";
+import { Component, computed, defineComponent, getCurrentInstance, isRef, onMounted, onUnmounted, PropType, Ref, ref, watch } from "vue";
 import HighlightJs from "@Obsidian/Libs/highlightJs";
 import FieldFilterEditor from "@Obsidian/Controls/fieldFilterEditor";
 import AttributeValuesContainer from "@Obsidian/Controls/attributeValuesContainer";
 import TextBox from "@Obsidian/Controls/textBox";
 import EmailBox from "@Obsidian/Controls/emailBox";
+import CodeEditor from "@Obsidian/Controls/codeEditor";
 import CurrencyBox from "@Obsidian/Controls/currencyBox";
 import DatePicker from "@Obsidian/Controls/datePicker";
 import DateRangePicker from "@Obsidian/Controls/dateRangePicker";
@@ -105,6 +106,10 @@ import InteractionChannelPicker from "@Obsidian/Controls/interactionChannelPicke
 import InteractionComponentPicker from "@Obsidian/Controls/interactionComponentPicker";
 import LavaCommandPicker from "@Obsidian/Controls/lavaCommandPicker";
 import RemoteAuthsPicker from "@Obsidian/Controls/remoteAuthsPicker";
+import StepProgramPicker from "@Obsidian/Controls/stepProgramPicker";
+import StepStatusPicker from "@Obsidian/Controls/stepStatusPicker";
+import StepTypePicker from "@Obsidian/Controls/stepTypePicker";
+import StreakTypePicker from "@Obsidian/Controls/streakTypePicker";
 
 // #region Gallery Support
 
@@ -136,6 +141,46 @@ function convertComponentName(name: string | undefined | null): string {
     }
 
     return name.replace(/[A-Z]/g, " $&").replace(/Gallery$/, "").trim();
+}
+
+/**
+ * Takes an element name and a collection of attribute keys and values and
+ * constructs the example code. This can be used inside a computed call to
+ * have the example code dynamically match the selected settings.
+ * 
+ * @param elementName The name of the element to use in the example code.
+ * @param attributes The attribute names and values to append to the element name.
+ * 
+ * @returns A string of valid HTML content for how to use the component.
+ */
+function buildExampleCode(elementName: string, attributes: Record<string, Ref<unknown> | unknown>): string {
+    const attrs: string[] = [];
+
+    for (const attr in attributes) {
+        let value = attributes[attr];
+        console.log("attributes", attr, value);
+
+        if (isRef(value)) {
+            value = value.value;
+        }
+
+        if (typeof value === "string") {
+            attrs.push(`${attr}="${value}"`);
+        }
+        else if (typeof value === "number") {
+            attrs.push(`:${attr}="${value}"`);
+        }
+        else if (typeof value === "boolean") {
+            attrs.push(`:${attr}="${value ? "true" : "false"}"`);
+        }
+        else if (value === undefined || value === null) {
+            /* Do nothing */
+        }
+    }
+
+    console.log(attrs);
+
+    return `<${elementName} ${attrs.join(" ")} />`;
 }
 
 /**
@@ -492,8 +537,7 @@ const attributeValuesContainerGallery = defineComponent({
     :value="{ attributes, modelValue: attributeValues }"
     hasMultipleValues
     :importCode="importCode"
-    :exampleCode="exampleCode"
->
+    :exampleCode="exampleCode" >
     <AttributeValuesContainer
         v-model="attributeValues"
         :attributes="attributes"
@@ -503,8 +547,7 @@ const attributeValuesContainerGallery = defineComponent({
         :displayAsTabs="displayAsTabs"
         :showCategoryLabel="showCategoryLabel"
         :numberOfColumns="numberOfColumns"
-        :entityTypeName="entityName"
-    />
+        :entityTypeName="entityName" />
 
     <template #settings>
         <div class="row">
@@ -765,8 +808,7 @@ const fieldFilterEditorGallery = defineComponent({
     :value="{ 'output:modelValue':value, 'input:sources':sources }"
     hasMultipleValues
     :importCode="importCode"
-    :exampleCode="exampleCode"
->
+    :exampleCode="exampleCode" >
     <FieldFilterEditor :sources="sources" v-model="value" :title="title" />
 
     <template #settings>
@@ -795,8 +837,7 @@ const phoneNumberBoxGallery = defineComponent({
     :value="phoneNumber"
     :importCode="importCode"
     :exampleCode="exampleCode"
-    enableReflection
->
+    enableReflection >
     <PhoneNumberBox label="Phone 1" v-model="phoneNumber" />
 
     <template #settings>
@@ -823,8 +864,7 @@ const helpBlockGallery = defineComponent({
     template: `
 <GalleryAndResult
     :importCode="importCode"
-    :exampleCode="exampleCode"
->
+    :exampleCode="exampleCode" >
     <HelpBlock :text="text" />
     Hover over the symbol to the left to view HelpBlock in action
 
@@ -875,8 +915,7 @@ const dropDownListGallery = defineComponent({
     hasMultipleValues
     :importCode="importCode"
     :exampleCode="exampleCode"
-    enableReflection
->
+    enableReflection >
     <DropDownList label="Select" v-model="value" :items="options" :showBlankItem="showBlankItem" :enhanceForLongLists="enhanceForLongLists" :grouped="grouped" :multiple="multiple" />
 
     <template #settings>
@@ -926,8 +965,7 @@ const radioButtonListGallery = defineComponent({
     hasMultipleValues
     :importCode="importCode"
     :exampleCode="exampleCode"
-    enableReflection
->
+    enableReflection >
     <RadioButtonList label="Radio List" v-model="value" :items="options" :horizontal="isHorizontal" :repeatColumns="repeatColumns" />
 
     <template #settings>
@@ -960,8 +998,7 @@ const checkBoxGallery = defineComponent({
     :value="isChecked"
     :importCode="importCode"
     :exampleCode="exampleCode"
-    enableReflection
->
+    enableReflection >
     <CheckBox label="Check Box" text="Enable" v-model="isChecked" />
 
     <template #settings>
@@ -992,8 +1029,7 @@ const inlineCheckBoxGallery = defineComponent({
     :importCode="importCode"
     :exampleCode="exampleCode"
     description="Check Box with label that is displayed beside it instead of above it"
-    enableReflection
->
+    enableReflection >
     <InlineCheckBox label="Inline Label" v-model="isChecked" />
 </GalleryAndResult>`
 });
@@ -1029,8 +1065,7 @@ const dialogGallery = defineComponent({
 <GalleryAndResult
     :value="isDialogVisible"
     :importCode="importCode"
-    :exampleCode="exampleCode"
->
+    :exampleCode="exampleCode" >
     <RockButton @click="isDialogVisible = true">Show</RockButton>
 
     <Dialog v-model="isDialogVisible" :dismissible="isDismissible">
@@ -1093,8 +1128,7 @@ const checkBoxListGallery = defineComponent({
     hasMultipleValues
     :importCode="importCode"
     :exampleCode="exampleCode"
-    enableReflection
->
+    enableReflection >
     <CheckBoxList label="CheckBoxList" v-model="items" :items="options" :horizontal="isHorizontal" :repeatColumns="repeatColumns" />
 
     <template #settings>
@@ -1134,8 +1168,7 @@ const listBoxGallery = defineComponent({
     hasMultipleValues
     :importCode="importCode"
     :exampleCode="exampleCode"
-    enableReflection
->
+    enableReflection >
     <ListBox label="Select" v-model="value" :items="options" :enhanceForLongLists="enhanced" />
 
     <template #settings>
@@ -1166,8 +1199,7 @@ const datePickerGallery = defineComponent({
     :value="date"
     :importCode="importCode"
     :exampleCode="exampleCode"
-    enableReflection
->
+    enableReflection >
     <DatePicker label="Date" v-model="date" :displayCurrentOption="displayCurrentOption" :isCurrentDateOffset="isCurrentDateOffset" />
 
     <template #settings>
@@ -1203,8 +1235,7 @@ const dateRangePickerGallery = defineComponent({
     :value="date"
     :importCode="importCode"
     :exampleCode="exampleCode"
-    enableReflection
->
+    enableReflection >
     <DateRangePicker label="Date Range" v-model="date" />
 
     <template #settings>
@@ -1235,8 +1266,7 @@ const dateTimePickerGallery = defineComponent({
     :value="date"
     :importCode="importCode"
     :exampleCode="exampleCode"
-    enableReflection
->
+    enableReflection >
 
     <DateTimePicker label="Date and Time" v-model="date" :displayCurrentOption="displayCurrentOption" :isCurrentDateOffset="isCurrentDateOffset" />
 
@@ -1280,8 +1310,7 @@ const datePartsPickerGallery = defineComponent({
     :value="datePartsModel"
     :importCode="importCode"
     :exampleCode="exampleCode"
-    enableReflection
->
+    enableReflection >
     <DatePartsPicker label="Date" v-model="datePartsModel" :showYear="showYear" />
 
     <template #settings>
@@ -1310,8 +1339,7 @@ const textBoxGallery = defineComponent({
 <GalleryAndResult
     :value="text"
     :importCode="importCode"
-    :exampleCode="exampleCode"
->
+    :exampleCode="exampleCode" >
     <TextBox label="Text 1" v-model="text" :maxLength="50" showCountDown />
     <TextBox label="Text 2" v-model="text" />
     <TextBox label="Memo" v-model="text" textMode="MultiLine" :rows="10" :maxLength="100" showCountDown />
@@ -1342,8 +1370,7 @@ const colorPickerGallery = defineComponent({
     :value="value"
     :importCode="importCode"
     :exampleCode="exampleCode"
-    enableReflection
->
+    enableReflection >
     <ColorPicker label="Color" v-model="value" />
 
     <template #settings>
@@ -1386,8 +1413,7 @@ const numberBoxGallery = defineComponent({
     :value="value"
     :importCode="importCode"
     :exampleCode="exampleCode"
-    enableReflection
->
+    enableReflection >
     <RockForm>
         <NumberBox label="Number" v-model="value" :minimumValue="numericMinimumValue" :maximumValue="numericMaximumValue" />
         <RockButton btnType="primary" type="submit">Test Validation</RockButton>
@@ -1422,8 +1448,7 @@ const numberRangeBoxGallery = defineComponent({
     :value="value"
     :importCode="importCode"
     :exampleCode="exampleCode"
-    enableReflection
->
+    enableReflection >
     <NumberRangeBox label="Number Range" v-model="value" />
 
     <template #settings>
@@ -1452,8 +1477,7 @@ const genderDropDownListGallery = defineComponent({
     :value="value"
     :importCode="importCode"
     :exampleCode="exampleCode"
-    enableReflection
->
+    enableReflection >
     <GenderDropDownList label="Your Gender" v-model="value" />
 
     <template #settings>
@@ -1482,8 +1506,7 @@ const socialSecurityNumberBoxGallery = defineComponent({
     :value="value"
     :importCode="importCode"
     :exampleCode="exampleCode"
-    enableReflection
->
+    enableReflection >
     <SocialSecurityNumberBox label="SSN" v-model="value" />
 
     <template #settings>
@@ -1512,8 +1535,7 @@ const timePickerGallery = defineComponent({
     :value="value"
     :importCode="importCode"
     :exampleCode="exampleCode"
-    enableReflection
->
+    enableReflection >
     <TimePicker label="Time" v-model="value" />
 
     <template #settings>
@@ -1544,8 +1566,7 @@ const ratingGallery = defineComponent({
     :value="value"
     :importCode="importCode"
     :exampleCode="exampleCode"
-    enableReflection
->
+    enableReflection >
     <Rating label="How Would You Rate God?" v-model="value" :maxRating="maximumValue || 5" />
 
     <template #settings>
@@ -1574,8 +1595,7 @@ const switchGallery = defineComponent({
     :value="isChecked"
     :importCode="importCode"
     :exampleCode="exampleCode"
-    enableReflection
->
+    enableReflection >
     <Switch text="Switch" v-model="isChecked" />
 
     <template #settings>
@@ -1606,8 +1626,7 @@ const inlineSwitchGallery = defineComponent({
     :value="isChecked"
     :importCode="importCode"
     :exampleCode="exampleCode"
-    enableReflection
->
+    enableReflection >
     <InlineSwitch label="Inline Switch" v-model="isChecked" :isBold="isBold" />
 
     <template #settings>
@@ -1636,8 +1655,7 @@ const currencyBoxGallery = defineComponent({
     :value="value"
     :importCode="importCode"
     :exampleCode="exampleCode"
-    enableReflection
->
+    enableReflection >
     <CurrencyBox label="Currency" v-model="value" />
 
     <template #settings>
@@ -1666,8 +1684,7 @@ const emailBoxGallery = defineComponent({
     :value="value"
     :importCode="importCode"
     :exampleCode="exampleCode"
-    enableReflection
->
+    enableReflection >
     <EmailBox label="Email" v-model="value" />
 
     <template #settings>
@@ -1696,8 +1713,7 @@ const numberUpDownGallery = defineComponent({
     :value="value"
     :importCode="importCode"
     :exampleCode="exampleCode"
-    enableReflection
->
+    enableReflection >
     <NumberUpDown label="Number" v-model="value" />
 
     <template #settings>
@@ -1725,8 +1741,7 @@ const staticFormControlGallery = defineComponent({
 <GalleryAndResult
     :value="value"
     :importCode="importCode"
-    :exampleCode="exampleCode"
->
+    :exampleCode="exampleCode" >
     <StaticFormControl label="Static Value" v-model="value" />
 </GalleryAndResult>`
 });
@@ -1749,8 +1764,7 @@ const addressControlGallery = defineComponent({
 <GalleryAndResult :value="value"
     :importCode="importCode"
     :exampleCode="exampleCode"
-    enableReflection
->
+    enableReflection >
     <AddressControl label="Address" v-model="value" />
 
     <template #settings>
@@ -1789,8 +1803,7 @@ const toggleGallery = defineComponent({
     :value="value"
     :importCode="importCode"
     :exampleCode="exampleCode"
-    enableReflection
->
+    enableReflection >
     <Toggle label="Toggle" v-model="value" :trueText="trueText" :falseText="falseText" :btnSize="btnSize" />
 
     <template #settings>
@@ -1833,8 +1846,7 @@ const progressTrackerGallery = defineComponent({
     template: `
 <GalleryAndResult
     :importCode="importCode"
-    :exampleCode="exampleCode"
->
+    :exampleCode="exampleCode" >
     <ProgressTracker :items="items" :currentIndex="value" />
 
     <template #settings>
@@ -1872,8 +1884,7 @@ const itemsWithPreAndPostHtmlGallery = defineComponent({
 <GalleryAndResult
     :value="value"
     :importCode="importCode"
-    :exampleCode="exampleCode"
->
+    :exampleCode="exampleCode" >
     <ItemsWithPreAndPostHtml :items="value">
         <template #item1>
             <div class="padding-all-sm text-center bg-primary">This is item 1</div>
@@ -1913,8 +1924,7 @@ const urlLinkBoxGallery = defineComponent({
     :value="value"
     :importCode="importCode"
     :exampleCode="exampleCode"
-    enableReflection
->
+    enableReflection >
     <UrlLinkBox label="URL" v-model="value" />
 
     <template #settings>
@@ -1947,8 +1957,7 @@ const fullscreenGallery = defineComponent({
     template: `
 <GalleryAndResult
     :importCode="importCode"
-    :exampleCode="exampleCode"
->
+    :exampleCode="exampleCode" >
     <Fullscreen v-model="value" :isPageOnly="pageOnly">
         <div class="bg-info padding-all-md" style="width:100%; height: 100%; min-height: 300px; display: grid; place-content: center;">
             <InlineSwitch v-model="value" label="Fullscreen" :isBold="true" />
@@ -2068,8 +2077,7 @@ const panelGallery = defineComponent({
     template: `
 <GalleryAndResult
     :importCode="importCode"
-    :exampleCode="exampleCode"
->
+    :exampleCode="exampleCode" >
     <Panel v-model="value" v-model:isDrawerOpen="drawerValue" :hasCollapse="collapsableValue" :hasFullscreen="hasFullscreen" :isFullscreenPageOnly="isFullscreenPageOnly" title="Panel Title" :headerSecondaryActions="headerSecondaryActions">
         <template v-if="simulateHelp" #helpContent>
             This is some help text.
@@ -2159,8 +2167,7 @@ const personPickerGallery = defineComponent({
     :value="value ?? null"
     :importCode="importCode"
     :exampleCode="exampleCode"
-    enableReflection
->
+    enableReflection >
     <PersonPicker v-model="value" label="Person" />
     <template #settings>
         <p class="text-semibold font-italic">Not all options have been implemented yet.</p>
@@ -2194,15 +2201,13 @@ const fileUploaderGallery = defineComponent({
     :value="value"
     :importCode="importCode"
     :exampleCode="exampleCode"
-    enableReflection
->
+    enableReflection >
     <FileUploader v-model="value"
         label="File Uploader"
         :uploadAsTemporary="uploadAsTemporary"
         :binaryFileTypeGuid="binaryFileTypeGuid"
         :uploadButtonText="uploadButtonText"
-        :showDeleteButton="showDeleteButton"
-    />
+        :showDeleteButton="showDeleteButton" />
 
     <template #settings>
         <div class="row">
@@ -2244,15 +2249,13 @@ const imageUploaderGallery = defineComponent({
         :value="value"
         :importCode="importCode"
         :exampleCode="exampleCode"
-        enableReflection
-    >
+        enableReflection >
         <ImageUploader v-model="value"
             label="Image Uploader"
             :uploadAsTemporary="uploadAsTemporary"
             :binaryFileTypeGuid="binaryFileTypeGuid"
             :uploadButtonText="uploadButtonText"
-            :showDeleteButton="showDeleteButton"
-        />
+            :showDeleteButton="showDeleteButton" />
 
         <template #settings>
             <div class="row">
@@ -2292,8 +2295,7 @@ const slidingDateRangePickerGallery = defineComponent({
     :value="value"
     :importCode="importCode"
     :exampleCode="exampleCode"
-    enableReflection
->
+    enableReflection >
     <SlidingDateRangePicker v-model="value" label="Sliding Date Range" />
 
     <template #settings>
@@ -2326,8 +2328,7 @@ const definedValuePickerGallery = defineComponent({
     :value="value"
     :importCode="importCode"
     :exampleCode="exampleCode"
-    enableReflection
->
+    enableReflection >
     <DefinedValuePicker label="Defined Value" v-model="value" :definedTypeGuid="definedTypeGuid" :multiple="multiple" :enhanceForLongLists="enhanceForLongLists" />
 
     <template #settings>
@@ -2369,8 +2370,7 @@ const entityTypePickerGallery = defineComponent({
     :value="value"
     :importCode="importCode"
     :exampleCode="exampleCode"
-    enableReflection
->
+    enableReflection >
     <EntityTypePicker label="Entity Type"
         v-model="value"
         :multiple="multiple"
@@ -2443,8 +2443,7 @@ const achievementTypePickerGallery = defineComponent({
     :value="value"
     :importCode="importCode"
     :exampleCode="exampleCode"
-    enableReflection
->
+    enableReflection >
     <AchievementTypePicker label="Achievement Type"
         v-model="value"
         :multiple="multiple"
@@ -2511,8 +2510,7 @@ const badgeComponentPickerGallery = defineComponent({
     :value="value"
     :importCode="importCode"
     :exampleCode="exampleCode"
-    enableReflection
->
+    enableReflection >
     <BadgeComponentPicker label="Badge Component"
         v-model="value"
         :multiple="multiple"
@@ -2583,14 +2581,12 @@ const sectionHeaderGallery = defineComponent({
     template: `
 <GalleryAndResult
     :importCode="importCode"
-    :exampleCode="exampleCode"
->
+    :exampleCode="exampleCode" >
 
     <SectionHeader
         title="This is a SectionHeader"
         :description="description"
-        :isSeparatorHidden="!showSeparator"
-    >
+        :isSeparatorHidden="!showSeparator" >
         <template v-if="showActionBar" #actions>
             <div>
                 <a class="btn btn-default btn-xs btn-square"><i class="fa fa-lock"></i></a>
@@ -2646,15 +2642,13 @@ const sectionContainerGallery = defineComponent({
     template: `
 <GalleryAndResult
     :importCode="importCode"
-    :exampleCode="exampleCode"
->
+    :exampleCode="exampleCode" >
 
     <SectionContainer
         title="This is a Section Container"
         :description="description"
         v-model="showContent"
-        :toggleText="showContentToggle ? 'Show' : ''"
-    >
+        :toggleText="showContentToggle ? 'Show' : ''" >
         <template v-if="showActionBar" #actions>
             <div>
                 <a class="btn btn-default btn-xs btn-square"><i class="fa fa-lock"></i></a>
@@ -2710,8 +2704,7 @@ const categoryPickerGallery = defineComponent({
     :value="value"
     :importCode="importCode"
     :exampleCode="exampleCode"
-    enableReflection
->
+    enableReflection >
     <CategoryPicker label="Category Picker" v-model="value" :multiple="multiple" :entityTypeGuid="entityTypeGuid" />
 
     <template #settings>
@@ -2752,8 +2745,7 @@ const locationPickerGallery = defineComponent({
     :value="value"
     :importCode="importCode"
     :exampleCode="exampleCode"
-    enableReflection
->
+    enableReflection >
     <LocationPicker label="Location" v-model="value" :multiple="multiple" />
 
     <template #settings>
@@ -2791,8 +2783,7 @@ const copyButtonGallery = defineComponent({
     template: `
 <GalleryAndResult
     :importCode="importCode"
-    :exampleCode="exampleCode"
->
+    :exampleCode="exampleCode" >
     <CopyButton :value="value" :tooltip="tooltip" :btnSize="buttonSize" />
 
     <template #settings>
@@ -2912,8 +2903,7 @@ const assessmentTypePickerGallery = defineComponent({
     :value="value"
     :importCode="importCode"
     :exampleCode="exampleCode"
-    enableReflection
->
+    enableReflection >
     <AssessmentTypePicker label="Assessment Type"
         v-model="value"
         :multiple="multiple"
@@ -2987,8 +2977,7 @@ const assetStorageProviderPickerGallery = defineComponent({
     :value="value"
     :importCode="importCode"
     :exampleCode="exampleCode"
-    enableReflection
->
+    enableReflection >
     <AssetStorageProviderPicker label="Asset Storage Provider"
         v-model="value"
         :multiple="multiple"
@@ -3057,8 +3046,7 @@ const binaryFileTypePickerGallery = defineComponent({
     :value="value"
     :importCode="importCode"
     :exampleCode="exampleCode"
-    enableReflection
->
+    enableReflection >
     <BinaryFileTypePicker label="Binary File Type"
         v-model="value"
         :multiple="multiple"
@@ -3128,8 +3116,7 @@ const binaryFilePickerGallery = defineComponent({
     :value="value"
     :importCode="importCode"
     :exampleCode="exampleCode"
-    enableReflection
->
+    enableReflection >
     <BinaryFilePicker label="Binary File"
         v-model="value"
         :multiple="multiple"
@@ -3200,8 +3187,7 @@ const eventItemPickerGallery = defineComponent({
     :value="value"
     :importCode="importCode"
     :exampleCode="exampleCode"
-    enableReflection
->
+    enableReflection >
     <EventItemPicker label="Event Item"
         v-model="value"
         :multiple="multiple"
@@ -3269,8 +3255,7 @@ const dataViewPickerGallery = defineComponent({
     :value="value"
     :importCode="importCode"
     :exampleCode="exampleCode"
-    enableReflection
->
+    enableReflection >
     <DataViewPicker label="Data Views"
         v-model="value"
         :multiple="multiple"
@@ -3315,8 +3300,7 @@ const workflowTypePickerGallery = defineComponent({
     :value="value"
     :importCode="importCode"
     :exampleCode="exampleCode"
-    enableReflection
->
+    enableReflection >
     <WorkflowTypePicker label="Data Views"
         v-model="value"
         :multiple="multiple"
@@ -3354,7 +3338,8 @@ const financialGatewayPickerGallery = defineComponent({
             enhanceForLongLists: ref(false),
             multiple: ref(false),
             showBlankItem: ref(false),
-            showAll: ref(false),
+            showInactive: ref(false),
+            showAllGatewayComponents: ref(false),
             value: ref({}),
             importCode: getControlImportPath("financialGatewayPicker"),
             exampleCode: `<FinancialGatewayPicker label="Financial Gateway" v-model="value" :multiple="false" />`
@@ -3365,8 +3350,7 @@ const financialGatewayPickerGallery = defineComponent({
     :value="value"
     :importCode="importCode"
     :exampleCode="exampleCode"
-    enableReflection
->
+    enableReflection >
     <FinancialGatewayPicker label="Financial Gateway"
         v-model="value"
         :multiple="multiple"
@@ -3374,7 +3358,8 @@ const financialGatewayPickerGallery = defineComponent({
         :enhanceForLongLists="enhanceForLongLists"
         :displayStyle="displayStyle"
         :showBlankItem="showBlankItem"
-        :showAll="showAll" />
+        :showInactive="showInactive"
+        :showAllGatewayComponents="showAllGatewayComponents" />
 
     <template #settings>
         <div class="row">
@@ -3400,8 +3385,12 @@ const financialGatewayPickerGallery = defineComponent({
                 <NumberUpDown label="Column Count" v-model="columnCount" :min="0" />
             </div>
 
-            <div class="col-md-4">
-                <CheckBox label="Show All Gateways" v-model="showAll" />
+            <div class="col-md-2">
+                <CheckBox label="Show Inactive Gateways" v-model="showInactive" />
+            </div>
+
+            <div class="col-md-2">
+                <CheckBox label="Show All Gateway Components" v-model="showAllGatewayComponents" />
             </div>
         </div>
     </template>
@@ -3436,8 +3425,7 @@ const financialStatementTemplatePickerGallery = defineComponent({
     :value="value"
     :importCode="importCode"
     :exampleCode="exampleCode"
-    enableReflection
->
+    enableReflection >
     <FinancialStatementTemplatePicker label="Financial Statement Template"
         v-model="value"
         :multiple="multiple"
@@ -3502,8 +3490,7 @@ const fieldTypePickerGallery = defineComponent({
     :value="value"
     :importCode="importCode"
     :exampleCode="exampleCode"
-    enableReflection
->
+    enableReflection >
     <FieldTypePicker label="Field Type"
         v-model="value"
         :multiple="multiple"
@@ -3640,8 +3627,7 @@ const componentPickerGallery = defineComponent({
     :value="value"
     :importCode="importCode"
     :exampleCode="exampleCode"
-    enableReflection
->
+    enableReflection >
     <ComponentPicker label="Component"
         v-model="value"
         :multiple="multiple"
@@ -3708,8 +3694,7 @@ const gradePickerGallery = defineComponent({
     :value="value"
     :importCode="importCode"
     :exampleCode="exampleCode"
-    enableReflection
->
+    enableReflection >
     <GradePicker label="Grade"
         v-model="value"
         :multiple="multiple"
@@ -3766,7 +3751,7 @@ const groupMemberPickerGallery = defineComponent({
             columnCount: ref(0),
             displayStyle: ref(PickerDisplayStyle.Auto),
             displayStyleItems,
-            groupId: ref(175),
+            groupGuid: ref("62DC3753-01D5-48B5-B22D-D2825D92900B"), // use a groupPicker eventually...
             enhanceForLongLists: ref(false),
             multiple: ref(false),
             showBlankItem: ref(false),
@@ -3780,8 +3765,7 @@ const groupMemberPickerGallery = defineComponent({
     :value="value"
     :importCode="importCode"
     :exampleCode="exampleCode"
-    enableReflection
->
+    enableReflection >
     <GroupMemberPicker label="Group Member"
         v-model="value"
         :multiple="multiple"
@@ -3789,7 +3773,7 @@ const groupMemberPickerGallery = defineComponent({
         :enhanceForLongLists="enhanceForLongLists"
         :displayStyle="displayStyle"
         :showBlankItem="showBlankItem"
-        :groupId="groupId" />
+        :groupGuid="groupGuid" />
     <template #settings>
         <div class="row">
             <div class="col-md-4">
@@ -3810,7 +3794,7 @@ const groupMemberPickerGallery = defineComponent({
                 <NumberUpDown label="Column Count" v-model="columnCount" :min="0" />
             </div>
             <div class="col-md-4">
-                <NumberBox label="Group ID" v-model="groupId" />
+                <NumberBox label="Group ID" v-model="groupGuid" />
             </div>
         </div>
     </template>
@@ -3847,16 +3831,14 @@ const interactionChannelPickerGallery = defineComponent({
     :value="value"
     :importCode="importCode"
     :exampleCode="exampleCode"
-    enableReflection
->
+    enableReflection >
     <InteractionChannelPicker label="Interaction Channel"
         v-model="value"
         :multiple="multiple"
         :columnCount="columnCount"
         :enhanceForLongLists="enhanceForLongLists"
         :displayStyle="displayStyle"
-        :showBlankItem="showBlankItem"
-        :groupId="groupId" />
+        :showBlankItem="showBlankItem" />
     <template #settings>
         <div class="row">
             <div class="col-md-4">
@@ -3899,13 +3881,13 @@ const interactionComponentPickerGallery = defineComponent({
             columnCount: ref(0),
             displayStyle: ref(PickerDisplayStyle.Auto),
             displayStyleItems,
-            interactionChannelId: ref(null),
+            interactionChannelGuid: ref(null),
             enhanceForLongLists: ref(false),
             multiple: ref(false),
             showBlankItem: ref(false),
             value: ref({}),
             importCode: getControlImportPath("interactionComponentPicker"),
-            exampleCode: `<InteractionComponentPicker label="Interaction Component" v-model="value" :interactionChannelId="interactionChannelId" />`
+            exampleCode: `<InteractionComponentPicker label="Interaction Component" v-model="value" :interactionChannelGuid="interactionChannelGuid" />`
         };
     },
     template: `
@@ -3913,8 +3895,7 @@ const interactionComponentPickerGallery = defineComponent({
     :value="value"
     :importCode="importCode"
     :exampleCode="exampleCode"
-    enableReflection
->
+    enableReflection >
     <InteractionComponentPicker label="Interaction Component"
         v-model="value"
         :multiple="multiple"
@@ -3922,7 +3903,7 @@ const interactionComponentPickerGallery = defineComponent({
         :enhanceForLongLists="enhanceForLongLists"
         :displayStyle="displayStyle"
         :showBlankItem="showBlankItem"
-        :interactionChannelId="interactionChannelId?.value" />
+        :interactionChannelGuid="interactionChannelGuid?.value" />
     <template #settings>
         <div class="row">
             <div class="col-md-4">
@@ -3943,7 +3924,7 @@ const interactionComponentPickerGallery = defineComponent({
                 <NumberUpDown label="Column Count" v-model="columnCount" :min="0" />
             </div>
             <div class="col-md-4">
-                <InteractionChannelPicker label="Interaction Channel" v-model="interactionChannelId" />
+                <InteractionChannelPicker label="Interaction Channel" v-model="interactionChannelGuid" />
             </div>
         </div>
     </template>
@@ -3980,8 +3961,7 @@ const lavaCommandPickerGallery = defineComponent({
     :value="value"
     :importCode="importCode"
     :exampleCode="exampleCode"
-    enableReflection
->
+    enableReflection >
     <LavaCommandPicker label="Lava Command"
         v-model="value"
         :multiple="multiple"
@@ -4043,8 +4023,7 @@ const remoteAuthsPickerGallery = defineComponent({
     :value="value"
     :importCode="importCode"
     :exampleCode="exampleCode"
-    enableReflection
->
+    enableReflection >
     <RemoteAuthsPicker label="Remote Auths"
         v-model="value"
         :multiple="multiple"
@@ -4075,6 +4054,371 @@ const remoteAuthsPickerGallery = defineComponent({
     </template>
 </GalleryAndResult>`
 });
+
+/** Demonstrates Step Program Picker */
+const stepProgramPickerGallery = defineComponent({
+    name: "StepProgramPickerGallery",
+    components: {
+        GalleryAndResult,
+        CheckBox,
+        DropDownList,
+        StepProgramPicker,
+        NumberUpDown,
+        TextBox,
+        NumberBox
+    },
+    setup() {
+        return {
+            columnCount: ref(0),
+            displayStyle: ref(PickerDisplayStyle.Auto),
+            displayStyleItems,
+            enhanceForLongLists: ref(false),
+            multiple: ref(false),
+            showBlankItem: ref(false),
+            value: ref({}),
+            importCode: getControlImportPath("stepProgramPicker"),
+            exampleCode: `<StepProgramPicker label="Step Program" v-model="value" />`
+        };
+    },
+    template: `
+<GalleryAndResult
+    :value="value"
+    :importCode="importCode"
+    :exampleCode="exampleCode"
+    enableReflection >
+    <StepProgramPicker label="Step Program"
+        v-model="value"
+        :multiple="multiple"
+        :columnCount="columnCount"
+        :enhanceForLongLists="enhanceForLongLists"
+        :displayStyle="displayStyle"
+        :showBlankItem="showBlankItem" />
+    <template #settings>
+        <div class="row">
+            <div class="col-md-4">
+                <CheckBox label="Multiple" v-model="multiple" />
+            </div>
+            <div class="col-md-4">
+                <CheckBox label="Enhance For Long Lists" v-model="enhanceForLongLists" />
+            </div>
+            <div class="col-md-4">
+                <CheckBox label="Show Blank Item" v-model="showBlankItem" />
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-4">
+                <DropDownList label="Display Style" :showBlankItem="false" v-model="displayStyle" :items="displayStyleItems" />
+            </div>
+            <div class="col-md-4">
+                <NumberUpDown label="Column Count" v-model="columnCount" :min="0" />
+            </div>
+        </div>
+    </template>
+</GalleryAndResult>`
+});
+
+/** Demonstrates Step Status Picker */
+const stepStatusPickerGallery = defineComponent({
+    name: "StepStatusPickerGallery",
+    components: {
+        GalleryAndResult,
+        CheckBox,
+        DropDownList,
+        StepStatusPicker,
+        StepProgramPicker,
+        NumberUpDown,
+        TextBox,
+        NumberBox
+    },
+    setup() {
+        return {
+            columnCount: ref(0),
+            displayStyle: ref(PickerDisplayStyle.Auto),
+            displayStyleItems,
+            enhanceForLongLists: ref(false),
+            multiple: ref(false),
+            showBlankItem: ref(false),
+            stepProgramGuid: ref(null),
+            value: ref({}),
+            importCode: getControlImportPath("stepStatusPicker"),
+            exampleCode: `<StepStatusPicker label="Step Status" v-model="value" />`
+        };
+    },
+    template: `
+<GalleryAndResult
+    :value="value"
+    :importCode="importCode"
+    :exampleCode="exampleCode"
+    enableReflection >
+    <StepStatusPicker label="Step Status"
+        v-model="value"
+        :multiple="multiple"
+        :columnCount="columnCount"
+        :enhanceForLongLists="enhanceForLongLists"
+        :displayStyle="displayStyle"
+        :showBlankItem="showBlankItem"
+        :stepProgramGuid="stepProgramGuid?.value" />
+    <template #settings>
+        <div class="row">
+            <div class="col-md-4">
+                <CheckBox label="Multiple" v-model="multiple" />
+            </div>
+            <div class="col-md-4">
+                <CheckBox label="Enhance For Long Lists" v-model="enhanceForLongLists" />
+            </div>
+            <div class="col-md-4">
+                <CheckBox label="Show Blank Item" v-model="showBlankItem" />
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-4">
+                <DropDownList label="Display Style" :showBlankItem="false" v-model="displayStyle" :items="displayStyleItems" />
+            </div>
+            <div class="col-md-4">
+                <NumberUpDown label="Column Count" v-model="columnCount" :min="0" />
+            </div>
+            <div class="col-md-4">
+                <StepProgramPicker label="Step Program" v-model="stepProgramGuid" />
+            </div>
+        </div>
+    </template>
+</GalleryAndResult>`
+});
+
+/** Demonstrates Step Type Picker */
+const stepTypePickerGallery = defineComponent({
+    name: "StepTypePickerGallery",
+    components: {
+        GalleryAndResult,
+        CheckBox,
+        DropDownList,
+        StepTypePicker,
+        StepProgramPicker,
+        NumberUpDown,
+        TextBox,
+        NumberBox
+    },
+    setup() {
+        return {
+            columnCount: ref(0),
+            displayStyle: ref(PickerDisplayStyle.Auto),
+            displayStyleItems,
+            enhanceForLongLists: ref(false),
+            multiple: ref(false),
+            showBlankItem: ref(false),
+            stepProgramGuid: ref(null),
+            value: ref({}),
+            importCode: getControlImportPath("stepTypePicker"),
+            exampleCode: `<StepTypePicker label="Step Type" v-model="value" />`
+        };
+    },
+    template: `
+<GalleryAndResult
+    :value="value"
+    :importCode="importCode"
+    :exampleCode="exampleCode"
+    enableReflection >
+    <StepTypePicker label="Step Type"
+        v-model="value"
+        :multiple="multiple"
+        :columnCount="columnCount"
+        :enhanceForLongLists="enhanceForLongLists"
+        :displayStyle="displayStyle"
+        :showBlankItem="showBlankItem"
+        :stepProgramGuid="stepProgramGuid?.value" />
+    <template #settings>
+        <div class="row">
+            <div class="col-md-4">
+                <CheckBox label="Multiple" v-model="multiple" />
+            </div>
+            <div class="col-md-4">
+                <CheckBox label="Enhance For Long Lists" v-model="enhanceForLongLists" />
+            </div>
+            <div class="col-md-4">
+                <CheckBox label="Show Blank Item" v-model="showBlankItem" />
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-4">
+                <DropDownList label="Display Style" :showBlankItem="false" v-model="displayStyle" :items="displayStyleItems" />
+            </div>
+            <div class="col-md-4">
+                <NumberUpDown label="Column Count" v-model="columnCount" :min="0" />
+            </div>
+            <div class="col-md-4">
+                <StepProgramPicker label="Step Program" v-model="stepProgramGuid" />
+            </div>
+        </div>
+    </template>
+</GalleryAndResult>`
+});
+
+/** Demonstrates Streak Type Picker */
+const streakTypePickerGallery = defineComponent({
+    name: "StreakTypePickerGallery",
+    components: {
+        GalleryAndResult,
+        CheckBox,
+        DropDownList,
+        StreakTypePicker,
+        NumberUpDown,
+        TextBox,
+        NumberBox
+    },
+    setup() {
+        return {
+            columnCount: ref(0),
+            displayStyle: ref(PickerDisplayStyle.Auto),
+            displayStyleItems,
+            enhanceForLongLists: ref(false),
+            multiple: ref(false),
+            showBlankItem: ref(false),
+            value: ref({}),
+            importCode: getControlImportPath("streakTypePicker"),
+            exampleCode: `<StreakTypePicker label="Streak Type" v-model="value" />`
+        };
+    },
+    template: `
+<GalleryAndResult
+    :value="value"
+    :importCode="importCode"
+    :exampleCode="exampleCode"
+    enableReflection >
+    <StreakTypePicker label="Streak Type"
+        v-model="value"
+        :multiple="multiple"
+        :columnCount="columnCount"
+        :enhanceForLongLists="enhanceForLongLists"
+        :displayStyle="displayStyle"
+        :showBlankItem="showBlankItem" />
+    <template #settings>
+        <div class="row">
+            <div class="col-md-4">
+                <CheckBox label="Multiple" v-model="multiple" />
+            </div>
+            <div class="col-md-4">
+                <CheckBox label="Enhance For Long Lists" v-model="enhanceForLongLists" />
+            </div>
+            <div class="col-md-4">
+                <CheckBox label="Show Blank Item" v-model="showBlankItem" />
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-4">
+                <DropDownList label="Display Style" :showBlankItem="false" v-model="displayStyle" :items="displayStyleItems" />
+            </div>
+            <div class="col-md-4">
+                <NumberUpDown label="Column Count" v-model="columnCount" :min="0" />
+            </div>
+        </div>
+    </template>
+</GalleryAndResult>`
+});
+
+/** Demonstrates code editor. */
+const codeEditorGallery = defineComponent({
+    name: "CodeEditorGallery",
+    components: {
+        GalleryAndResult,
+        CodeEditor,
+        DropDownList,
+        NumberBox
+    },
+    setup() {
+        const themeItems: ListItemBag[] = [
+            { value: "rock", text: "rock" },
+            { value: "chrome", text: "chrome" },
+            { value: "crimson_editor", text: "crimson_editor" },
+            { value: "dawn", text: "dawn" },
+            { value: "dreamweaver", text: "dreamweaver" },
+            { value: "eclipse", text: "eclipse" },
+            { value: "solarized_light", text: "solarized_light" },
+            { value: "textmate", text: "textmate" },
+            { value: "tomorrow", text: "tomorrow" },
+            { value: "xcode", text: "xcode" },
+            { value: "github", text: "github" },
+            { value: "ambiance", text: "ambiance" },
+            { value: "chaos", text: "chaos" },
+            { value: "clouds_midnight", text: "clouds_midnight" },
+            { value: "cobalt", text: "cobalt" },
+            { value: "idle_fingers", text: "idle_fingers" },
+            { value: "kr_theme", text: "kr_theme" },
+            { value: "merbivore", text: "merbivore" },
+            { value: "merbivore_soft", text: "merbivore_soft" },
+            { value: "mono_industrial", text: "mono_industrial" },
+            { value: "monokai", text: "monokai" },
+            { value: "pastel_on_dark", text: "pastel_on_dark" },
+            { value: "solarized_on_dark", text: "solarized_on_dark" },
+            { value: "terminal", text: "terminal" },
+            { value: "tomorrow_night", text: "tomorrow_night" },
+            { value: "tomorrow_night_blue", text: "tomorrow_night_blue" },
+            { value: "tomorrow_night_bright", text: "tomorrow_night_bright" },
+            { value: "tomorrow_night_eighties", text: "tomorrow_night_eighties" },
+            { value: "twilight", text: "twilight" },
+            { value: "vibrant_ink", text: "vibrant_ink" }
+        ].sort((a, b) => a.text.localeCompare(b.text));
+
+        const modeItems: ListItemBag[] = [
+            { value: "text", text: "text" },
+            { value: "css", text: "css" },
+            { value: "html", text: "html" },
+            { value: "lava", text: "lava" },
+            { value: "javascript", text: "javascript" },
+            { value: "less", text: "less" },
+            { value: "powershell", text: "powershell" },
+            { value: "sql", text: "sql" },
+            { value: "typescript", text: "typescript" },
+            { value: "csharp", text: "csharp" },
+            { value: "markdown", text: "markdown" },
+            { value: "xml", text: "xml" },
+        ].sort((a, b) => a.text.localeCompare(b.text));
+
+        const theme = ref("rock");
+        const mode = ref("text");
+        const editorHeight = ref(200);
+
+        const exampleCode = computed((): string => {
+            return buildExampleCode("CodeEditor", {
+                theme,
+                mode,
+                editorHeight
+            });
+        });
+
+        return {
+            theme,
+            themeItems,
+            mode,
+            modeItems,
+            editorHeight,
+            importCode: getControlImportPath("codeEditor"),
+            exampleCode
+        };
+    },
+    template: `
+<GalleryAndResult
+    :importCode="importCode"
+    :exampleCode="exampleCode">
+    <CodeEditor :theme="theme" :mode="mode" :editorHeight="editorHeight" />
+
+    <template #settings>
+        <div class="row">
+            <div class="col-md-4">
+                <DropDownList label="Theme" v-model="theme" :items="themeItems" />
+            </div>
+
+            <div class="col-md-4">
+                <DropDownList label="Mode" v-model="mode" :items="modeItems" />
+            </div>
+
+            <div class="col-md-4">
+                <NumberBox label="Editor Height" v-model="editorHeight" />
+            </div>
+        </div>
+    </template>
+</GalleryAndResult>`
+});
+
 
 
 const controlGalleryComponents: Record<string, Component> = [
@@ -4134,6 +4478,7 @@ const controlGalleryComponents: Record<string, Component> = [
     auditDetailGallery,
     binaryFileTypePickerGallery,
     binaryFilePickerGallery,
+    codeEditorGallery,
     modalGallery,
     eventItemPickerGallery,
     dataViewPickerGallery,
@@ -4148,6 +4493,10 @@ const controlGalleryComponents: Record<string, Component> = [
     interactionComponentPickerGallery,
     lavaCommandPickerGallery,
     remoteAuthsPickerGallery,
+    stepProgramPickerGallery,
+    stepStatusPickerGallery,
+    stepTypePickerGallery,
+    streakTypePickerGallery,
 ]
     // Sort list by component name
     .sort((a, b) => a.name.localeCompare(b.name))
