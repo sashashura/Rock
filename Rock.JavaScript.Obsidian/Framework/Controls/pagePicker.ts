@@ -73,8 +73,9 @@ export default defineComponent({
         itemProvider.value.securityGrantToken = props.securityGrantToken;
         itemProvider.value.hidePageGuids = props.hidePageGuids;
 
-        if (props.modelValue && !Array.isArray(props.modelValue)) {
-            itemProvider.value.selectedPageGuid = props.modelValue.value;
+        // TODO: deal with array of values
+        if (internalValue.value && !Array.isArray(internalValue.value)) {
+            itemProvider.value.selectedPageGuid = internalValue.value.value;
         }
 
         watch(internalValue, () => {
@@ -82,16 +83,7 @@ export default defineComponent({
         });
 
         watch(() => props.modelValue, () => {
-            console.debug("model updated", updateRefValue(internalValue, props.modelValue ?? null))
-                ;
-        });
-
-        watch(() => props.someVal, () => {
-            const prov = new PageTreeItemProvider();
-            prov.securityGrantToken = props.securityGrantToken;
-            prov.hidePageGuids = props.hidePageGuids;
-
-            itemProvider.value = prov;
+            console.debug("model updated", updateRefValue(internalValue, props.modelValue ?? null));
         });
 
         function onValueSelected(): void {
@@ -106,6 +98,7 @@ export default defineComponent({
         async function selectCurrentPage(): Promise<void> {
             if (currentPage) {
                 updateRefValue(internalValue, currentPage);
+
                 return;
             }
 
@@ -123,6 +116,14 @@ export default defineComponent({
                 console.error("Error", response.errorMessage);
                 updateRefValue(internalValue, { value: pageGuid.value });
             }
+        }
+
+        function refreshProvider() {
+            const prov = new PageTreeItemProvider();
+            prov.securityGrantToken = props.securityGrantToken;
+            prov.hidePageGuids = props.hidePageGuids;
+
+            itemProvider.value = prov;
         }
 
         return {
