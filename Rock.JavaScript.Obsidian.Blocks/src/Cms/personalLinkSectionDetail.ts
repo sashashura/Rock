@@ -92,7 +92,7 @@ export default defineComponent({
                 return null;
             }
 
-            if (personalLinkSectionViewBag.value?.isShared == true) {
+            if (personalLinkSectionViewBag.value?.isShared) {
                 labels.push({
                     title: "Shared",
                     type: "info"
