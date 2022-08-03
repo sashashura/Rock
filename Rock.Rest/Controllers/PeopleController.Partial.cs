@@ -911,23 +911,29 @@ namespace Rock.Rest.Controllers
         /// <returns></returns>
         private static List<PersonSearchResult> SearchWithDetails( RockContext rockContext, IQueryable<Person> sortedPersonQry, bool showFullNameReversed, bool includeHtml )
         {
-            var phoneNumbersQry = new PhoneNumberService( rockContext ).Queryable();
+            var personAliasQry = new PersonAliasService( rockContext ).Queryable();
 
             var sortedPersonList = sortedPersonQry
                 .Include( a => a.PhoneNumbers )
                 .Include( "PrimaryFamily.GroupLocations.Location" )
                 .AsNoTracking()
+                .Select( sp => new
+                {
+                    Person = sp,
+                    // Get the first PersonAlias here to avoid lazy-loading the Aliases collection.
+                    PersonAlias = personAliasQry.FirstOrDefault( pa => pa.PersonId == sp.Id )
+                } )
                 .ToList();
 
             Guid activeRecord = new Guid( SystemGuid.DefinedValue.PERSON_RECORD_STATUS_ACTIVE );
-
             List<PersonSearchResult> searchResult = new List<PersonSearchResult>();
-            foreach ( var person in sortedPersonList )
+            foreach ( var personResult in sortedPersonList )
             {
+                var person = personResult.Person;
                 PersonSearchResult personSearchResult = new PersonSearchResult();
                 personSearchResult.Id = person.Id;
                 personSearchResult.Guid = person.Guid;
-                personSearchResult.PrimaryAliasGuid = person.PrimaryAlias.Guid;
+                personSearchResult.PrimaryAliasGuid = personResult.PersonAlias?.Guid ?? Guid.Empty;
                 personSearchResult.Name = showFullNameReversed ? person.FullNameReversed : person.FullName;
                 if ( person.RecordStatusValueId.HasValue )
                 {
@@ -940,12 +946,10 @@ namespace Rock.Rest.Controllers
                     personSearchResult.RecordStatus = string.Empty;
                     personSearchResult.IsActive = false;
                 }
-
                 GetPersonSearchDetails( rockContext, personSearchResult, person, includeHtml );
 
                 searchResult.Add( personSearchResult );
             }
-
             return searchResult;
         }
 
