@@ -1,4 +1,4 @@
-// <copyright>
+﻿// <copyright>
 // Copyright by the Spark Development Network
 //
 // Licensed under the Rock Community License (the "License");
@@ -16,6 +16,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Web.UI;
 
 using Rock.Attribute;
@@ -31,7 +32,7 @@ namespace Rock.Field.Types
     /// </summary>
     /// <seealso cref="Rock.Field.FieldType" />
     [RockPlatformSupport( Utility.RockPlatform.WebForms )]
-    [Rock.SystemGuid.FieldTypeGuid( "A58A0CBF-C3E6-4054-85D7-05118035980B")]
+    [Rock.SystemGuid.FieldTypeGuid( "A58A0CBF-C3E6-4054-85D7-05118035980B" )]
     public class LocationListFieldType : FieldType, IEntityFieldType
     {
         #region Configuration
@@ -304,23 +305,31 @@ namespace Rock.Field.Types
         /// <returns></returns>
         public override string FormatValue( Control parentControl, string value, Dictionary<string, ConfigurationValue> configurationValues, bool condensed )
         {
-            var locationGuid = value.AsGuid();
+            return !condensed
+                ? GetTextValue( value, configurationValues.ToDictionary( cv => cv.Key, cv => cv.Value.Value ) )
+                : GetCondensedTextValue( value, configurationValues.ToDictionary( cv => cv.Key, cv => cv.Value.Value ) );
+        }
+
+        /// <inheritdoc/>
+        public override string GetTextValue( string privateValue, Dictionary<string, string> privateConfigurationValues )
+        {
+            var locationGuid = privateValue.AsGuid();
             var location = GetLocationByGuid( locationGuid );
             if ( location == null )
             {
                 return string.Empty;
             }
 
-            if ( configurationValues.GetConfigurationValueAsString( ConfigurationKey.ShowCityState ).AsBoolean() )
+            if ( privateConfigurationValues.GetValueOrNull( ConfigurationKey.ShowCityState ).AsBoolean() )
             {
-                value = $"{location.Name} ({location.City}, {location.State})";
+                privateValue = $"{location.Name} ({location.City}, {location.State})";
             }
             else
             {
-                value = location.Name;
+                privateValue = location.Name;
             }
 
-            return base.FormatValue( parentControl, value, configurationValues, condensed );
+            return privateValue;
         }
         #endregion
 

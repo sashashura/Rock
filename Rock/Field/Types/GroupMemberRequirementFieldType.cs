@@ -20,6 +20,7 @@ using Rock.Data;
 using Rock.Model;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Web.UI;
 
 namespace Rock.Field.Types
@@ -44,13 +45,21 @@ namespace Rock.Field.Types
         /// <returns></returns>
         public override string FormatValue( Control parentControl, string value, Dictionary<string, ConfigurationValue> configurationValues, bool condensed )
         {
-            string formattedValue = value;
+            return !condensed
+                ? GetTextValue( value, configurationValues.ToDictionary( cv => cv.Key, cv => cv.Value.Value ) )
+                : GetCondensedTextValue( value, configurationValues.ToDictionary( cv => cv.Key, cv => cv.Value.Value ) );
+        }
+
+        /// <inheritdoc/>
+        public override string GetTextValue( string privateValue, Dictionary<string, string> privateConfigurationValues )
+        {
+            string formattedValue = privateValue;
 
             GroupMemberRequirement groupMemberRequirement = null;
 
             using ( var rockContext = new RockContext() )
             {
-                Guid? guid = value.AsGuidOrNull();
+                Guid? guid = privateValue.AsGuidOrNull();
                 if ( guid.HasValue )
                 {
                     groupMemberRequirement = new GroupMemberRequirementService( rockContext ).GetNoTracking( guid.Value );
@@ -62,7 +71,7 @@ namespace Rock.Field.Types
                 }
             }
 
-            return base.FormatValue( parentControl, formattedValue, configurationValues, condensed );
+            return formattedValue;
         }
 
         #endregion

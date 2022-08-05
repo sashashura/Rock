@@ -49,9 +49,17 @@ namespace Rock.Field.Types
         /// <returns></returns>
         public override string FormatValue( Control parentControl, string value, Dictionary<string, ConfigurationValue> configurationValues, bool condensed )
         {
+            return !condensed
+                ? GetTextValue( value, configurationValues.ToDictionary( cv => cv.Key, cv => cv.Value.Value ) )
+                : GetCondensedTextValue( value, configurationValues.ToDictionary( cv => cv.Key, cv => cv.Value.Value ) );
+        }
+
+        /// <inheritdoc/>
+        public override string GetTextValue( string privateValue, Dictionary<string, string> privateConfigurationValues )
+        {
             string formattedValue = string.Empty;
 
-            Guid? financialGatewayGuid = value.AsGuidOrNull();
+            Guid? financialGatewayGuid = privateValue.AsGuidOrNull();
             if ( financialGatewayGuid.HasValue )
             {
                 using ( var rockContext = new RockContext() )
@@ -61,8 +69,7 @@ namespace Rock.Field.Types
                 }
             }
 
-            return base.FormatValue( parentControl, formattedValue, null, condensed );
-
+            return formattedValue;
         }
 
         #endregion
