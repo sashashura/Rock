@@ -111,8 +111,10 @@ const treeItem = defineComponent({
             if (!props.autoOpen || hasChildren.value == false) {
                 return;
             }
+            console.log("hasSelectedChildren?", props.modelValue);
 
             if (hasSelectedChild(props.item, props.modelValue)) {
+                console.log("yup");
                 showChildren.value = true;
             }
         }, { immediate: true });

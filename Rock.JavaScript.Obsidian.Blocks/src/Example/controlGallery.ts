@@ -4434,8 +4434,14 @@ const pagePickerGallery = defineComponent({
         return {
             multiple: ref(false),
             value: ref({
-                "value": "9593f41c-23a2-4f65-bbd4-634a06380e2e",
-                "text": "Following Suggestion"
+                page: {
+                    value: "fbc16153-897b-457c-a35f-28fdfdc466b6",
+                    text: "Shared Documents"
+                },
+                route: {
+                    value: "SOME GUID",
+                    text: "route/to/page"
+                }
             }),
             someVal: ref(1),
             importCode: getControlImportPath("pagePicker"),
@@ -4448,7 +4454,7 @@ const pagePickerGallery = defineComponent({
     :importCode="importCode"
     :exampleCode="exampleCode"
     enableReflection >
-    <PagePicker label="Page" v-model="value" :multiple="multiple" :someVal="someVal" />
+    <PagePicker label="Page" v-model="value" :multiple="multiple" promptForPageRoute />
 
     <template #settings>
         <CheckBox label="Multiple" v-model="multiple" />

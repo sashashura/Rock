@@ -72,28 +72,75 @@ export default defineComponent({
     },
 
     setup(props, { emit }) {
-        const internalPageValue = ref(
-            isArrayValue() ? props.modelValue?.map(item => item?.page) : props.modelValue?.page
-        );
-        const internalRouteValue = ref(
-            isArrayValue() ? null : props.modelValue?.route
-        );
-
+        // Enable route picker only if prop is set to true AND we're only selecting one value
         const shouldPromptForRoute = computed(() => !props.multiple && props.promptForPageRoute);
-        const isRoutePickerVisible = ref(shouldPromptForRoute.value && !internalRouteValue.value);
 
-        function showRoutePicker() {
-            if (shouldPromptForRoute.value) {
-                isRoutePickerVisible.value = true;
+        // Extract the page value(s) from the the PageRouteValueBag(s) so they can be used with the tree picker
+        const internalPageValue = computed<ListItemBag | (ListItemBag | null | undefined)[] | null | undefined>(() => {
+            if (!props.modelValue) {
+                return null;
             }
+
+            if (Array.isArray(props.modelValue)) {
+                if (props.multiple) {
+                    return props.modelValue.map(item => item.page);
+                }
+
+                return props.modelValue[0].page;
+            }
+
+            return props.modelValue.page;
+        });
+
+        // Extract the route so it can be controlled by its own picker (if route picking enabled)
+        const internalRouteValue = computed<ListItemBag | null | undefined>(() => {
+            if (!props.modelValue || Array.isArray(props.modelValue) || !shouldPromptForRoute.value) {
+                return null;
+            }
+
+            return props.modelValue.route;
+        });
+
+        // Initialize to true if
+        const isRoutePickerVisible = ref(shouldPromptForRoute.value && !internalRouteValue.value && !!internalPageValue.value);
+
+        function showRoutePicker(): void {
+            isRoutePickerVisible.value = shouldPromptForRoute.value;
         }
 
-        function hideRoutePicker() {
+        function hideRoutePicker(): void {
             isRoutePickerVisible.value = false;
         }
 
-        function isArrayValue(): boolean {
-            return Array.isArray(props.modelValue) && props.multiple;
+        function updatePage(pages: ListItemBag | ListItemBag[] | null): void {
+            if (!pages) {
+                emit("update:modelValue", null);
+                hideRoutePicker();
+                return;
+            }
+
+            if (props.multiple) {
+                emit("update:modelValue", (pages as ListItemBag[]).map(page => ({ page })));
+            }
+            else {
+                // When page is updated, no route will be picked, so just use the page property
+                emit("update:modelValue", { page: pages as ListItemBag });
+            }
+
+            if (shouldPromptForRoute.value) {
+                showRoutePicker();
+            }
+        }
+
+        function updateRoute(route: ListItemBag): void {
+            // This is only called if route selection is enabled, and a page is selected, so we can assume
+            // internalPageValue is a ListItemBag
+            emit("update:modelValue", {
+                page: internalPageValue.value as ListItemBag,
+                route
+            });
+
+            hideRoutePicker();
         }
 
         // Configure the item provider with our settings. These are not reactive
@@ -107,15 +154,8 @@ export default defineComponent({
             itemProvider.value.selectedPageGuid = internalPageValue.value.value;
         }
 
-        watch([internalPageValue, internalRouteValue], () => {
-            // emit("update:modelValue", {
-            //     page: internalPageValue.value,
-            //     route: internalRouteValue.value
-            // });
-        });
-
         watch(() => props.modelValue, () => {
-            console.debug("model updated", updateRefValue(internalPageValue, props.modelValue ?? null));
+            // console.debug("model updated", updateRefValue(internalPageValue, props.modelValue ?? null));
         });
 
         function onValueSelected(): void {
@@ -166,12 +206,13 @@ export default defineComponent({
         return {
             internalPageValue,
             itemProvider,
-            pageGuid,
             btnSize: BtnSize.ExtraSmall,
             btnType: BtnType.Link,
             isRoutePickerVisible,
             selectCurrentPage,
-            onValueSelected
+            onValueSelected,
+            updatePage,
+            updateRoute
         };
     },
 
