@@ -33,7 +33,7 @@ namespace Rock.Field.Types
     /// <seealso cref="Rock.Field.FieldType" />
     [RockPlatformSupport( Utility.RockPlatform.WebForms )]
     [Rock.SystemGuid.FieldTypeGuid( "A58A0CBF-C3E6-4054-85D7-05118035980B" )]
-    public class LocationListFieldType : FieldType, IEntityFieldType
+    public class LocationListFieldType : FieldType, IEntityFieldType, IEntityReferenceFieldType
     {
         #region Configuration
         /// <summary>
@@ -439,5 +439,46 @@ namespace Rock.Field.Types
             var locationService = new LocationService( rockContext );
             return locationService.Get( id );
         }
+
+        #region IEntityReferenceFieldType
+
+        /// <inheritdoc/>
+        List<ReferencedEntity> IEntityReferenceFieldType.GetReferencedEntities( string privateValue, Dictionary<string, string> privateConfigurationValues )
+        {
+            Guid? guid = privateValue.AsGuidOrNull();
+
+            if ( !guid.HasValue )
+            {
+                return null;
+            }
+
+            using ( var rockContext = new RockContext() )
+            {
+                var locationId = new LocationService( rockContext ).GetId( guid.Value );
+
+                if ( !locationId.HasValue )
+                {
+                    return null;
+                }
+
+                return new List<ReferencedEntity>
+                {
+                    new ReferencedEntity( EntityTypeCache.GetId<Location>().Value, locationId.Value )
+                };
+            }
+        }
+
+        /// <inheritdoc/>
+        List<ReferencedProperty> IEntityReferenceFieldType.GetReferencedProperties( Dictionary<string, string> privateConfigurationValues )
+        {
+            // This field type references the Name property of a Group and
+            // should have its persisted values updated when changed.
+            return new List<ReferencedProperty>
+            {
+                new ReferencedProperty( EntityTypeCache.GetId<Location>().Value, nameof( Location.Name ) )
+            };
+        }
+
+        #endregion
     }
 }

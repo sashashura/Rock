@@ -67,7 +67,7 @@ namespace Rock.Field.Types
                 var eventCalendars = guids.Select( g => EventCalendarCache.Get( g ) );
                 if ( eventCalendars.Any() )
                 {
-                    formattedValue = string.Join( ", ", ( from eventCalendar in eventCalendars select eventCalendar.Name ).ToArray() );
+                    formattedValue = string.Join( ", ", from eventCalendar in eventCalendars select eventCalendar.Name );
                 }
             }
 
@@ -407,16 +407,16 @@ namespace Rock.Field.Types
 
             using ( var rockContext = new RockContext() )
             {
-                var groupId = new EventCalendarService( rockContext ).GetId( guid.Value );
+                var eventCalenderId = new EventCalendarService( rockContext ).GetId( guid.Value );
 
-                if ( !groupId.HasValue )
+                if ( !eventCalenderId.HasValue )
                 {
                     return null;
                 }
 
                 return new List<ReferencedEntity>
                 {
-                    new ReferencedEntity( EntityTypeCache.GetId<EventCalendar>().Value, groupId.Value )
+                    new ReferencedEntity( EntityTypeCache.GetId<EventCalendar>().Value, eventCalenderId.Value )
                 };
             }
         }
