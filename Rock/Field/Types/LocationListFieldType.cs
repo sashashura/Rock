@@ -354,6 +354,30 @@ namespace Rock.Field.Types
             return location.Id;
         }
 
+        /// <inheritdoc/>
+        public override bool IsPersistedValueInvalidated( Dictionary<string, string> oldPrivateConfigurationValues, Dictionary<string, string> newPrivateConfigurationValues )
+        {
+            var oldLocationType = oldPrivateConfigurationValues.GetValueOrNull( ConfigurationKey.LocationType ) ?? string.Empty;
+            var oldParentLocation = oldPrivateConfigurationValues.GetValueOrNull( ConfigurationKey.ParentLocation ) ?? string.Empty;
+            var oldAllowAddingNewLocations = oldPrivateConfigurationValues.GetValueOrNull( ConfigurationKey.AllowAddingNewLocations ) ?? string.Empty;
+            var oldShowCityState = oldPrivateConfigurationValues.GetValueOrNull( ConfigurationKey.ShowCityState ) ?? string.Empty;
+            var oldAddressRequired = oldPrivateConfigurationValues.GetValueOrNull( ConfigurationKey.AddressRequired ) ?? string.Empty;
+
+            var newLocationType = newPrivateConfigurationValues.GetValueOrNull( ConfigurationKey.LocationType ) ?? string.Empty;
+            var newParentLocation = newPrivateConfigurationValues.GetValueOrNull( ConfigurationKey.ParentLocation ) ?? string.Empty;
+            var newAllowAddingNewLocations = newPrivateConfigurationValues.GetValueOrNull( ConfigurationKey.AllowAddingNewLocations ) ?? string.Empty;
+            var newShowCityState = newPrivateConfigurationValues.GetValueOrNull( ConfigurationKey.ShowCityState ) ?? string.Empty;
+            var newAddressRequired = newPrivateConfigurationValues.GetValueOrNull( ConfigurationKey.AddressRequired ) ?? string.Empty;
+
+            return newLocationType != oldLocationType
+                || newParentLocation != oldParentLocation
+                || newAllowAddingNewLocations != oldAllowAddingNewLocations
+                || newShowCityState != oldShowCityState
+                || newAddressRequired != oldAddressRequired;
+
+        }
+
+
         /// <summary>
         /// Sets the edit value from IEntity.Id value
         /// </summary>
