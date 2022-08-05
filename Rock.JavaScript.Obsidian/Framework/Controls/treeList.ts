@@ -45,6 +45,11 @@ const treeItem = defineComponent({
         disableFolderSelection: {
             type: Boolean as PropType<boolean>,
             default: false
+        },
+
+        autoOpen: {
+            type: Boolean as PropType<boolean>,
+            default: false
         }
     },
 
@@ -103,11 +108,40 @@ const treeItem = defineComponent({
 
         // Automatically expand to show selected value deep in the tree
         watch(() => [props.item, props.modelValue], () => {
-            if (hasChildren.value == false) {
+            if (!props.autoOpen || hasChildren.value == false) {
                 return;
             }
-            console.log("Auto expand - value:", props.modelValue, "item:", props.item);
+
+            if (hasSelectedChild(props.item, props.modelValue)) {
+                showChildren.value = true;
+            }
         }, { immediate: true });
+
+        /**
+         * Determine if a child item is a selected value
+         *
+         * @param item The item potentially with children that are selected
+         * @param values The selected values
+         *
+         * @return Whether or not a child is selected
+         */
+        function hasSelectedChild(item: TreeItemBag, values: string[]): boolean {
+            const children = item.children;
+
+            if (children && children.length > 0) {
+                for (const child of children) {
+                    if (values.includes(child.value ?? "")) {
+                        return true;
+                    }
+
+                    if (child.children && child.children.length > 0 && hasSelectedChild(child, values)) {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
 
         /**
          * Event handler for when the folder arrow is clicked.
@@ -189,7 +223,7 @@ const treeItem = defineComponent({
         {{ itemName }}
     </span>
     <ul v-if="hasChildren" v-show="showChildren" class="rocktree-children" v-for="child in children">
-        <TreeList.Item :modelValue="modelValue" @update:modelValue="onUpdateSelectedValues" @treeitem-expanded="onChildItemExpanded" :item="child" :multiple="multiple" :disableFolderSelection="disableFolderSelection" />
+        <TreeList.Item :modelValue="modelValue" @update:modelValue="onUpdateSelectedValues" @treeitem-expanded="onChildItemExpanded" :item="child" :multiple="multiple" :disableFolderSelection="disableFolderSelection" :autoOpen="autoOpen" />
     </ul>
 </li>
 `
@@ -223,6 +257,11 @@ export default defineComponent({
         },
 
         disableFolderSelection: {
+            type: Boolean as PropType<boolean>,
+            default: false
+        },
+
+        autoOpen: {
             type: Boolean as PropType<boolean>,
             default: false
         }
@@ -321,7 +360,7 @@ export default defineComponent({
     template: `
 <div>
     <ul class="rocktree">
-        <TreeItem v-for="child in internalItems" :modelValue="modelValue" @update:modelValue="onUpdateSelectedValues" @treeitem-expanded="onItemExpanded" :item="child" :multiple="multiple" :disableFolderSelection="disableFolderSelection" />
+        <TreeItem v-for="child in internalItems" :modelValue="modelValue" @update:modelValue="onUpdateSelectedValues" @treeitem-expanded="onItemExpanded" :item="child" :multiple="multiple" :disableFolderSelection="disableFolderSelection" :autoOpen="autoOpen" />
     </ul>
 </div>
 `

@@ -109,6 +109,11 @@ export default defineComponent({
         disableFolderSelection: {
             type: Boolean as PropType<boolean>,
             default: false
+        },
+
+        autoExpand: {
+            type: Boolean as PropType<boolean>,
+            default: false
         }
     },
 
@@ -288,7 +293,7 @@ export default defineComponent({
 
                 <div v-show="showPopup" class="picker-menu dropdown-menu" style="display: block;">
                     <div class="scrollbar-thin" style="height: 200px; overflow-y: scroll; overflow-x: hidden;">
-                        <TreeList v-model="internalValues" :multiple="multiple" :items="items" :provider="provider" @update:items="onUpdateItems" :disableFolderSelection="disableFolderSelection" />
+                        <TreeList v-model="internalValues" :multiple="multiple" :items="items" :provider="provider" @update:items="onUpdateItems" :disableFolderSelection="disableFolderSelection" :autoExpand="autoExpand" />
                     </div>
 
                     <div class="picker-actions">

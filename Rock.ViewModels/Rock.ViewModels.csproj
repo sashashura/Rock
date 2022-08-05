@@ -351,6 +351,7 @@
     <Compile Include="Reporting\FieldFilterSourceBag.cs" />
     <Compile Include="Rest\Controls\FinancialGatewayPickerGetFinancialGatewaysOptionsBag.cs" />
     <Compile Include="Rest\Controls\EventItemPickerGetEventItemsOptionsBag.cs" />
+    <Compile Include="Rest\Controls\PageRouteValueBag.cs" />
     <Compile Include="Rest\Controls\PagePickerGetPageNameOptionsBag.cs" />
     <Compile Include="Rest\Controls\PagePickerGetSelectedPageHierarchyOptionsBag.cs" />
     <Compile Include="Rest\Controls\PagePickerGetChildrenOptionsBag.cs" />
