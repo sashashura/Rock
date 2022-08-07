@@ -949,7 +949,9 @@ namespace Rock.Model
         }
 
         /// <summary>
-        /// Gets the <see cref="Rock.Model.PersonAlias">primary alias</see>.
+        /// Gets the <see cref="Rock.Model.PersonAlias" /> representing the current alias for this person.
+        /// The primary alias is a pointer to the existing person record, whereas secondary aliases hold references to historical records
+        /// previously associated with this person that have been removed from the database, either by a merge or delete operation.
         /// </summary>
         /// <value>
         /// The primary alias.

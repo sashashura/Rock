@@ -911,8 +911,7 @@ namespace Rock.Rest.Controllers
         /// <returns></returns>
         private static List<PersonSearchResult> SearchWithDetails( RockContext rockContext, IQueryable<Person> sortedPersonQry, bool showFullNameReversed, bool includeHtml )
         {
-            var personAliasQry = new PersonAliasService( rockContext ).Queryable();
-
+            var primaryAliasQry = new PersonAliasService( rockContext ).GetPrimaryAliasQuery();
             var sortedPersonList = sortedPersonQry
                 .Include( a => a.PhoneNumbers )
                 .Include( "PrimaryFamily.GroupLocations.Location" )
@@ -920,8 +919,9 @@ namespace Rock.Rest.Controllers
                 .Select( sp => new
                 {
                     Person = sp,
-                    // Get the first PersonAlias here to avoid lazy-loading the Aliases collection.
-                    PersonAlias = personAliasQry.FirstOrDefault( pa => pa.PersonId == sp.Id )
+                    PersonAliasGuid = primaryAliasQry.Where( pa => pa.PersonId == sp.Id )
+                        .Select( pa => pa.Guid )
+                        .FirstOrDefault()
                 } )
                 .ToList();
 
@@ -933,7 +933,7 @@ namespace Rock.Rest.Controllers
                 PersonSearchResult personSearchResult = new PersonSearchResult();
                 personSearchResult.Id = person.Id;
                 personSearchResult.Guid = person.Guid;
-                personSearchResult.PrimaryAliasGuid = personResult.PersonAlias?.Guid ?? Guid.Empty;
+                personSearchResult.PrimaryAliasGuid = personResult.PersonAliasGuid;
                 personSearchResult.Name = showFullNameReversed ? person.FullNameReversed : person.FullName;
                 if ( person.RecordStatusValueId.HasValue )
                 {
