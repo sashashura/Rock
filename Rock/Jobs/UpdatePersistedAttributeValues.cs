@@ -234,7 +234,24 @@ namespace Rock.Jobs
 
                 foreach ( var value in distinctValues )
                 {
-                    var persistedValues = field.GetPersistedValues( value, configurationValues );
+                    Field.PersistedValues persistedValues;
+
+                    if ( field.IsPersistedValueSupported( configurationValues ) )
+                    {
+                        persistedValues = field.GetPersistedValues( value, configurationValues );
+                    }
+                    else
+                    {
+                        var placeholderValue = field.GetPersistedValuePlaceholder( configurationValues );
+
+                        persistedValues = new Field.PersistedValues
+                        {
+                            TextValue = placeholderValue,
+                            CondensedTextValue = placeholderValue,
+                            HtmlValue = placeholderValue,
+                            CondensedHtmlValue = placeholderValue
+                        };
+                    }
 
                     updatedCount += Helper.BulkUpdateAttributeValuePersistedValues( attribute.Id, value, persistedValues, rockContext );
                 }
@@ -467,7 +484,24 @@ namespace Rock.Jobs
                 {
                     var value = valueGroup.Key;
                     var attributeValueIds = valueGroup.Select( grp => grp.Id ).ToList();
-                    var persistedValues = field.GetPersistedValues( value, attributeCache.ConfigurationValues );
+                    Field.PersistedValues persistedValues;
+
+                    if ( field.IsPersistedValueSupported( attributeCache.ConfigurationValues ) )
+                    {
+                        persistedValues = field.GetPersistedValues( value, attributeCache.ConfigurationValues );
+                    }
+                    else
+                    {
+                        var placeholderValue = field.GetPersistedValuePlaceholder( attributeCache.ConfigurationValues );
+
+                        persistedValues = new Field.PersistedValues
+                        {
+                            TextValue = placeholderValue,
+                            CondensedTextValue = placeholderValue,
+                            HtmlValue = placeholderValue,
+                            CondensedHtmlValue = placeholderValue
+                        };
+                    }
 
                     using ( var rockContext = new RockContext() )
                     {
