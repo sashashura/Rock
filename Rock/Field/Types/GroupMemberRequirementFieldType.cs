@@ -181,11 +181,11 @@ namespace Rock.Field.Types
             // should have its persisted values updated when changed.
             return new List<ReferencedProperty>
             {
-                new ReferencedProperty( EntityTypeCache.GetId<GroupMemberRequirement>().Value, nameof( GroupMemberRequirement.GroupMember.Person.NickName ) ),
-                new ReferencedProperty( EntityTypeCache.GetId<GroupMemberRequirement>().Value, nameof( GroupMemberRequirement.GroupMember.Person.LastName ) ),
-                new ReferencedProperty( EntityTypeCache.GetId<GroupMemberRequirement>().Value, nameof( GroupMemberRequirement.GroupRequirement.GroupRequirementType.Name ) ),
-                new ReferencedProperty( EntityTypeCache.GetId<GroupMemberRequirement>().Value, nameof( GroupMemberRequirement.GroupRequirement.Group.Name ) ),
-                new ReferencedProperty( EntityTypeCache.GetId<GroupMemberRequirement>().Value, nameof( GroupMemberRequirement.GroupRequirement.GroupType.Name ) )
+                new ReferencedProperty( EntityTypeCache.GetId<Person>().Value, nameof( Person.NickName ) ),
+                new ReferencedProperty( EntityTypeCache.GetId<Person>().Value, nameof( Person.LastName ) ),
+                new ReferencedProperty( EntityTypeCache.GetId<GroupRequirementType>().Value, nameof( GroupRequirementType.Name ) ),
+                new ReferencedProperty( EntityTypeCache.GetId<Group>().Value, nameof( Group.Name ) ),
+                new ReferencedProperty( EntityTypeCache.GetId<GroupType>().Value, nameof( GroupType.Name ) )
             };
         }
 

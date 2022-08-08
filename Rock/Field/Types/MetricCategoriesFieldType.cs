@@ -195,24 +195,23 @@ namespace Rock.Field.Types
         /// <inheritdoc/>
         List<ReferencedEntity> IEntityReferenceFieldType.GetReferencedEntities( string privateValue, Dictionary<string, string> privateConfigurationValues )
         {
-            Guid? guid = privateValue.AsGuidOrNull();
+            var guidPairs = Rock.Attribute.MetricCategoriesFieldAttribute.GetValueAsGuidPairs( privateValue );
 
-            if ( !guid.HasValue )
+            if ( !guidPairs.Any() )
             {
                 return null;
             }
-
-            var guidPairs = Rock.Attribute.MetricCategoriesFieldAttribute.GetValueAsGuidPairs( privateValue );
-
             var metricGuids = guidPairs.Select( a => a.MetricGuid );
 
             using ( var rockContext = new RockContext() )
             {
-                IQueryable<ReferencedEntity> referencedEntities = new MetricService( rockContext )
+                var referencedEntities = new MetricService( rockContext )
                                     .Queryable()
                                     .AsNoTracking()
                                     .Where( m => metricGuids.Contains( m.Guid ) )
-                                    .Select( m => new ReferencedEntity( EntityTypeCache.GetId<Metric>().Value, m.Id ) );
+                                    .Select( m => m.Id )
+                                    .ToList()
+                                    .Select( m => new ReferencedEntity( EntityTypeCache.GetId<Metric>().Value, m ) );
                 if ( !referencedEntities.Any() )
                 {
                     return null;
