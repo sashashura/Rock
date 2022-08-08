@@ -22,7 +22,6 @@ using System.Web.UI.WebControls;
 
 using Rock;
 using Rock.Attribute;
-using Rock.Constants;
 using Rock.Data;
 using Rock.Model;
 using Rock.Web.Cache;
@@ -284,7 +283,7 @@ namespace Rock.Field.Types
         /// <inheritdoc/>
         List<ReferencedProperty> IEntityReferenceFieldType.GetReferencedProperties( Dictionary<string, string> privateConfigurationValues )
         {
-            // This field type references the Name property of a Group and
+            // This field type references the Name property of a Metric and
             // should have its persisted values updated when changed.
             return new List<ReferencedProperty>
             {

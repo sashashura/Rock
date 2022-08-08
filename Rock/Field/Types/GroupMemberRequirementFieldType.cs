@@ -177,11 +177,15 @@ namespace Rock.Field.Types
         /// <inheritdoc/>
         List<ReferencedProperty> IEntityReferenceFieldType.GetReferencedProperties( Dictionary<string, string> privateConfigurationValues )
         {
-            // This field type references the Name property of a Group and
+            // This field type references the Name property of a Group Member Requirement and
             // should have its persisted values updated when changed.
             return new List<ReferencedProperty>
             {
-                new ReferencedProperty( EntityTypeCache.GetId<GroupMemberRequirement>().Value, nameof( GroupMemberRequirement  ) )
+                new ReferencedProperty( EntityTypeCache.GetId<GroupMemberRequirement>().Value, nameof( GroupMemberRequirement.GroupMember.Person.NickName ) ),
+                new ReferencedProperty( EntityTypeCache.GetId<GroupMemberRequirement>().Value, nameof( GroupMemberRequirement.GroupMember.Person.LastName ) ),
+                new ReferencedProperty( EntityTypeCache.GetId<GroupMemberRequirement>().Value, nameof( GroupMemberRequirement.GroupRequirement.GroupRequirementType.Name ) ),
+                new ReferencedProperty( EntityTypeCache.GetId<GroupMemberRequirement>().Value, nameof( GroupMemberRequirement.GroupRequirement.Group.Name ) ),
+                new ReferencedProperty( EntityTypeCache.GetId<GroupMemberRequirement>().Value, nameof( GroupMemberRequirement.GroupRequirement.GroupType.Name ) )
             };
         }
 

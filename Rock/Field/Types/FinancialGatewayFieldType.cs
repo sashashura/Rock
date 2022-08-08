@@ -228,7 +228,7 @@ namespace Rock.Field.Types
         /// <inheritdoc/>
         List<ReferencedProperty> IEntityReferenceFieldType.GetReferencedProperties( Dictionary<string, string> privateConfigurationValues )
         {
-            // This field type references the Name property of a Group and
+            // This field type references the Name property of a Financial Gateway and
             // should have its persisted values updated when changed.
             return new List<ReferencedProperty>
             {

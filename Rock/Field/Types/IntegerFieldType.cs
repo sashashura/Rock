@@ -45,7 +45,7 @@ namespace Rock.Field.Types
             try
             {
                 int? intValue = ( int? ) privateValue.AsDecimalOrNull();
-                return base.GetTextValue( intValue.ToString(), privateConfigurationValues );
+                return intValue.ToString();
             }
             catch ( System.OverflowException )
             {

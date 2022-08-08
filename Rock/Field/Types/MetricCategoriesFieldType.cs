@@ -202,30 +202,33 @@ namespace Rock.Field.Types
                 return null;
             }
 
+            var guidPairs = Rock.Attribute.MetricCategoriesFieldAttribute.GetValueAsGuidPairs( privateValue );
+
+            var metricGuids = guidPairs.Select( a => a.MetricGuid );
+
             using ( var rockContext = new RockContext() )
             {
-                var metricId = new MetricService( rockContext ).GetId( guid.Value );
-
-                if ( !metricId.HasValue )
+                IQueryable<ReferencedEntity> referencedEntities = new MetricService( rockContext )
+                                    .Queryable()
+                                    .AsNoTracking()
+                                    .Where( m => metricGuids.Contains( m.Guid ) )
+                                    .Select( m => new ReferencedEntity( EntityTypeCache.GetId<Metric>().Value, m.Id ) );
+                if ( !referencedEntities.Any() )
                 {
                     return null;
                 }
-
-                return new List<ReferencedEntity>
-                {
-                    new ReferencedEntity( EntityTypeCache.GetId<MetricService>().Value, metricId.Value )
-                };
+                return referencedEntities.ToList();
             }
         }
 
         /// <inheritdoc/>
         List<ReferencedProperty> IEntityReferenceFieldType.GetReferencedProperties( Dictionary<string, string> privateConfigurationValues )
         {
-            // This field type references the Name property of a Group and
+            // This field type references the Name property of a Metric and
             // should have its persisted values updated when changed.
             return new List<ReferencedProperty>
             {
-                new ReferencedProperty( EntityTypeCache.GetId<MetricService>().Value, nameof( Metric.Title ) )
+                new ReferencedProperty( EntityTypeCache.GetId<Metric>().Value, nameof( Metric.Title ) )
             };
         }
 

@@ -258,7 +258,7 @@ namespace Rock.Field.Types
         {
             if ( privateValue.IsNotNullOrWhiteSpace() )
             {
-                return $"{privateValue}%watched";
+                return $"{privateValue}% watched";
             }
             return privateValue;
         }

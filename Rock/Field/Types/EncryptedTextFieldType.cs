@@ -34,9 +34,9 @@ namespace Rock.Field.Types
     [Rock.SystemGuid.FieldTypeGuid( Rock.SystemGuid.FieldType.ENCRYPTED_TEXT )]
     public class EncryptedTextFieldType : TextFieldType
     {
-
         #region Configuration
 
+        private const string IS_PASSWORD_KEY = "ispassword";
         private const string NUMBER_OF_ROWS = "numberofrows";
         private const string ALLOW_HTML = "allowhtml";
 
@@ -144,13 +144,14 @@ namespace Rock.Field.Types
         /// <inheritdoc/>
         public override string GetTextValue( string privateValue, Dictionary<string, string> privateConfigurationValues )
         {
-            return base.GetTextValue( Encryption.DecryptString( privateValue ), privateConfigurationValues );
-        }
+            if ( privateConfigurationValues != null &&
+                privateConfigurationValues.ContainsKey( IS_PASSWORD_KEY ) &&
+                privateConfigurationValues[IS_PASSWORD_KEY].AsBoolean() )
+            {
+                return "********";
+            }
 
-        /// <inheritdoc/>
-        public override string GetCondensedTextValue( string privateValue, Dictionary<string, string> privateConfigurationValues )
-        {
-            return base.GetCondensedTextValue( Encryption.DecryptString( privateValue ), privateConfigurationValues );
+            return Encryption.DecryptString( privateValue );
         }
 
         /// <inheritdoc/>

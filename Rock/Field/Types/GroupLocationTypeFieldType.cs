@@ -261,16 +261,16 @@ namespace Rock.Field.Types
 
             using ( var rockContext = new RockContext() )
             {
-                var groupLocationId = new GroupLocationService( rockContext ).GetId( guid.Value );
+                var definedValueId = new DefinedValueService( rockContext ).GetId( guid.Value );
 
-                if ( !groupLocationId.HasValue )
+                if ( !definedValueId.HasValue )
                 {
                     return null;
                 }
 
                 return new List<ReferencedEntity>
                 {
-                    new ReferencedEntity( EntityTypeCache.GetId<GroupLocation>().Value, groupLocationId.Value )
+                    new ReferencedEntity( EntityTypeCache.GetId<DefinedValue>().Value, definedValueId.Value )
                 };
             }
         }
@@ -278,7 +278,7 @@ namespace Rock.Field.Types
         /// <inheritdoc/>
         List<ReferencedProperty> IEntityReferenceFieldType.GetReferencedProperties( Dictionary<string, string> privateConfigurationValues )
         {
-            // This field type references the Name property of a Group and
+            // This field type references the Name property of a Defined Value and
             // should have its persisted values updated when changed.
             return new List<ReferencedProperty>
             {
