@@ -342,7 +342,11 @@ namespace Rock.Field.Types
             {
                 if ( Int32.TryParse( privateConfigurationValues["definedtype"], out int definedTypeId ) )
                 {
-                    return values.Select( v => new ReferencedEntity( EntityTypeCache.GetId<DefinedValue>().Value, v.AsInteger() ) )
+                    return values.Select( v => v.AsIntegerOrNull() )
+                        .Where( id => id.HasValue )
+                        .Select( id => DefinedValueCache.Get( id.Value ) )
+                        .Where( dv => dv != null )
+                        .Select( dv => new ReferencedEntity( EntityTypeCache.GetId<DefinedValue>().Value, dv.Id ) )
                         .ToList();
                 }
             }

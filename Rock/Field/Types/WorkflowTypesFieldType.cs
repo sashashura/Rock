@@ -62,7 +62,6 @@ namespace Rock.Field.Types
 
             if ( !string.IsNullOrWhiteSpace( privateValue ) )
             {
-                var names = new List<string>();
                 var guids = new List<Guid>();
 
                 foreach ( string guidValue in privateValue.Split( new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries ) )
@@ -213,7 +212,6 @@ namespace Rock.Field.Types
                 return null;
             }
 
-            var names = new List<string>();
             var guids = new List<Guid>();
 
             foreach ( string guidValue in privateValue.Split( new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries ) )

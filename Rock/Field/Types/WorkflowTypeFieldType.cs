@@ -221,16 +221,16 @@ namespace Rock.Field.Types
 
             using ( var rockContext = new RockContext() )
             {
-                var groupId = new WorkflowTypeService( rockContext ).GetId( guid.Value );
+                var workflowTypeId = new WorkflowTypeService( rockContext ).GetId( guid.Value );
 
-                if ( !groupId.HasValue )
+                if ( !workflowTypeId.HasValue )
                 {
                     return null;
                 }
 
                 return new List<ReferencedEntity>
                 {
-                    new ReferencedEntity( EntityTypeCache.GetId<WorkflowType>().Value, groupId.Value )
+                    new ReferencedEntity( EntityTypeCache.GetId<WorkflowType>().Value, workflowTypeId.Value )
                 };
             }
         }

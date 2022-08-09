@@ -225,14 +225,15 @@ namespace Rock.Field.Types
                 var referencedEntities = guids.Select( a => new ScheduleService( rockContext ).Get( a ) )
                 .Select( s => s.Id )
                 .ToList()
-                .Select( s => new ReferencedEntity( EntityTypeCache.GetId<Schedule>().Value, s ) );
+                .Select( s => new ReferencedEntity( EntityTypeCache.GetId<Schedule>().Value, s ) )
+                .ToList();
 
                 if ( !referencedEntities.Any() )
                 {
                     return null;
                 }
 
-                return referencedEntities.ToList();
+                return referencedEntities;
             }
         }
 

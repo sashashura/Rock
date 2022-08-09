@@ -209,40 +209,37 @@ namespace Rock.Field.Types
                 return null;
             }
 
-            else
+            var guids = new List<Guid>();
+
+            foreach ( string guidValue in privateValue.Split( new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries ) )
             {
-                var names = new List<string>();
-                var guids = new List<Guid>();
-
-                foreach ( string guidValue in privateValue.Split( new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries ) )
+                Guid? guid = guidValue.AsGuidOrNull();
+                if ( guid.HasValue )
                 {
-                    Guid? guid = guidValue.AsGuidOrNull();
-                    if ( guid.HasValue )
-                    {
-                        guids.Add( guid.Value );
-                    }
-                }
-
-                if ( !guids.Any() )
-                {
-                    return null;
-                }
-
-                using ( var rockContext = new RockContext() )
-                {
-                    var registrationTemplateIds = new RegistrationTemplateService( rockContext )
-                        .Queryable()
-                        .AsNoTracking()
-                        .Where( rt => guids.Contains( rt.Guid ) )
-                        .Select( rt => rt.Id );
-                    if ( registrationTemplateIds.Any() )
-                    {
-                        return registrationTemplateIds
-                            .Select( id => new ReferencedEntity( EntityTypeCache.GetId<RegistrationTemplate>().Value, id ) )
-                            .ToList();
-                    }
+                    guids.Add( guid.Value );
                 }
             }
+
+            if ( !guids.Any() )
+            {
+                return null;
+            }
+
+            using ( var rockContext = new RockContext() )
+            {
+                var registrationTemplateIds = new RegistrationTemplateService( rockContext )
+                    .Queryable()
+                    .AsNoTracking()
+                    .Where( rt => guids.Contains( rt.Guid ) )
+                    .Select( rt => rt.Id );
+                if ( registrationTemplateIds.Any() )
+                {
+                    return registrationTemplateIds
+                        .Select( id => new ReferencedEntity( EntityTypeCache.GetId<RegistrationTemplate>().Value, id ) )
+                        .ToList();
+                }
+            }
+
 
             return null;
         }
