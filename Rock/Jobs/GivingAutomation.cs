@@ -172,10 +172,11 @@ namespace Rock.Jobs
             {
                 // Set MaxDegreeOfParallelism to 1 to make it easier to debug. 
                 // Otherwise set it to half of Processor Count. Seems to be a sweet spot on best performance without overwhelming the machine and slowing down IIS.
-                MaxDegreeOfParallelism = Environment.ProcessorCount > 4
-                    ? Environment.ProcessorCount / 2
-                    : 1
+                MaxDegreeOfParallelism = 1 // Environment.ProcessorCount > 4                    ? Environment.ProcessorCount / 2                    : 1
             };
+
+            // DEBUG
+            context.GivingIdsToClassify = new List<string>();
 
             Parallel.ForEach(
                 context.GivingIdsToClassify,
@@ -2123,6 +2124,7 @@ Created {context.AlertsCreated} {"alert".PluralizeIf( context.AlertsCreated != 1
             List<int> alertAccountIds = GetAlertTypeAccountIds( lateGiftAlertType );
 
             var rockContext = new RockContext();
+            rockContext.SqlLogging( true );
             rockContext.Database.CommandTimeout = context.SqlCommandTimeoutSeconds;
             var financialTransactionService = new FinancialTransactionService( rockContext );
 
@@ -2150,9 +2152,12 @@ Created {context.AlertsCreated} {"alert".PluralizeIf( context.AlertsCreated != 1
 
             var oneYearAgo = context.Now.AddMonths( -12 );
 
+            // this one is timing out...
             var mostRecentOldTransactionDateForAlertTypeByGivingId = givingAutomationSourceTransactionQueryForAlertType
                 .Where( t => t.TransactionDateTime < oneYearAgo )
-                .GroupBy( a => a.AuthorizedPersonAlias.Person.GivingId )
+                .Select( a => new { a.AuthorizedPersonAlias.Person.GivingId, a.TransactionDateTime } )
+                .ToList()
+                .GroupBy( a => a.GivingId )
                 .Select( a => new
                 {
                     GivingId = a.Key,
@@ -2163,24 +2168,27 @@ Created {context.AlertsCreated} {"alert".PluralizeIf( context.AlertsCreated != 1
 
             var twelveMonthsTransactionsForAlertTypeByGivingId = givingAutomationSourceTransactionQueryForAlertType
                 .Where( t => t.TransactionDateTime >= oneYearAgo )
-                .GroupBy( a => a.AuthorizedPersonAlias.Person.GivingId )
+                .Select( t => new TransactionView
+                {
+                    Id = t.Id,
+                    AuthorizedPersonAliasId = t.AuthorizedPersonAliasId.Value,
+                    AuthorizedPersonGivingId = t.AuthorizedPersonAlias.Person.GivingId,
+                    AuthorizedPersonCampusId = t.AuthorizedPersonAlias.Person.PrimaryCampusId,
+                    TransactionDateTime = t.TransactionDateTime.Value,
+                    TransactionViewDetailsBeforeRefunds = t.TransactionDetails.Select( x => new TransactionViewDetail { AccountId = x.AccountId, Amount = x.Amount } ).ToList(),
+                    RefundDetails = t.Refunds.SelectMany( r => r.FinancialTransaction.TransactionDetails ).Select( x => new TransactionViewDetail { AccountId = x.AccountId, Amount = x.Amount } ).ToList(),
+                    CurrencyTypeValueId = t.FinancialPaymentDetail.CurrencyTypeValueId,
+                    SourceTypeValueId = t.SourceTypeValueId,
+                    IsScheduled = t.ScheduledTransactionId.HasValue
+                } )
+                .ToList()
+                .GroupBy( a => a.AuthorizedPersonGivingId )
                 .Select( a => new
                 {
                     GivingId = a.Key,
-                    Last12MonthsTransactions = a.Select( t => new TransactionView
-                    {
-                        Id = t.Id,
-                        AuthorizedPersonAliasId = t.AuthorizedPersonAliasId.Value,
-                        AuthorizedPersonGivingId = a.Key,
-                        AuthorizedPersonCampusId = t.AuthorizedPersonAlias.Person.PrimaryCampusId,
-                        TransactionDateTime = t.TransactionDateTime.Value,
-                        TransactionViewDetailsBeforeRefunds = t.TransactionDetails.Select( x => new TransactionViewDetail { AccountId = x.AccountId, Amount = x.Amount } ).ToList(),
-                        RefundDetails = t.Refunds.SelectMany( r => r.FinancialTransaction.TransactionDetails ).Select( x => new TransactionViewDetail { AccountId = x.AccountId, Amount = x.Amount } ).ToList(),
-                        CurrencyTypeValueId = t.FinancialPaymentDetail.CurrencyTypeValueId,
-                        SourceTypeValueId = t.SourceTypeValueId,
-                        IsScheduled = t.ScheduledTransactionId.HasValue
-                    } ).ToList()
+                    Last12MonthsTransactions = a.ToList()
                 } ).ToList();
+
 
             var financialTransactionAlertService = new FinancialTransactionAlertService( rockContext );
 
@@ -2223,6 +2231,8 @@ Created {context.AlertsCreated} {"alert".PluralizeIf( context.AlertsCreated != 1
                     alertsForThisAlertType.Add( financialTransactionAlert );
                 }
             }
+
+            rockContext.SqlLogging( false );
 
             return alertsForThisAlertType;
         }
@@ -2470,7 +2480,7 @@ Created {context.AlertsCreated} {"alert".PluralizeIf( context.AlertsCreated != 1
         /// <summary>
         /// Log debug output?
         /// </summary>
-        private static bool _debugModeEnabled = false;
+        private static bool _debugModeEnabled = true;
 
         /// <summary>
         /// Debugs the specified message.
