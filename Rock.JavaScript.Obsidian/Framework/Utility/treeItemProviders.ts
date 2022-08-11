@@ -25,6 +25,7 @@ import { DataViewPickerGetDataViewsOptionsBag } from "@Obsidian/ViewModels/Rest/
 import { WorkflowTypePickerGetWorkflowTypesOptionsBag } from "@Obsidian/ViewModels/Rest/Controls/workflowTypePickerGetWorkflowTypesOptionsBag";
 import { PagePickerGetChildrenOptionsBag } from "@Obsidian/ViewModels/Rest/Controls/pagePickerGetChildrenOptionsBag";
 import { PagePickerGetSelectedPageHierarchyOptionsBag } from "@Obsidian/ViewModels/Rest/Controls/PagePickerGetSelectedPageHierarchyOptionsBag";
+import { flatten } from "./array";
 
 /**
  * The methods that must be implemented by tree item providers. These methods
@@ -317,7 +318,7 @@ export class PageTreeItemProvider implements ITreeItemProvider {
     /**
      * Currently selected page
      */
-    public selectedPageGuid?: Guid | null;
+    public selectedPageGuids?: Guid[] | null;
 
     /**
      * Gets the child items from the server.
@@ -327,7 +328,6 @@ export class PageTreeItemProvider implements ITreeItemProvider {
      * @returns A collection of TreeItem objects as an asynchronous operation.
      */
     private async getItems(parentGuid?: Guid | null): Promise<TreeItemBag[]> {
-        console.debug(`getItems parentGuid:${parentGuid}`);
         let result: TreeItemBag[];
 
         const options: Partial<PagePickerGetChildrenOptionsBag> = {
@@ -348,7 +348,7 @@ export class PageTreeItemProvider implements ITreeItemProvider {
         }
 
         // If we're getting child nodes or if there is no selected page
-        if (parentGuid || !this.selectedPageGuid) {
+        if (parentGuid || !this.selectedPageGuids) {
             return result;
         }
 
@@ -363,10 +363,8 @@ export class PageTreeItemProvider implements ITreeItemProvider {
      * @returns A list of GUIDs of the parent pages
      */
     async getParentList(): Promise<Guid[]> {
-        console.debug("getParentList");
-
         const options: PagePickerGetSelectedPageHierarchyOptionsBag = {
-            selectedPageGuid: this.selectedPageGuid
+            selectedPageGuids: this.selectedPageGuids
         };
         const url = "/api/v2/Controls/PagePickerGetSelectedPageHierarchy";
         const response = await post<Guid[]>(url, undefined, options);
@@ -388,7 +386,6 @@ export class PageTreeItemProvider implements ITreeItemProvider {
      * @return The augmented `rootLayer` with the child pages
      */
     async getHierarchyToSelectedPage(rootLayer: TreeItemBag[]): Promise<TreeItemBag[]> {
-        console.debug("getHierarchyToSelectedPage", rootLayer);
         const parents = await this.getParentList();
 
         if (!parents || parents.length == 0) {
@@ -397,13 +394,12 @@ export class PageTreeItemProvider implements ITreeItemProvider {
         }
 
         const childLists = await Promise.all(parents.map(guid => this.getItems(guid)));
-        let currentLevel = rootLayer;
+        const allPages = rootLayer.concat(flatten(childLists));
 
         parents.forEach((parentGuid, i) => {
-            const parentPage: TreeItemBag | undefined = currentLevel.find(page => page.value == parentGuid);
+            const parentPage: TreeItemBag | undefined = allPages.find(page => page.value == parentGuid);
             if (parentPage) {
                 parentPage.children = childLists[i];
-                currentLevel = childLists[i];
             }
         });
 

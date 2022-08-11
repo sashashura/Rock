@@ -47,7 +47,7 @@ const treeItem = defineComponent({
             default: false
         },
 
-        autoOpen: {
+        autoExpand: {
             type: Boolean as PropType<boolean>,
             default: false
         }
@@ -108,14 +108,15 @@ const treeItem = defineComponent({
 
         // Automatically expand to show selected value deep in the tree
         watch(() => [props.item, props.modelValue], () => {
-            if (!props.autoOpen || hasChildren.value == false) {
+            if (!props.autoExpand || hasChildren.value == false) {
                 return;
             }
-            console.log("hasSelectedChildren?", props.modelValue);
 
             if (hasSelectedChild(props.item, props.modelValue)) {
-                console.log("yup");
                 showChildren.value = true;
+            }
+            else if (children.value.length == 0) {
+                showChildren.value = false;
             }
         }, { immediate: true });
 
@@ -225,7 +226,7 @@ const treeItem = defineComponent({
         {{ itemName }}
     </span>
     <ul v-if="hasChildren" v-show="showChildren" class="rocktree-children" v-for="child in children">
-        <TreeList.Item :modelValue="modelValue" @update:modelValue="onUpdateSelectedValues" @treeitem-expanded="onChildItemExpanded" :item="child" :multiple="multiple" :disableFolderSelection="disableFolderSelection" :autoOpen="autoOpen" />
+        <TreeList.Item :modelValue="modelValue" @update:modelValue="onUpdateSelectedValues" @treeitem-expanded="onChildItemExpanded" :item="child" :multiple="multiple" :disableFolderSelection="disableFolderSelection" :autoExpand="autoExpand" />
     </ul>
 </li>
 `
@@ -263,7 +264,7 @@ export default defineComponent({
             default: false
         },
 
-        autoOpen: {
+        autoExpand: {
             type: Boolean as PropType<boolean>,
             default: false
         }
@@ -362,7 +363,7 @@ export default defineComponent({
     template: `
 <div>
     <ul class="rocktree">
-        <TreeItem v-for="child in internalItems" :modelValue="modelValue" @update:modelValue="onUpdateSelectedValues" @treeitem-expanded="onItemExpanded" :item="child" :multiple="multiple" :disableFolderSelection="disableFolderSelection" :autoOpen="autoOpen" />
+        <TreeItem v-for="child in internalItems" :modelValue="modelValue" @update:modelValue="onUpdateSelectedValues" @treeitem-expanded="onItemExpanded" :item="child" :multiple="multiple" :disableFolderSelection="disableFolderSelection" :autoExpand="autoExpand" />
     </ul>
 </div>
 `

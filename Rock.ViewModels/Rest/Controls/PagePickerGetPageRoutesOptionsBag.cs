@@ -16,7 +16,6 @@
 //
 
 using System;
-using System.Collections.Generic;
 
 namespace Rock.ViewModels.Rest.Controls
 {
@@ -24,13 +23,13 @@ namespace Rock.ViewModels.Rest.Controls
     /// The options that can be passed to the GetActiveChildren API action of
     /// the LocationPicker control.
     /// </summary>
-    public class PagePickerGetSelectedPageHierarchyOptionsBag
+    public class PagePickerGetPageRoutesOptionsBag
     {
         /// <summary>
         /// Gets or sets the unique identifier of the parent location whose
         /// children are to be enumerated.
         /// </summary>
         /// <value>The unique identifier of the parent location.</value>
-        public List<Guid> SelectedPageGuids { get; set; }
+        public Guid PageGuid { get; set; }
     }
 }

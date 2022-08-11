@@ -15,7 +15,7 @@
 // </copyright>
 //
 
-import { computed, defineComponent, Prop, PropType, ref, toRefs, watch } from "vue";
+import { computed, defineComponent, nextTick, PropType, ref, watch } from "vue";
 import { PageTreeItemProvider } from "@Obsidian/Utility/treeItemProviders";
 import { updateRefValue } from "@Obsidian/Utility/component";
 import { ListItemBag } from "@Obsidian/ViewModels/Utility/listItemBag";
@@ -25,14 +25,23 @@ import { useStore } from "@Obsidian/PageState";
 import { Guid } from "@Obsidian/Types";
 import { post } from "@Obsidian/Utility/http";
 import { PagePickerGetPageNameOptionsBag } from "@Obsidian/ViewModels/Rest/Controls/pagePickerGetPageNameOptionsBag";
+import { PagePickerGetPageRoutesOptionsBag } from "@Obsidian/ViewModels/Rest/Controls/pagePickerGetPageRoutesOptionsBag";
 import { PageRouteValueBag } from "@Obsidian/ViewModels/Rest/Controls/pageRouteValueBag";
+import BaseAsyncPicker from "./baseAsyncPicker";
+import { useHttp } from "@Obsidian/Utility/http";
+import { PickerDisplayStyle } from "@Obsidian/Types/Controls/pickerDisplayStyle";
+import { ControlLazyMode } from "@Obsidian/Types/Controls/controlLazyMode";
+import { emptyGuid } from "@Obsidian/Utility/guid";
+import { rowProps } from "ant-design-vue/lib/grid/Row";
+
 
 export default defineComponent({
     name: "PagePicker",
 
     components: {
         TreeItemPicker,
-        RockButton
+        RockButton,
+        BaseAsyncPicker
     },
 
     props: {
@@ -72,95 +81,56 @@ export default defineComponent({
     },
 
     setup(props, { emit }) {
-        // Enable route picker only if prop is set to true AND we're only selecting one value
-        const shouldPromptForRoute = computed(() => !props.multiple && props.promptForPageRoute);
+        // #region Page
 
         // Extract the page value(s) from the the PageRouteValueBag(s) so they can be used with the tree picker
         const internalPageValue = computed<ListItemBag | (ListItemBag | null | undefined)[] | null | undefined>(() => {
             if (!props.modelValue) {
                 return null;
             }
-
             if (Array.isArray(props.modelValue)) {
                 if (props.multiple) {
                     return props.modelValue.map(item => item.page);
                 }
-
+                emit("update:modelValue", { page: props.modelValue[0].page });
                 return props.modelValue[0].page;
             }
 
             return props.modelValue.page;
         });
 
-        // Extract the route so it can be controlled by its own picker (if route picking enabled)
-        const internalRouteValue = computed<ListItemBag | null | undefined>(() => {
-            if (!props.modelValue || Array.isArray(props.modelValue) || !shouldPromptForRoute.value) {
-                return null;
+        // This value is used for TreePicker to show the route in parentheses if a route is chosen
+        const pagePickerValue = computed<ListItemBag | (ListItemBag | null | undefined)[] | null | undefined>(() => {
+            if (internalRouteValue.value) {
+                const route = internalRouteValue.value as ListItemBag;
+                const page = internalPageValue.value as ListItemBag;
+
+                return {
+                    value: page.value,
+                    text: `${page.text} (${route.text})`
+                };
             }
 
-            return props.modelValue.route;
+            return internalPageValue.value;
         });
-
-        // Initialize to true if
-        const isRoutePickerVisible = ref(shouldPromptForRoute.value && !internalRouteValue.value && !!internalPageValue.value);
-
-        function showRoutePicker(): void {
-            isRoutePickerVisible.value = shouldPromptForRoute.value;
-        }
-
-        function hideRoutePicker(): void {
-            isRoutePickerVisible.value = false;
-        }
 
         function updatePage(pages: ListItemBag | ListItemBag[] | null): void {
             if (!pages) {
                 emit("update:modelValue", null);
-                hideRoutePicker();
                 return;
             }
 
             if (props.multiple) {
                 emit("update:modelValue", (pages as ListItemBag[]).map(page => ({ page })));
             }
+            else if ((pages as ListItemBag).value == (internalPageValue.value as ListItemBag)?.value) {
+                // In this case, the user hit "select" without choosing a different option, so reset the value to the current page (no route)
+                emit("update:modelValue", { page: internalPageValue.value as ListItemBag });
+            }
             else {
                 // When page is updated, no route will be picked, so just use the page property
                 emit("update:modelValue", { page: pages as ListItemBag });
             }
-
-            if (shouldPromptForRoute.value) {
-                showRoutePicker();
-            }
-        }
-
-        function updateRoute(route: ListItemBag): void {
-            // This is only called if route selection is enabled, and a page is selected, so we can assume
-            // internalPageValue is a ListItemBag
-            emit("update:modelValue", {
-                page: internalPageValue.value as ListItemBag,
-                route
-            });
-
-            hideRoutePicker();
-        }
-
-        // Configure the item provider with our settings. These are not reactive
-        // since we don't do lazy loading so there is no point.
-        const itemProvider = ref(new PageTreeItemProvider());
-        itemProvider.value.securityGrantToken = props.securityGrantToken;
-        itemProvider.value.hidePageGuids = props.hidePageGuids;
-
-        // TODO: deal with array of values
-        if (internalPageValue.value && !Array.isArray(internalPageValue.value)) {
-            itemProvider.value.selectedPageGuid = internalPageValue.value.value;
-        }
-
-        watch(() => props.modelValue, () => {
-            // console.debug("model updated", updateRefValue(internalPageValue, props.modelValue ?? null));
-        });
-
-        function onValueSelected(): void {
-            console.log("value selected");
-            // TODO: unset route
         }
 
         const pageStore = useStore();
@@ -169,7 +139,7 @@ export default defineComponent({
 
         async function selectCurrentPage(): Promise<void> {
             if (currentPage) {
-                updateRefValue(internalPageValue, currentPage);
+                updatePage(props.multiple ? [currentPage] : currentPage);
                 refreshProvider();
                 return;
             }
@@ -182,35 +152,136 @@ export default defineComponent({
                     text: response.data,
                     value: pageGuid.value
                 };
-                updateRefValue(internalPageValue, currentPage);
+                updatePage(props.multiple ? [currentPage] : currentPage);
             }
             else {
                 console.error("Error", response.errorMessage);
-                updateRefValue(internalPageValue, { value: pageGuid.value });
+                updatePage(props.multiple ? [{ value: pageGuid.value }] : { value: pageGuid.value });
             }
+            await nextTick(); // Wait until internalPageValue is updated before retrieving the tree again.
             refreshProvider();
         }
+
+        // Configure the item provider with our settings.
+        const itemProvider = ref<PageTreeItemProvider | null>(null);
+        refreshProvider();
 
         function refreshProvider(): void {
             const prov = new PageTreeItemProvider();
             prov.securityGrantToken = props.securityGrantToken;
             prov.hidePageGuids = props.hidePageGuids;
 
-            if (internalPageValue.value && !Array.isArray(internalPageValue.value)) {
-                prov.selectedPageGuid = internalPageValue.value.value;
+            if (internalPageValue.value) {
+                if (Array.isArray(internalPageValue.value)) {
+                    prov.selectedPageGuids = internalPageValue.value.map(p => p?.value ?? emptyGuid);
+                }
+                else {
+                    prov.selectedPageGuids = [internalPageValue.value.value ?? emptyGuid];
+                }
             }
 
             itemProvider.value = prov;
         }
 
+        // #endregion
+
+        // #region Route
+
+        // Enable route picker only if prop is set to true AND we're only selecting one value
+        const shouldPromptForRoute = computed(() => !props.multiple && props.promptForPageRoute);
+
+        // Extract the route so it can be controlled by its own picker (if route picking enabled)
+        const internalRouteValue = computed<ListItemBag | null | undefined>(() => {
+            if (!props.modelValue || Array.isArray(props.modelValue) || !shouldPromptForRoute.value) {
+                return null;
+            }
+
+            return props.modelValue.route;
+        });
+
+        // Initialize to true if we have a page value but no route value and the props indicate we should ask for a route
+        const isRoutePickerVisible = computed(() => {
+            return shouldPromptForRoute.value && !internalRouteValue.value && !!internalPageValue.value;
+        });
+
+        function updateRoute(route: ListItemBag | undefined): void {
+            // This is only called if route selection is enabled, and a page is selected, so we can assume
+            // internalPageValue is a ListItemBag
+            emit("update:modelValue", {
+                page: internalPageValue.value as ListItemBag,
+                route
+            });
+        }
+
+        /**
+         * Route Async Picker Information
+         */
+        const http = useHttp();
+        const loadedItems = ref<ListItemBag[] | null>(null);
+        const actualRouteItems = computed((): ListItemBag[] | (() => Promise<ListItemBag[]>) => {
+            return loadedItems.value || loadOptions;
+        });
+        const routeItemsCount = computed<number>(() => {
+            if (Array.isArray(actualRouteItems.value)) {
+                return actualRouteItems.value.length;
+            }
+
+            return 0;
+        });
+        const routeCountText = computed<string>(() => {
+            if (routeItemsCount.value == 1) {
+                return "( 1 route exists )";
+            }
+
+            return `( ${routeItemsCount.value} routes exist )`;
+        });
+
+        // Loads the items from the server.
+        const loadOptions = async (): Promise<ListItemBag[]> => {
+            if (Array.isArray(internalPageValue.value)) {
+                return [];
+            }
+
+            const options: PagePickerGetPageRoutesOptionsBag = {
+                pageGuid: (internalPageValue.value as ListItemBag).value
+            };
+            const result = await http.post<ListItemBag[]>("/api/v2/Controls/PagePickerGetPageRoutes", undefined, options);
+
+            if (result.isSuccess && result.data) {
+                loadedItems.value = result.data;
+                return result.data;
+            }
+            else {
+                console.error(result.errorMessage ?? "Unknown error while loading data.");
+                loadedItems.value = [];
+                return [];
+            }
+        };
+
+        // When new page is selected, reload route picker options
+        watch(internalPageValue, () => {
+            loadedItems.value = null;
+        });
+
+        const routePickerDisplayStyle = PickerDisplayStyle.Condensed;
+        const isLazy = ControlLazyMode.Eager;
+
+        // #endregion
+
         return {
             internalPageValue,
+            internalRouteValue,
+            pagePickerValue,
             itemProvider,
             btnSize: BtnSize.ExtraSmall,
             btnType: BtnType.Link,
             isRoutePickerVisible,
+            routePickerDisplayStyle,
+            actualRouteItems,
+            isLazy,
+            routeItemsCount,
+            routeCountText,
             selectCurrentPage,
-            onValueSelected,
             updatePage,
             updateRoute
         };
@@ -218,22 +289,28 @@ export default defineComponent({
 
     template: `
 <TreeItemPicker
-    :modelValue="internalPageValue"
+    :modelValue="pagePickerValue"
     @update:modelValue="updatePage"
     formGroupClasses="location-item-picker"
     iconCssClass="fa fa-file"
     :provider="itemProvider"
     :multiple="multiple"
-    @valueSelected="onValueSelected"
     :autoExpand="true">
 
-    <template #customPickerActions>
+    <template #customPickerActions v-if="showSelectCurrentPage">
         <RockButton @click="selectCurrentPage" :btnSize="btnSize" :btnType="btnType" title="Select Current Page"><i class="fa fa-file-o"></i></RockButton>
     </template>
-
 </TreeItemPicker>
-<div v-if="isRoutePickerVisible">
-    ROUTE PROMPT
+
+<div v-if="isRoutePickerVisible" v-show="routeItemsCount > 0">
+    <small>{{ routeCountText }}</small>
+    <BaseAsyncPicker
+        :modelValue="internalRouteValue"
+        @update:modelValue="updateRoute"
+        showBlankItem
+        :lazyMode="isLazy"
+        :displayStyle="routePickerDisplayStyle"
+        :items="actualRouteItems" />
 </div>
 `
 });

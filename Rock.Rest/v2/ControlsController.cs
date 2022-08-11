@@ -1597,24 +1597,33 @@ namespace Rock.Rest.v2
         [Rock.SystemGuid.RestActionGuid( "e74611a0-1711-4a0b-b3bd-df242d344679" )]
         public IHttpActionResult PagePickerGetSelectedPageHierarchy( [FromBody] PagePickerGetSelectedPageHierarchyOptionsBag options )
         {
-            var page = PageCache.Get( options.SelectedPageGuid );
-
             var parentPageGuids = new List<string>();
-            var parentPage = page.ParentPage;
-
-            while ( parentPage != null )
+            
+            foreach ( Guid pageGuid in options.SelectedPageGuids )
             {
-                if ( !parentPageGuids.Contains( parentPage.Guid.ToString() ) )
+                var page = PageCache.Get( pageGuid );
+
+                if (page == null)
                 {
-                    parentPageGuids.Insert( 0, parentPage.Guid.ToString() );
-                }
-                else
-                {
-                    // infinite recursion
-                    break;
+                    continue;
                 }
 
-                parentPage = parentPage.ParentPage;
+                var parentPage = page.ParentPage;
+
+                while ( parentPage != null )
+                {
+                    if ( !parentPageGuids.Contains( parentPage.Guid.ToString() ) )
+                    {
+                        parentPageGuids.Insert( 0, parentPage.Guid.ToString() );
+                    }
+                    else
+                    {
+                        // infinite recursion
+                        break;
+                    }
+
+                    parentPage = parentPage.ParentPage;
+                }
             }
 
             return Ok( parentPageGuids );
@@ -1634,6 +1643,29 @@ namespace Rock.Rest.v2
             var page = PageCache.Get( options.PageGuid );
 
             return Ok( page.InternalName );
+        }
+
+        /// <summary>
+        /// Gets the list of routes to the given page
+        /// </summary>
+        /// <param name="options">The options that describe which routes to retrieve.</param>
+        /// <returns>A collection of <see cref="ListItemBag"/> that represent the routes.</returns>
+        [Authenticate, Secured]
+        [HttpPost]
+        [System.Web.Http.Route( "PagePickerGetPageRoutes" )]
+        [Rock.SystemGuid.RestActionGuid( "858209a4-7715-43e6-aff5-00b82773f241" )]
+        public IHttpActionResult PagePickerGetPageRoutes( [FromBody] PagePickerGetPageRoutesOptionsBag options )
+        {
+            var page = PageCache.Get( options.PageGuid );
+            var routes = page.PageRoutes
+                .Select( r => new ListItemBag
+                {
+                    Text = r.Route,
+                    Value = r.Guid.ToString()
+                } )
+                .ToList();
+
+            return Ok( routes );
         }
 
         #endregion

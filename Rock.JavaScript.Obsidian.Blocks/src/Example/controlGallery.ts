@@ -4433,19 +4433,32 @@ const pagePickerGallery = defineComponent({
     setup() {
         return {
             multiple: ref(false),
+            showSelectCurrentPage: ref(false),
+            promptForPageRoute: ref(false),
             value: ref({
-                page: {
-                    value: "fbc16153-897b-457c-a35f-28fdfdc466b6",
-                    text: "Shared Documents"
-                },
-                route: {
-                    value: "SOME GUID",
-                    text: "route/to/page"
+                "page": {
+                    value: "b07f30b3-95c4-40a5-9cf6-455399bef67a",
+                    text: "Universal Search"
                 }
             }),
-            someVal: ref(1),
+            // value: ref([{
+            //     "page": {
+            //         "value": "b07f30b3-95c4-40a5-9cf6-455399bef67a",
+            //         "text": "Universal Search"
+            //     }
+            // }, {
+            //     "page": {
+            //         "value": "0c4b3f4d-53fd-4a65-8c93-3868ce4da137",
+            //         "text": "Intranet"
+            //     }
+            // }, {
+            //     "page": {
+            //         "value": "fbc16153-897b-457c-a35f-28fdfdc466b6",
+            //         "text": "Shared Documents"
+            //     }
+            // }]),
             importCode: getControlImportPath("pagePicker"),
-            exampleCode: `<PagePicker label="Page" v-model="value" :multiple="false" />`
+            exampleCode: `<PagePicker label="Page" v-model="value" :multiple="false" promptForPageRoute />`
         };
     },
     template: `
@@ -4454,11 +4467,21 @@ const pagePickerGallery = defineComponent({
     :importCode="importCode"
     :exampleCode="exampleCode"
     enableReflection >
-    <PagePicker label="Page" v-model="value" :multiple="multiple" promptForPageRoute />
+    <PagePicker label="Page" v-model="value" :multiple="multiple" :promptForPageRoute="promptForPageRoute" :showSelectCurrentPage="showSelectCurrentPage" />
 
     <template #settings>
-        <CheckBox label="Multiple" v-model="multiple" />
-        <RockButton @click="someVal++">Refresh</RockButton>
+
+        <div class="row">
+            <div class="col-md-4">
+                <CheckBox label="Multiple" v-model="multiple" />
+            </div>
+            <div class="col-md-4">
+                <CheckBox label="Show 'Select Current Page' Button" v-model="showSelectCurrentPage" />
+            </div>
+            <div class="col-md-4">
+                <CheckBox label="Prompt for Route" v-model="promptForPageRoute" help="Only works if not selecting multiple values" />
+            </div>
+        </div>
         <p class="text-semibold font-italic">Not all options have been implemented yet.</p>
     </template>
 </GalleryAndResult>`
