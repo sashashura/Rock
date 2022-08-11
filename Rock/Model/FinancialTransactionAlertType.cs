@@ -428,7 +428,7 @@ namespace Rock.Model
                 // Normal is 'significantly later than usual'
                 return @"
 <p>
-    For a follow-up alert, the frequency sensitivity scale determines when to generate an alert if a gift hasn't been received for a while, or was received later than usual.
+    For a follow-up alert, the frequency sensitivity scale determines when to generate an alert if a gift hasn't been received for a while.
 </p>
 <p>
     Typical Values are shown below.

@@ -1703,29 +1703,30 @@ namespace Rock.Tests.Integration.Jobs
         }
 
         /// <summary>
-        /// Tests an example transaction that is early/late depending on various test values
+        /// Tests an example transaction that is early depending on various test values
         /// </summary>
         [TestMethod]
 
         // range from 29-31 days
-        [DataRow( 30.0, 4.0, new int[] { 4, 6 } )] // very early (26x their normal deviation)
-        [DataRow( 30.0, 15.0, new int[] { 4, 6 } )] // early (15x their normal deviation), case 7 does get triggered because it is unusually early
-        [DataRow( 30.0, 28.0, new int[] { 6, 7 } )] // a little early (only 2x normal deviation), but still pretty consistent
-        [DataRow( 30.0, 32.0, new int[] { 6, 7 } )] // a little late (only 2x normal deviation), but still pretty consistent
-        [DataRow( 30.0, 30.0, new int[] { 6, 7 } )] // consistent
-        [DataRow( 30.0, 35.0, new int[] { 6, 7 } )] // kinda late, but still pretty consistent
-        [DataRow( 30.0, 45.0, new int[] { 5, 7 } )] // late
-        [DataRow( 30.0, 999.0, new int[] { 5, 7 } )] // really late
+        [DataRow( 30.0, 4.0, new int[] { 4, 6, 7 } )] // very early (26x their normal deviation) - All the early alerts should be fired (4,6,7)
+        [DataRow( 30.0, 22.0, new int[] { 4, 6 } )] // somewhat early
+        [DataRow( 30.0, 15.0, new int[] { 4, 6, 7 } )] // early (15x their normal deviation)
+        [DataRow( 30.0, 28.0, new int[] { } )] // a little early (only 2x normal deviation), but still pretty consistent
+        [DataRow( 30.0, 32.0, new int[] { } )] // a little late (only 2x normal deviation), but still pretty consistent
+        [DataRow( 30.0, 30.0, new int[] { } )] // consistent
+        [DataRow( 30.0, 35.0, new int[] { } )] // kinda late, but still pretty consistent
+        [DataRow( 30.0, 45.0, new int[] { } )] // late
+        [DataRow( 30.0, 999.0, new int[] { } )] // really late
 
         // range from 5-9 days
-        [DataRow( 7.0, 1.0, new int[] { 4, 6, 7 } )] // 6 days early (exactly 3x off their normal deviation) so this triggers 3 alerts (Early, and both cases 6 and 7 since it is exactly 3x )
-        [DataRow( 7.0, 3.0, new int[] { 6, 7 } )] // 4 days early, but they range from 5-9 days, (just 2x off their normal deviation) so pretty close to consistent
-        [DataRow( 7.0, 6.0, new int[] { 6, 7 } )] // a little early, but still pretty consistent
-        [DataRow( 7.0, 8.0, new int[] { 6, 7 } )] // a little late, but still pretty consistent
-        [DataRow( 7.0, 7.0, new int[] { 6, 7 } )] // consistent
-        [DataRow( 7.0, 11.0, new int[] { 6, 7 } )] // kinda late
-        [DataRow( 7.0, 15.0, new int[] { 5, 7 } )] // late
-        [DataRow( 7.0, 999.0, new int[] { 5, 7 } )] // really late
+        [DataRow( 7.0, 1.0, new int[] { 4, 6 } )] // 6 days early (exactly 3x off their normal deviation)
+        [DataRow( 7.0, 3.0, new int[] { 6 } )] // 4 days early, but they range from 5-9 days, (just 2x off their normal deviation) so pretty close to consistent
+        [DataRow( 7.0, 6.0, new int[] { } )] // a little early, but still pretty consistent
+        [DataRow( 7.0, 8.0, new int[] { } )] // a little late, but still pretty consistent
+        [DataRow( 7.0, 7.0, new int[] { } )] // consistent
+        [DataRow( 7.0, 11.0, new int[] { } )] // kinda late
+        [DataRow( 7.0, 15.0, new int[] { } )] // late
+        [DataRow( 7.0, 999.0, new int[] { } )] // really late
         public void CreateAlertsForTransaction_CreatesAlertForEarlyGift( double frequencyMean, double frequency, int[] expectedAlertTypeIds )
         {
             var jobExecutionContext = new TestJobContext();
@@ -1766,28 +1767,30 @@ namespace Rock.Tests.Integration.Jobs
                     },
                     new FinancialTransactionAlertType {
                         Id = 5,
-                        Name = "Follow up - Alert if Late",
+                        Name = "Follow up - Alert if Late. Shouldn't happen when looking for an alert on a new transaction.",
                         Order = 5,
                         FrequencySensitivityScale = 3,
                         ContinueIfMatched = true,
                         AlertType = AlertType.FollowUp
                     },
+
                     new FinancialTransactionAlertType {
                         Id = 6,
-                        Name = "Gratitude - (Negative) Alert if consistent or late!",
-                        Order = 6,
-                        FrequencySensitivityScale = -3,
+                        Name = "Gratitude - Aggressive Alert if Early",
+                        Order = 4,
+                        FrequencySensitivityScale = 2,
                         ContinueIfMatched = true,
                         AlertType = AlertType.Gratitude
                     },
+
                     new FinancialTransactionAlertType {
                         Id = 7,
-                        Name = "Follow up - (Negative) Alert if consistent  or late!",
-                        Order = 7,
-                        FrequencySensitivityScale = -3,
+                        Name = "Gratitude - Alert if really Early (needs to be significantly earlier than usual)",
+                        Order = 4,
+                        FrequencySensitivityScale = 5,
                         ContinueIfMatched = true,
-                        AlertType = AlertType.FollowUp
-                    }
+                        AlertType = AlertType.Gratitude
+                    },
                 }
             };
 

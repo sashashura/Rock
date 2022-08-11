@@ -1633,8 +1633,6 @@ Created {context.AlertsCreated} {"alert".PluralizeIf( context.AlertsCreated != 1
             Example:
                 - Normal Range $500 +/- $30
                 - Gratitude (with sensitivity of 3), would alert if $590 or more
-
-
             */
 
 
@@ -1669,11 +1667,13 @@ Created {context.AlertsCreated} {"alert".PluralizeIf( context.AlertsCreated != 1
                     reasons.Add( nameof( alertType.AmountSensitivityScale ) );
                 }
 
-                if ( alertType.FrequencySensitivityScale.HasValue && numberOfFrequencyStdDevs <= ( alertType.FrequencySensitivityScale * -1 ) )
-                {
-                    // Gift is outside the frequency sensitivity scale (Later than Usual)
-                    reasons.Add( nameof( alertType.FrequencySensitivityScale ) );
-                }
+                /* 08/11/2022 MDP. 
+
+                At this point in the logic, the only thing left to check for is Late alerts. However, that only applies if there are no recent transactions, so we don't need to do this
+                here in CreateAlertForRecentTransaction(), where we looking for alerts for a recent transaction.
+                So if that haven't given recently, that would be covered by ProcessLateAlertTypes().
+                 
+                */
             }
 
             bool hasSensitivityAlerts = reasons.Any();
