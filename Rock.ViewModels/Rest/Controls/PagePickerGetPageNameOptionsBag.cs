@@ -20,16 +20,16 @@ using System;
 namespace Rock.ViewModels.Rest.Controls
 {
     /// <summary>
-    /// The options that can be passed to the GetActiveChildren API action of
-    /// the LocationPicker control.
+    /// The options that can be passed to the GetPageName API action of
+    /// the PagePicker control.
     /// </summary>
     public class PagePickerGetPageNameOptionsBag
     {
         /// <summary>
-        /// Gets or sets the unique identifier of the parent location whose
-        /// children are to be enumerated.
+        /// Gets or sets the unique identifier of the page we're
+        /// retrieving the name of.
         /// </summary>
-        /// <value>The unique identifier of the parent location.</value>
+        /// <value>The unique identifier of the page.</value>
         public Guid PageGuid { get; set; }
     }
 }

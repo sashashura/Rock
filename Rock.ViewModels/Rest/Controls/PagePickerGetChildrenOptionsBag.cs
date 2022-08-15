@@ -20,35 +20,34 @@ using System;
 namespace Rock.ViewModels.Rest.Controls
 {
     /// <summary>
-    /// The options that can be passed to the GetActiveChildren API action of
-    /// the LocationPicker control.
+    /// The options that can be passed to the GetChildren API action of
+    /// the PagePicker control.
     /// </summary>
     public class PagePickerGetChildrenOptionsBag
     {
         /// <summary>
-        /// Gets or sets the unique identifier of the parent location whose
+        /// Gets or sets the unique identifier of the parent page whose
         /// children are to be enumerated.
         /// </summary>
-        /// <value>The unique identifier of the parent location.</value>
+        /// <value>The unique identifier of the parent page.</value>
         public Guid Guid { get; set; }
 
         /// <summary>
-        /// Gets or sets the unique identifier of the parent location whose
+        /// Gets or sets the unique identifier of the root page whose
         /// children are to be enumerated.
         /// </summary>
-        /// <value>The unique identifier of the parent location.</value>
+        /// <value>The unique identifier of the root page.</value>
         public Guid RootPageGuid { get; set; } = Guid.Empty;
 
         /// <summary>
-        /// Gets or sets the root location unique identifier. This is used if <see cref="Guid"/>
-        /// is empty to specify the root location to limit the tree to.
+        /// Gets or sets the site type to filter results by.
         /// </summary>
         /// <value>The root location unique identifier.</value>
         public int? SiteType { get; set; } = null;
 
         /// <summary>
-        /// Gets or sets the security grant token to use when performing
-        /// authorization checks.
+        /// Gets or sets the list of unique identifiers of pages that should
+        /// be excluded from the results
         /// </summary>
         /// <value>The security grant token.</value>
         public string HidePageGuids { get; set; } = null;

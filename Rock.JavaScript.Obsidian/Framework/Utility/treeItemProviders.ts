@@ -321,7 +321,7 @@ export class PageTreeItemProvider implements ITreeItemProvider {
     public selectedPageGuids?: Guid[] | null;
 
     /**
-     * Gets the child items from the server.
+     * Gets the child items of the given parent (or root if no parent given) from the server.
      *
      * @param parentGuid The parent item whose children are retrieved.
      *

@@ -17,11 +17,10 @@
 
 import { computed, defineComponent, nextTick, PropType, ref, watch } from "vue";
 import { PageTreeItemProvider } from "@Obsidian/Utility/treeItemProviders";
-import { updateRefValue } from "@Obsidian/Utility/component";
 import { ListItemBag } from "@Obsidian/ViewModels/Utility/listItemBag";
 import TreeItemPicker from "./treeItemPicker";
 import RockButton, { BtnSize, BtnType } from "./rockButton";
-import { useStore } from "@Obsidian/PageState";
+import { useStore as usePageStateStore } from "@Obsidian/PageState";
 import { Guid } from "@Obsidian/Types";
 import { post } from "@Obsidian/Utility/http";
 import { PagePickerGetPageNameOptionsBag } from "@Obsidian/ViewModels/Rest/Controls/pagePickerGetPageNameOptionsBag";
@@ -32,7 +31,6 @@ import { useHttp } from "@Obsidian/Utility/http";
 import { PickerDisplayStyle } from "@Obsidian/Types/Controls/pickerDisplayStyle";
 import { ControlLazyMode } from "@Obsidian/Types/Controls/controlLazyMode";
 import { emptyGuid } from "@Obsidian/Utility/guid";
-import { rowProps } from "ant-design-vue/lib/grid/Row";
 
 
 export default defineComponent({
@@ -55,21 +53,25 @@ export default defineComponent({
             required: false
         },
 
+        // Whether or not to show a button on the drop-down that sets the value to the current page
         showSelectCurrentPage: {
             type: Boolean as PropType<boolean>,
             default: false
         },
 
+        // List of GUIDs of pages to hide from the list
         hidePageGuids: {
             type: Array as PropType<Guid[]>,
             required: false
         },
 
+        // Whether or not to prompt for a route for pages that have at least one
         promptForPageRoute: {
             type: Boolean as PropType<boolean>,
             default: false
         },
 
+        // Whether to allow multi-select or single-select
         multiple: {
             type: Boolean as PropType<boolean>,
             default: false
@@ -114,13 +116,13 @@ export default defineComponent({
             return internalPageValue.value;
         });
 
+        // Set the page value
         function updatePage(pages: ListItemBag | ListItemBag[] | null): void {
             if (!pages) {
                 emit("update:modelValue", null);
-                return;
             }
-
-            if (props.multiple) {
+            else if (props.multiple) {
+                // When `multiple`, we can assume we're receiving an array
                 emit("update:modelValue", (pages as ListItemBag[]).map(page => ({ page })));
             }
             else if ((pages as ListItemBag).value == (internalPageValue.value as ListItemBag)?.value) {
@@ -133,11 +135,14 @@ export default defineComponent({
             }
         }
 
-        const pageStore = useStore();
+        // Use the Page State store to get the GUID of the current page
+        const pageStore = usePageStateStore();
         const pageGuid = computed(() => pageStore.state.pageGuid);
         let currentPage;
 
+        // Using the GUID we have of the current page, fetch the page name and assign the current page as the picker's value
         async function selectCurrentPage(): Promise<void> {
+            // If cached, don't re-fetch
             if (currentPage) {
                 updatePage(props.multiple ? [currentPage] : currentPage);
                 refreshProvider();
@@ -166,6 +171,7 @@ export default defineComponent({
         const itemProvider = ref<PageTreeItemProvider | null>(null);
         refreshProvider();
 
+        // (Re)Initialize the PageTreeItemProvider to pull in the right tree of options for the picker
         function refreshProvider(): void {
             const prov = new PageTreeItemProvider();
             prov.securityGrantToken = props.securityGrantToken;
@@ -206,7 +212,7 @@ export default defineComponent({
 
         function updateRoute(route: ListItemBag | undefined): void {
             // This is only called if route selection is enabled, and a page is selected, so we can assume
-            // internalPageValue is a ListItemBag
+            // internalPageValue is a single ListItemBag
             emit("update:modelValue", {
                 page: internalPageValue.value as ListItemBag,
                 route
@@ -281,6 +287,7 @@ export default defineComponent({
             isLazy,
             routeItemsCount,
             routeCountText,
+            open: ref(null),
             selectCurrentPage,
             updatePage,
             updateRoute
@@ -310,7 +317,8 @@ export default defineComponent({
         showBlankItem
         :lazyMode="isLazy"
         :displayStyle="routePickerDisplayStyle"
-        :items="actualRouteItems" />
+        :items="actualRouteItems"
+        :open="open" />
 </div>
 `
 });

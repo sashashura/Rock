@@ -26,10 +26,10 @@ namespace Rock.ViewModels.Rest.Controls
     public class PagePickerGetPageRoutesOptionsBag
     {
         /// <summary>
-        /// Gets or sets the unique identifier of the parent location whose
-        /// children are to be enumerated.
+        /// Gets or sets the unique identifier of the page we're
+        /// retrieving the routes for.
         /// </summary>
-        /// <value>The unique identifier of the parent location.</value>
+        /// <value>The unique identifier of the page.</value>
         public Guid PageGuid { get; set; }
     }
 }

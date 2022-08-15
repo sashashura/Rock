@@ -21,23 +21,20 @@ using Rock.ViewModels.Utility;
 namespace Rock.ViewModels.Rest.Controls
 {
     /// <summary>
-    /// The options that can be passed to the GetActiveChildren API action of
-    /// the LocationPicker control.
+    /// The value you'll receive from the Obsidian PagePicker control.
     /// </summary>
     public class PageRouteValueBag
     {
         /// <summary>
-        /// Gets or sets the unique identifier of the parent location whose
-        /// children are to be enumerated.
+        /// The value representing the page, with a name and a GUID.
         /// </summary>
-        /// <value>The unique identifier of the parent location.</value>
+        /// <value>Representation of a page.</value>
         public ListItemBag Page { get; set; }
 
         /// <summary>
-        /// Gets or sets the unique identifier of the parent location whose
-        /// children are to be enumerated.
+        /// The value representing the route, with a name and a GUID.
         /// </summary>
-        /// <value>The unique identifier of the parent location.</value>
+        /// <value>Representation of a route.</value>
         public ListItemBag Route { get; set; }
     }
 }

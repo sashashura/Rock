@@ -24,13 +24,13 @@
 import { Guid } from "@Obsidian/Types";
 
 /**
- * The options that can be passed to the GetActiveChildren API action of
- * the LocationPicker control.
+ * The options that can be passed to the GetPageName API action of
+ * the PagePicker control.
  */
 export type PagePickerGetPageNameOptionsBag = {
     /**
-     * Gets or sets the unique identifier of the parent location whose
-     * children are to be enumerated.
+     * Gets or sets the unique identifier of the page we're
+     * retrieving the name of.
      */
     pageGuid?: Guid | null;
 };

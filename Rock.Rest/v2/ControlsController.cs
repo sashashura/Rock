@@ -1630,10 +1630,10 @@ namespace Rock.Rest.v2
         }
 
         /// <summary>
-        /// Gets the list of pages in the hierarchy going from the root to the given page
+        /// Gets the name of the page with the given Guid
         /// </summary>
-        /// <param name="options">The options that describe which pages to retrieve.</param>
-        /// <returns>A collection of <see cref="Guid"/> that represent the pages.</returns>
+        /// <param name="options">The options that contains the Guid of the page</param>
+        /// <returns>A string name of the page with the given Guid.</returns>
         [Authenticate, Secured]
         [HttpPost]
         [System.Web.Http.Route( "PagePickerGetPageName" )]

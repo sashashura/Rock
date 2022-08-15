@@ -342,13 +342,15 @@ export const GalleryAndResult = defineComponent({
             </TransitionVerticalCollapse>
         </div>
     </div>
-    <div v-if="value !== void 0" class="well mb-4 col-sm-6">
-        <h4>Current Value</h4>
-        <template v-if="hasMultipleValues" v-for="value, key in formattedValue">
-            <h5><code>{{ key }}</code></h5>
-            <pre class="m-0 p-0 border-0 galleryContent-valueBox">{{ value }}</pre>
-        </template>
-        <pre v-else class="m-0 p-0 border-0 galleryContent-valueBox">{{ formattedValue }}</pre>
+    <div v-if="value !== void 0" class="mb-4 col-sm-6">
+        <div v-if="value !== void 0" class="well">
+            <h4>Current Value</h4>
+            <template v-if="hasMultipleValues" v-for="value, key in formattedValue">
+                <h5><code>{{ key }}</code></h5>
+                <pre class="m-0 p-0 border-0 galleryContent-valueBox">{{ value }}</pre>
+            </template>
+            <pre v-else class="m-0 p-0 border-0 galleryContent-valueBox">{{ formattedValue }}</pre>
+        </div>
     </div>
 </div>
 <div v-if="$slots.settings" class="mb-4">
@@ -4427,8 +4429,7 @@ const pagePickerGallery = defineComponent({
     components: {
         GalleryAndResult,
         CheckBox,
-        PagePicker,
-        RockButton
+        PagePicker
     },
     setup() {
         return {
@@ -4441,24 +4442,8 @@ const pagePickerGallery = defineComponent({
                     text: "Universal Search"
                 }
             }),
-            // value: ref([{
-            //     "page": {
-            //         "value": "b07f30b3-95c4-40a5-9cf6-455399bef67a",
-            //         "text": "Universal Search"
-            //     }
-            // }, {
-            //     "page": {
-            //         "value": "0c4b3f4d-53fd-4a65-8c93-3868ce4da137",
-            //         "text": "Intranet"
-            //     }
-            // }, {
-            //     "page": {
-            //         "value": "fbc16153-897b-457c-a35f-28fdfdc466b6",
-            //         "text": "Shared Documents"
-            //     }
-            // }]),
             importCode: getControlImportPath("pagePicker"),
-            exampleCode: `<PagePicker label="Page" v-model="value" :multiple="false" promptForPageRoute />`
+            exampleCode: `<PagePicker label="Page" v-model="value" :multiple="false" promptForPageRoute showSelectCurrentPage />`
         };
     },
     template: `

@@ -23,20 +23,11 @@
 
 import { ListItemBag } from "@Obsidian/ViewModels/Utility/listItemBag";
 
-/**
- * The options that can be passed to the GetActiveChildren API action of
- * the LocationPicker control.
- */
+/** The value you'll receive from the Obsidian PagePicker control. */
 export type PageRouteValueBag = {
-    /**
-     * Gets or sets the unique identifier of the parent location whose
-     * children are to be enumerated.
-     */
+    /** The value representing the page, with a name and a GUID. */
     page?: ListItemBag | null;
 
-    /**
-     * Gets or sets the unique identifier of the parent location whose
-     * children are to be enumerated.
-     */
+    /** The value representing the route, with a name and a GUID. */
     route?: ListItemBag | null;
 };

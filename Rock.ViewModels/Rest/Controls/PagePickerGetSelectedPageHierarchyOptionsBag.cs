@@ -27,10 +27,10 @@ namespace Rock.ViewModels.Rest.Controls
     public class PagePickerGetSelectedPageHierarchyOptionsBag
     {
         /// <summary>
-        /// Gets or sets the unique identifier of the parent location whose
-        /// children are to be enumerated.
+        /// Gets or sets the list of unique identifier of the pages we're
+        /// retrieving the the parent hierarchy of.
         /// </summary>
-        /// <value>The unique identifier of the parent location.</value>
+        /// <value>The unique identifiers of the selected pages.</value>
         public List<Guid> SelectedPageGuids { get; set; }
     }
 }
