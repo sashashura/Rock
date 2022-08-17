@@ -20,7 +20,6 @@
 // limitations under the License.
 // </copyright>
 //
-
 /** Guids for EntityTypes */
 export const enum EntityType {
     /** The achievement attempt */
@@ -317,4 +316,5 @@ export const enum EntityType {
     PersistedDataset = "9C3064C0-CF9C-4549-9A80-022514B7FF83",
     /** The EntityType Guid for Rock.Model.PersonalLinkSection  */
     PersonalLinkSection = "42411FC0-7ACD-42E9-A8A1-BCEA78AF0AAF",
+    AssetStorageProvider = "E0B4BE77-B29F-4BD4-AE45-CF833AC3A482"
 }
