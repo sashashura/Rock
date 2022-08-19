@@ -25,7 +25,7 @@ import { DataViewPickerGetDataViewsOptionsBag } from "@Obsidian/ViewModels/Rest/
 import { WorkflowTypePickerGetWorkflowTypesOptionsBag } from "@Obsidian/ViewModels/Rest/Controls/workflowTypePickerGetWorkflowTypesOptionsBag";
 import { PagePickerGetChildrenOptionsBag } from "@Obsidian/ViewModels/Rest/Controls/pagePickerGetChildrenOptionsBag";
 import { PagePickerGetSelectedPageHierarchyOptionsBag } from "@Obsidian/ViewModels/Rest/Controls/PagePickerGetSelectedPageHierarchyOptionsBag";
-import { flatten } from "./array";
+import { flatten } from "./arrayUtils";
 
 /**
  * The methods that must be implemented by tree item providers. These methods
@@ -332,8 +332,8 @@ export class PageTreeItemProvider implements ITreeItemProvider {
 
         const options: Partial<PagePickerGetChildrenOptionsBag> = {
             guid: parentGuid ?? emptyGuid,
-            rootPageGuid: emptyGuid,
-            hidePageGuids: this.hidePageGuids?.join(","),
+            rootPageGuid: null,
+            hidePageGuids: this.hidePageGuids ?? [],
             securityGrantToken: this.securityGrantToken
         };
         const url = "/api/v2/Controls/PagePickerGetChildren";
@@ -362,9 +362,10 @@ export class PageTreeItemProvider implements ITreeItemProvider {
      *
      * @returns A list of GUIDs of the parent pages
      */
-    async getParentList(): Promise<Guid[]> {
+    private async getParentList(): Promise<Guid[]> {
         const options: PagePickerGetSelectedPageHierarchyOptionsBag = {
-            selectedPageGuids: this.selectedPageGuids
+            selectedPageGuids: this.selectedPageGuids,
+            securityGrantToken: this.securityGrantToken
         };
         const url = "/api/v2/Controls/PagePickerGetSelectedPageHierarchy";
         const response = await post<Guid[]>(url, undefined, options);
@@ -385,7 +386,7 @@ export class PageTreeItemProvider implements ITreeItemProvider {
      *
      * @return The augmented `rootLayer` with the child pages
      */
-    async getHierarchyToSelectedPage(rootLayer: TreeItemBag[]): Promise<TreeItemBag[]> {
+    private async getHierarchyToSelectedPage(rootLayer: TreeItemBag[]): Promise<TreeItemBag[]> {
         const parents = await this.getParentList();
 
         if (!parents || parents.length == 0) {

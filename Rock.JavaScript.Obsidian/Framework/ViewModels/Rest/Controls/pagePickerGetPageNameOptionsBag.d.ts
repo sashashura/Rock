@@ -33,4 +33,10 @@ export type PagePickerGetPageNameOptionsBag = {
      * retrieving the name of.
      */
     pageGuid?: Guid | null;
+
+    /**
+     * Gets or sets the security grant token to use when performing
+     * authorization checks.
+     */
+    securityGrantToken?: string | null;
 };

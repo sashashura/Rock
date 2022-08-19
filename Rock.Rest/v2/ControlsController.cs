@@ -1530,17 +1530,12 @@ namespace Rock.Rest.v2
         public IHttpActionResult PagePickerGetChildren( [FromBody] PagePickerGetChildrenOptionsBag options )
         {
             var service = new Service<Page>( new RockContext() ).Queryable().AsNoTracking();
+            var grant = SecurityGrant.FromToken( options.SecurityGrantToken );
             IQueryable<Page> qry;
+
             if ( options.Guid.IsEmpty() )
             {
-                if ( options.RootPageGuid.IsEmpty() )
-                {
-                    qry = service.Where( a => a.ParentPage.Guid == null );
-                }
-                else
-                {
-                    qry = service.Where( a => a.ParentPage.Guid == options.RootPageGuid );
-                }
+                qry = service.Where( a => a.ParentPage.Guid == options.RootPageGuid );
             }
             else
             {
@@ -1552,8 +1547,15 @@ namespace Rock.Rest.v2
                 qry = qry.Where( p => ( int ) p.Layout.Site.SiteType == options.SiteType.Value );
             }
 
-            List<Guid> hidePageGuidList = ( options.HidePageGuids ?? string.Empty ).Split( ',' ).Select( s => s.AsGuid() ).ToList();
-            List<Page> pageList = qry.Where( a => !hidePageGuidList.Contains( a.Guid ) ).OrderBy( a => a.Order ).ThenBy( a => a.InternalName ).ToList();
+            var hidePageGuids = options.HidePageGuids ?? new List<Guid>();
+
+            List<Page> pageList = qry
+                .Where( p => !hidePageGuids.Contains( p.Guid ))
+                .OrderBy( p => p.Order )
+                .ThenBy( p => p.InternalName )
+                .ToList()
+                .Where( p => p.IsAuthorized( Authorization.VIEW, RockRequestContext.CurrentPerson ) || grant?.IsAccessGranted( p, Authorization.VIEW ) == true )
+                .ToList();
             List<TreeItemBag> pageItemList = new List<TreeItemBag>();
             foreach ( var page in pageList )
             {
@@ -1598,7 +1600,8 @@ namespace Rock.Rest.v2
         public IHttpActionResult PagePickerGetSelectedPageHierarchy( [FromBody] PagePickerGetSelectedPageHierarchyOptionsBag options )
         {
             var parentPageGuids = new List<string>();
-            
+            var grant = SecurityGrant.FromToken( options.SecurityGrantToken );
+
             foreach ( Guid pageGuid in options.SelectedPageGuids )
             {
                 var page = PageCache.Get( pageGuid );
@@ -1612,7 +1615,7 @@ namespace Rock.Rest.v2
 
                 while ( parentPage != null )
                 {
-                    if ( !parentPageGuids.Contains( parentPage.Guid.ToString() ) )
+                    if ( !parentPageGuids.Contains( parentPage.Guid.ToString() ) && ( parentPage.IsAuthorized( Authorization.VIEW, RockRequestContext.CurrentPerson ) || ( grant?.IsAccessGranted( parentPage, Authorization.VIEW ) == true )) )
                     {
                         parentPageGuids.Insert( 0, parentPage.Guid.ToString() );
                     }
@@ -1630,17 +1633,30 @@ namespace Rock.Rest.v2
         }
 
         /// <summary>
-        /// Gets the name of the page with the given Guid
+        /// Gets the internal name of the page with the given Guid
         /// </summary>
         /// <param name="options">The options that contains the Guid of the page</param>
-        /// <returns>A string name of the page with the given Guid.</returns>
+        /// <returns>A string internal name of the page with the given Guid.</returns>
         [Authenticate, Secured]
         [HttpPost]
         [System.Web.Http.Route( "PagePickerGetPageName" )]
         [Rock.SystemGuid.RestActionGuid( "20d219bd-3635-4cbc-b79f-250972ae6b97" )]
         public IHttpActionResult PagePickerGetPageName( [FromBody] PagePickerGetPageNameOptionsBag options )
         {
+            var grant = SecurityGrant.FromToken( options.SecurityGrantToken );
             var page = PageCache.Get( options.PageGuid );
+
+            if (page == null)
+            {
+                return NotFound();
+            }
+
+            var isAuthorized = page.IsAuthorized( Authorization.VIEW, RockRequestContext.CurrentPerson ) || grant?.IsAccessGranted( page, Authorization.VIEW ) == true;
+
+            if ( isAuthorized )
+            {
+                return Unauthorized();
+            }
 
             return Ok( page.InternalName );
         }
@@ -1657,6 +1673,8 @@ namespace Rock.Rest.v2
         public IHttpActionResult PagePickerGetPageRoutes( [FromBody] PagePickerGetPageRoutesOptionsBag options )
         {
             var page = PageCache.Get( options.PageGuid );
+            var grant = SecurityGrant.FromToken( options.SecurityGrantToken );
+
             var routes = page.PageRoutes
                 .Select( r => new ListItemBag
                 {

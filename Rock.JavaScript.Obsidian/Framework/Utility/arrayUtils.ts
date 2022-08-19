@@ -16,8 +16,14 @@
 //
 
 /**
- * Flatten an array
+ * Flatten a nested array down by the given number of levels.
+ * Meant to be a replacement for the official Array.prototype.flat, which isn't supported by all browsers we support.
  * Adapted from Polyfill: https://github.com/behnammodi/polyfill/blob/master/array.polyfill.js#L591
+ *
+ * @param arr (potentially) nested array to be flattened
+ * @param depth The depth level specifying how deep a nested array structure should be flattened. Defaults to 1.
+ *
+ * @returns A new array with the sub-array elements concatenated into it.
  */
 export const flatten = <T>(arr: T[][], depth: number = 1): T[] => {
     const result: T[] = [];

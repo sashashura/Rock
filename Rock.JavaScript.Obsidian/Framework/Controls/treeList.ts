@@ -47,6 +47,9 @@ const treeItem = defineComponent({
             default: false
         },
 
+        /**
+         * Automatically open to show children if a selected value is a child of this item
+         */
         autoExpand: {
             type: Boolean as PropType<boolean>,
             default: false
@@ -264,6 +267,9 @@ export default defineComponent({
             default: false
         },
 
+        /**
+         * Automatically expand parents who have (sub)children that are selected
+         */
         autoExpand: {
             type: Boolean as PropType<boolean>,
             default: false

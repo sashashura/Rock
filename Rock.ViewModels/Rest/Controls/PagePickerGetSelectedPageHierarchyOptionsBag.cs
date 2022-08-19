@@ -32,5 +32,12 @@ namespace Rock.ViewModels.Rest.Controls
         /// </summary>
         /// <value>The unique identifiers of the selected pages.</value>
         public List<Guid> SelectedPageGuids { get; set; }
+
+        /// <summary>
+        /// Gets or sets the security grant token to use when performing
+        /// authorization checks.
+        /// </summary>
+        /// <value>The security grant token.</value>
+        public string SecurityGrantToken { get; set; }
     }
 }

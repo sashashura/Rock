@@ -16,6 +16,7 @@
 //
 
 using System;
+using System.Collections.Generic;
 
 namespace Rock.ViewModels.Rest.Controls
 {
@@ -37,20 +38,20 @@ namespace Rock.ViewModels.Rest.Controls
         /// children are to be enumerated.
         /// </summary>
         /// <value>The unique identifier of the root page.</value>
-        public Guid RootPageGuid { get; set; } = Guid.Empty;
+        public Guid? RootPageGuid { get; set; }
 
         /// <summary>
         /// Gets or sets the site type to filter results by.
         /// </summary>
         /// <value>The root location unique identifier.</value>
-        public int? SiteType { get; set; } = null;
+        public int? SiteType { get; set; }
 
         /// <summary>
         /// Gets or sets the list of unique identifiers of pages that should
         /// be excluded from the results
         /// </summary>
         /// <value>The security grant token.</value>
-        public string HidePageGuids { get; set; } = null;
+        public List<Guid> HidePageGuids { get; set; }
 
         /// <summary>
         /// Gets or sets the security grant token to use when performing

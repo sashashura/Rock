@@ -33,4 +33,10 @@ export type PagePickerGetSelectedPageHierarchyOptionsBag = {
      * retrieving the the parent hierarchy of.
      */
     selectedPageGuids?: Guid[] | null;
+
+    /**
+     * Gets or sets the security grant token to use when performing
+     * authorization checks.
+     */
+    securityGrantToken?: string | null;
 };

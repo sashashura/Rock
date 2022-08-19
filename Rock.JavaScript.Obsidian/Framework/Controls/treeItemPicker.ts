@@ -111,6 +111,9 @@ export default defineComponent({
             default: false
         },
 
+        /**
+         * Automatically expand parents who have (sub)children that are selected
+         */
         autoExpand: {
             type: Boolean as PropType<boolean>,
             default: false

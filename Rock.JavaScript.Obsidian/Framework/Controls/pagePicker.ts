@@ -22,7 +22,6 @@ import TreeItemPicker from "./treeItemPicker";
 import RockButton, { BtnSize, BtnType } from "./rockButton";
 import { useStore as usePageStateStore } from "@Obsidian/PageState";
 import { Guid } from "@Obsidian/Types";
-import { post } from "@Obsidian/Utility/http";
 import { PagePickerGetPageNameOptionsBag } from "@Obsidian/ViewModels/Rest/Controls/pagePickerGetPageNameOptionsBag";
 import { PagePickerGetPageRoutesOptionsBag } from "@Obsidian/ViewModels/Rest/Controls/pagePickerGetPageRoutesOptionsBag";
 import { PageRouteValueBag } from "@Obsidian/ViewModels/Rest/Controls/pageRouteValueBag";
@@ -31,6 +30,9 @@ import { useHttp } from "@Obsidian/Utility/http";
 import { PickerDisplayStyle } from "@Obsidian/Types/Controls/pickerDisplayStyle";
 import { ControlLazyMode } from "@Obsidian/Types/Controls/controlLazyMode";
 import { emptyGuid } from "@Obsidian/Utility/guid";
+import { standardRockFormFieldProps, useStandardRockFormFieldProps } from "@Obsidian/Utility/component";
+import { Dialogs } from "@Obsidian/Utility";
+
 
 
 export default defineComponent({
@@ -53,29 +55,39 @@ export default defineComponent({
             required: false
         },
 
-        // Whether or not to show a button on the drop-down that sets the value to the current page
+        /**
+         * Whether or not to show a button on the drop-down that sets the value to the current page
+         */
         showSelectCurrentPage: {
             type: Boolean as PropType<boolean>,
             default: false
         },
 
-        // List of GUIDs of pages to hide from the list
+        /**
+         * List of GUIDs of pages to hide from the list
+         */
         hidePageGuids: {
             type: Array as PropType<Guid[]>,
             required: false
         },
 
-        // Whether or not to prompt for a route for pages that have at least one
+        /**
+         * Whether or not to prompt for a route for pages that have at least one
+         */
         promptForPageRoute: {
             type: Boolean as PropType<boolean>,
             default: false
         },
 
-        // Whether to allow multi-select or single-select
+        /**
+         * Whether to allow multi-select or single-select
+         */
         multiple: {
             type: Boolean as PropType<boolean>,
             default: false
         },
+
+        ...standardRockFormFieldProps
     },
 
     emits: {
@@ -83,6 +95,9 @@ export default defineComponent({
     },
 
     setup(props, { emit }) {
+        const http = useHttp();
+        const standardFieldProps = useStandardRockFormFieldProps(props);
+
         // #region Page
 
         // Extract the page value(s) from the the PageRouteValueBag(s) so they can be used with the tree picker
@@ -119,7 +134,12 @@ export default defineComponent({
         // Set the page value
         function updatePage(pages: ListItemBag | ListItemBag[] | null): void {
             if (!pages) {
-                emit("update:modelValue", null);
+                if (props.multiple) {
+                    emit("update:modelValue", []);
+                }
+                else {
+                    emit("update:modelValue", null);
+                }
             }
             else if (props.multiple) {
                 // When `multiple`, we can assume we're receiving an array
@@ -137,8 +157,8 @@ export default defineComponent({
 
         // Use the Page State store to get the GUID of the current page
         const pageStore = usePageStateStore();
-        const pageGuid = computed(() => pageStore.state.pageGuid);
-        let currentPage;
+        const pageGuid = pageStore.state.pageGuid;
+        let currentPage: ListItemBag | undefined;
 
         // Using the GUID we have of the current page, fetch the page name and assign the current page as the picker's value
         async function selectCurrentPage(): Promise<void> {
@@ -149,21 +169,27 @@ export default defineComponent({
                 return;
             }
 
-            const options: PagePickerGetPageNameOptionsBag = { pageGuid: pageGuid.value };
-            const response = await post<string>("/api/v2/Controls/PagePickerGetPageName", {}, options);
+            const options: PagePickerGetPageNameOptionsBag = { pageGuid, securityGrantToken: props.securityGrantToken };
+            const response = await http.post<string>("/api/v2/Controls/PagePickerGetPageName", {}, options);
 
             if (response.isSuccess && response.data) {
                 currentPage = {
                     text: response.data,
-                    value: pageGuid.value
+                    value: pageGuid
                 };
                 updatePage(props.multiple ? [currentPage] : currentPage);
             }
+            else if (response.statusCode == 401) {
+                Dialogs.alert("Could not determine current page");
+                return;
+            }
             else {
                 console.error("Error", response.errorMessage);
-                updatePage(props.multiple ? [{ value: pageGuid.value }] : { value: pageGuid.value });
+                updatePage(props.multiple ? [{ value: pageGuid }] : { value: pageGuid });
             }
-            await nextTick(); // Wait until internalPageValue is updated before retrieving the tree again.
+            // Wait until internalPageValue is updated before retrieving the tree again.
+            await nextTick();
+
             refreshProvider();
         }
 
@@ -219,10 +245,9 @@ export default defineComponent({
             });
         }
 
-        /**
+        /*
          * Route Async Picker Information
          */
-        const http = useHttp();
         const loadedItems = ref<ListItemBag[] | null>(null);
         const actualRouteItems = computed((): ListItemBag[] | (() => Promise<ListItemBag[]>) => {
             return loadedItems.value || loadOptions;
@@ -288,6 +313,7 @@ export default defineComponent({
             routeItemsCount,
             routeCountText,
             open: ref(null),
+            standardFieldProps,
             selectCurrentPage,
             updatePage,
             updateRoute
@@ -296,6 +322,7 @@ export default defineComponent({
 
     template: `
 <TreeItemPicker
+    v-bind="standardFieldProps"
     :modelValue="pagePickerValue"
     @update:modelValue="updatePage"
     formGroupClasses="location-item-picker"

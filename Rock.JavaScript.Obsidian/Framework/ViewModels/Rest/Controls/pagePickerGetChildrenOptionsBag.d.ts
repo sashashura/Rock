@@ -47,7 +47,7 @@ export type PagePickerGetChildrenOptionsBag = {
      * Gets or sets the list of unique identifiers of pages that should
      * be excluded from the results
      */
-    hidePageGuids?: string | null;
+    hidePageGuids?: Guid[] | null;
 
     /**
      * Gets or sets the security grant token to use when performing
