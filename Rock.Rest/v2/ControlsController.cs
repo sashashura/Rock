@@ -1653,7 +1653,7 @@ namespace Rock.Rest.v2
 
             var isAuthorized = page.IsAuthorized( Authorization.VIEW, RockRequestContext.CurrentPerson ) || grant?.IsAccessGranted( page, Authorization.VIEW ) == true;
 
-            if ( isAuthorized )
+            if ( !isAuthorized )
             {
                 return Unauthorized();
             }
@@ -1674,6 +1674,13 @@ namespace Rock.Rest.v2
         {
             var page = PageCache.Get( options.PageGuid );
             var grant = SecurityGrant.FromToken( options.SecurityGrantToken );
+
+            var isAuthorized = page.IsAuthorized( Authorization.VIEW, RockRequestContext.CurrentPerson ) || grant?.IsAccessGranted( page, Authorization.VIEW ) == true;
+
+            if ( !isAuthorized )
+            {
+                return Unauthorized();
+            }
 
             var routes = page.PageRoutes
                 .Select( r => new ListItemBag
