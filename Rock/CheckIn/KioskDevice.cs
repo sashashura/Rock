@@ -14,16 +14,16 @@
 // limitations under the License.
 // </copyright>
 //
+using DotLiquid;
+using Rock.Data;
+using Rock.Lava;
+using Rock.Model;
+using Rock.Web.Cache;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data.Entity;
 using System.Linq;
 using System.Runtime.Serialization;
-
-using Rock.Data;
-using Rock.Model;
-using Rock.Web.Cache;
 
 namespace Rock.CheckIn
 {
@@ -31,7 +31,8 @@ namespace Rock.CheckIn
     /// The status of a check-in device.  
     /// </summary>
     [DataContract]
-    public class KioskDevice : ItemCache<KioskDevice>
+    [LiquidType( "CampusId", "Device" )]
+    public class KioskDevice : ItemCache<KioskDevice>, ILavaDataDictionary
     {
         #region Constructors
 
@@ -427,9 +428,46 @@ namespace Rock.CheckIn
                 }
             }
         }
-
         #endregion
 
+        #region Lava
+
+        /// <summary>
+        /// Gets a list of the keys defined by this data object.
+        /// </summary>
+        public List<string> AvailableKeys { get; } = new List<string> { "CampusId", "Device" };
+
+        /// <summary>
+        /// Returns the data value associated with the specified key.
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        /// <exception cref="System.NotImplementedException"></exception>
+        public object GetValue( string key )
+        {
+            if ( key == "CampusId" )
+            {
+                return CampusId;
+            }
+            else if ( key == "Device" )
+            {
+                return Device;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Returns a flag indicating if this data object contains a value associated with the specified key.
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        /// <exception cref="System.NotImplementedException"></exception>
+        public bool ContainsKey( string key )
+        {
+            return AvailableKeys.Contains( key );
+        }
+
+        #endregion
     }
 }
 
