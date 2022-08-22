@@ -145,7 +145,7 @@ export default defineComponent({
          * Event handler for the Cancel button being clicked while in Edit mode.
          * Handles redirect to parent page if creating a new entity.
          *
-         * @returns true if the panel should leave edit mode; otherwise false.
+         * @returns true if the panel should leave edit mode; false if it should stay in edit mode; or a string containing a redirect URL.
          */
         const onCancelEdit = async (): Promise<boolean | string> => {
             if (!campusEditBag.value?.idKey) {
@@ -162,6 +162,8 @@ export default defineComponent({
         /**
          * Event handler for the Delete button being clicked. Sends the
          * delete request to the server and then redirects to the target page.
+         *
+         * @returns false if it should stay on the page; or a string containing a redirect URL.
          */
         const onDelete = async (): Promise<false | string> => {
             errorMessage.value = "";
@@ -222,7 +224,7 @@ export default defineComponent({
          * Event handler for the panel's Save event. Send the data to the server
          * to be saved and then leave edit mode or redirect to target page.
          *
-         * @returns true if the panel should leave edit mode; otherwise false.
+         * @returns true if the panel should leave edit mode; false if it should stay in edit mode; or a string containing a redirect URL.
          */
         const onSave = async (): Promise<boolean | string> => {
             errorMessage.value = "";
