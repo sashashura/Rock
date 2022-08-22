@@ -63,6 +63,7 @@
     <Compile Include="Cms\ContentCollectionView.cs" />
     <Compile Include="Cms\MediaAccountDetail.cs" />
     <Compile Include="Cms\MediaFolderDetail.cs" />
+    <Compile Include="Cms\PageRouteDetail.cs" />
     <Compile Include="Cms\PersistedDatasetDetail.cs" />
     <Compile Include="Cms\PersonalLinkSectionDetail.cs" />
     <Compile Include="Core\Attributes.cs" />

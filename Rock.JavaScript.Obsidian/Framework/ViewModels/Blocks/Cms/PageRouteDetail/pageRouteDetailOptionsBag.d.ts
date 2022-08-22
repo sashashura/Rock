@@ -21,22 +21,5 @@
 // </copyright>
 //
 
-import { Guid } from "@Obsidian/Types";
-
-/**
- * The options that can be passed to the GetActiveChildren API action of
- * the LocationPicker control.
- */
-export type PagePickerGetPageRoutesOptionsBag = {
-    /**
-     * Gets or sets the unique identifier of the page we're
-     * retrieving the routes for.
-     */
-    pageGuid?: Guid | null;
-
-    /**
-     * Gets or sets the security grant token to use when performing
-     * authorization checks.
-     */
-    securityGrantToken?: string | null;
+export type PageRouteDetailOptionsBag = {
 };

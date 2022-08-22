@@ -44,6 +44,7 @@
     <Folder Include="src\Cms\ContentCollectionView\" />
     <Folder Include="src\Cms\MediaAccountDetail\" />
     <Folder Include="src\Cms\MediaFolderDetail\" />
+    <Folder Include="src\Cms\PageRouteDetail\" />
     <Folder Include="src\Cms\PersistedDatasetDetail\" />
     <Folder Include="src\Cms\PersonalLinkSectionDetail\" />
     <Folder Include="src\Core\" />
@@ -90,6 +91,10 @@
     <TypeScriptCompile Include="src\Cms\MediaFolderDetail\editPanel.partial.ts" />
     <TypeScriptCompile Include="src\Cms\MediaFolderDetail\types.d.ts" />
     <TypeScriptCompile Include="src\Cms\MediaFolderDetail\viewPanel.partial.ts" />
+    <TypeScriptCompile Include="src\Cms\pageRouteDetail.ts" />
+    <TypeScriptCompile Include="src\Cms\PageRouteDetail\editPanel.partial.ts" />
+    <TypeScriptCompile Include="src\Cms\PageRouteDetail\types.d.ts" />
+    <TypeScriptCompile Include="src\Cms\PageRouteDetail\viewPanel.partial.ts" />
     <TypeScriptCompile Include="src\Cms\persistedDatasetDetail.ts" />
     <TypeScriptCompile Include="src\Cms\PersistedDatasetDetail\editPanel.partial.ts" />
     <TypeScriptCompile Include="src\Cms\PersistedDatasetDetail\types.d.ts" />
