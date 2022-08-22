@@ -22,7 +22,7 @@ namespace Rock.SystemGuid
     /// This should be added to these classes by the developer. However, the CodeGenerator will catch any missing ones and add it.
     /// </para>
     /// <seealso cref="RockGuidAttribute" />
-    [System.AttributeUsage( System.AttributeTargets.Method, Inherited = true, AllowMultiple = false )]
+    [System.AttributeUsage( System.AttributeTargets.Method, Inherited = false, AllowMultiple = false )]
     public class RestActionGuidAttribute : RockGuidAttribute
     {
         /// <summary>

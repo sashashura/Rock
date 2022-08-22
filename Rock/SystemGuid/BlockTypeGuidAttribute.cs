@@ -28,7 +28,7 @@ namespace Rock.SystemGuid
     /// </para>
     /// </summary>
     /// <seealso cref="RockGuidAttribute" />
-    [System.AttributeUsage( System.AttributeTargets.Class, Inherited = true, AllowMultiple = false )]
+    [System.AttributeUsage( System.AttributeTargets.Class, Inherited = false, AllowMultiple = false )]
     public class BlockTypeGuidAttribute : RockGuidAttribute
     {
         /// <summary>
