@@ -37,9 +37,6 @@ export type AssetStorageProviderBag = {
     /** Gets or sets the name. */
     name?: string | null;
 
-    /** Gets or sets the order. */
-    order: number;
-
     /** Gets or sets the identifier key of this entity. */
     idKey?: string | null;
 

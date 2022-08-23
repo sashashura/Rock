@@ -63,8 +63,7 @@ export default defineComponent({
             "entityType",
             "entityTypeId",
             "isActive",
-            "name",
-            "order"
+            "name"
         ];
 
         const refreshAttributesDebounce = debounce(() => refreshDetailAttributes(assetStorageProviderEditBag, validProperties, invokeBlockAction), undefined, true);
@@ -256,7 +255,7 @@ export default defineComponent({
             blockError,
             blockLabels,
             entityKey,
-            entityTypeGuid: EntityType.AssetStorageProvider,
+            entityTypeGuid: EntityType.AssetstorageProvider,
             errorMessage,
             isEditable,
             onCancelEdit,

@@ -177,8 +177,7 @@ namespace Rock.Blocks.Core
                 Description = entity.Description,
                 EntityType = entity.EntityType.ToListItemBag(),
                 IsActive = entity.IsActive,
-                Name = entity.Name,
-                Order = entity.Order
+                Name = entity.Name
             };
         }
 
@@ -246,14 +245,10 @@ namespace Rock.Blocks.Core
             box.IfValidProperty( nameof( box.Entity.Name ),
                 () => entity.Name = box.Entity.Name );
 
-            box.IfValidProperty( nameof( box.Entity.Order ),
-                () => entity.Order = box.Entity.Order );
-
             box.IfValidProperty( nameof( box.Entity.AttributeValues ),
                 () =>
                 {
                     entity.LoadAttributes( rockContext );
-
                     entity.SetPublicAttributeValues( box.Entity.AttributeValues, RequestContext.CurrentPerson );
                 } );
 

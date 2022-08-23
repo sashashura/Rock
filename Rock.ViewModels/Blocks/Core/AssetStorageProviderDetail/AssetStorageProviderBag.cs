@@ -40,10 +40,5 @@ namespace Rock.ViewModels.Blocks.Core.AssetStorageProviderDetail
         /// Gets or sets the name.
         /// </summary>
         public string Name { get; set; }
-
-        /// <summary>
-        /// Gets or sets the order.
-        /// </summary>
-        public int Order { get; set; }
     }
 }
