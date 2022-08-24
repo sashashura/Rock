@@ -21,12 +21,14 @@ import { updateRefValue } from "@Obsidian/Utility/component";
 import { ListItemBag } from "@Obsidian/ViewModels/Utility/listItemBag";
 import TreeItemPicker from "./treeItemPicker";
 import { Guid } from "@Obsidian/Types";
+import InlineCheckBox from "./inlineCheckBox";
 
 export default defineComponent({
     name: "GroupPicker",
 
     components: {
-        TreeItemPicker
+        TreeItemPicker,
+        InlineCheckBox
     },
 
     props: {
@@ -58,12 +60,6 @@ export default defineComponent({
             default: []
         },
 
-        /** Whether to include inactive groups or not. */
-        includeInactiveGroups: {
-            type: Object as PropType<boolean>,
-            default: false
-        },
-
         /** Whether to limit to only groups that have scheduling enabled. */
         limitToSchedulingEnabled: {
             type: Object as PropType<boolean>,
@@ -84,6 +80,9 @@ export default defineComponent({
     setup(props, { emit }) {
         const internalValue = ref(props.modelValue ?? null);
 
+        /** Whether to include inactive groups in the results or not. */
+        const includeInactiveGroups = ref(false);
+
         const itemProvider = ref<GroupTreeItemProvider | null>(null);
 
         // Configure the item provider with our settings.
@@ -91,7 +90,7 @@ export default defineComponent({
             const provider = new GroupTreeItemProvider();
             provider.rootGroupGuid = props.rootGroupGuid;
             provider.includedGroupTypeGuids = props.includedGroupTypeGuids;
-            provider.includeInactiveGroups = props.includeInactiveGroups;
+            provider.includeInactiveGroups = includeInactiveGroups.value;
             provider.limitToSchedulingEnabled = props.limitToSchedulingEnabled;
             provider.limitToRSVPEnabled = props.limitToRSVPEnabled;
             provider.securityGrantToken = props.securityGrantToken;
@@ -103,7 +102,7 @@ export default defineComponent({
 
         watch(() => [
             props.rootGroupGuid,
-            props.includeInactiveGroups,
+            includeInactiveGroups.value,
             props.includedGroupTypeGuids,
             props.limitToRSVPEnabled,
             props.limitToSchedulingEnabled
@@ -119,6 +118,7 @@ export default defineComponent({
 
         return {
             internalValue,
+            includeInactiveGroups,
             itemProvider
         };
     },
@@ -128,7 +128,14 @@ export default defineComponent({
     formGroupClasses="group-item-picker"
     iconCssClass="fa fa-home"
     :provider="itemProvider"
-    :multiple="multiple"
-/>
+    :multiple="multiple">
+
+    <template #customPickerActions>
+        <label class="rock-checkbox-icon">
+            <i :class="['fa', includeInactiveGroups ? 'fa-check-square-o' : 'fa-square-o']"></i> Show Inactive
+            <span style="display:none"><input type="checkbox" v-model="includeInactiveGroups"></span>
+        </label>
+    </template>
+</TreeItemPicker>
 `
 });

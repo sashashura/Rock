@@ -5429,7 +5429,6 @@ const groupPickerGallery = defineComponent({
     setup() {
         return {
             multiple: ref(false),
-            includeInactiveGroups: ref(false),
             limitToSchedulingEnabled: ref(false),
             limitToRSVPEnabled: ref(false),
             value: ref(null),
@@ -5447,23 +5446,19 @@ const groupPickerGallery = defineComponent({
     <GroupPicker label="Group"
         v-model="value"
         :multiple="multiple"
-        :includeInactiveGroups="includeInactiveGroups"
         :limitToSchedulingEnabled="limitToSchedulingEnabled"
         :limitToRSVPEnabled="limitToRSVPEnabled" />
 
     <template #settings>
 
     <div class="row">
-        <div class="col-md-3">
+        <div class="col-md-4">
             <CheckBox label="Multiple" v-model="multiple" />
         </div>
-        <div class="col-md-3">
-            <CheckBox label="Include Inactive Groups" v-model="includeInactiveGroups" />
-        </div>
-        <div class="col-md-3">
+        <div class="col-md-4">
             <CheckBox label="Limit to Scheduling Enabled" v-model="limitToSchedulingEnabled" />
         </div>
-        <div class="col-md-3">
+        <div class="col-md-4">
             <CheckBox label="Limit to RSVP Enabled" v-model="limitToRSVPEnabled" />
         </div>
     </div>
