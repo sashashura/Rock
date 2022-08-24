@@ -1507,8 +1507,22 @@ namespace Rock.Rest.v2
             {
                 var groupService = new GroupService(rockContext);
 
+                List<int> includedGroupTypeIds = options.IncludedGroupTypeGuids
+                    .Select( ( guid ) =>
+                    {
+                        var gt = GroupTypeCache.Get( guid );
+
+                        if (gt != null)
+                        {
+                            return gt.Id;
+                        }
+
+                        return 0;
+                    } )
+                    .ToList();
+
                 // if specific group types are specified, show the groups regardless of ShowInNavigation
-                bool limitToShowInNavigation = !options.IncludedGroupTypeIds.Any();
+                bool limitToShowInNavigation = !includedGroupTypeIds.Any();
 
                 Rock.Model.Group parentGroup = groupService.GetByGuid( options.Guid ?? Guid.Empty );
                 int id = parentGroup == null ? 0 : parentGroup.Id;
@@ -1517,7 +1531,7 @@ namespace Rock.Rest.v2
                 int rootGroupId = rootGroup == null ? 0 : rootGroup.Id;
 
                 var qry = groupService
-                    .GetChildren( id, rootGroupId, false, options.IncludedGroupTypeIds, new List<int>(), options.IncludeInactiveGroups, limitToShowInNavigation, 0, false, false )
+                    .GetChildren( id, rootGroupId, false, includedGroupTypeIds, new List<int>(), options.IncludeInactiveGroups, limitToShowInNavigation, 0, false, false )
                     .AsNoTracking();
 
                 List<Rock.Model.Group> groupList = new List<Rock.Model.Group>();
@@ -1637,9 +1651,9 @@ namespace Rock.Rest.v2
                         g.ParentGroupId.HasValue &&
                         resultIds.Contains( g.ParentGroupId.Value ) );
 
-                if ( options.IncludedGroupTypeIds.Any() )
+                if ( includedGroupTypeIds.Any() )
                 {
-                    qryHasChildren = qryHasChildren.Where( a => options.IncludedGroupTypeIds.Contains( a.GroupTypeId ) );
+                    qryHasChildren = qryHasChildren.Where( a => includedGroupTypeIds.Contains( a.GroupTypeId ) );
                 }
 
                 var qryHasChildrenList = qryHasChildren

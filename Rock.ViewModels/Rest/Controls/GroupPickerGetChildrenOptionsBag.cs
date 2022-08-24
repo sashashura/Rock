@@ -31,10 +31,36 @@ namespace Rock.ViewModels.Rest.Controls
         /// </summary>
         public Guid? Guid { get; set; }
 
+        /// <summary>
+        /// GUID of the group you want to use as the root.
+        /// </summary>
         public Guid? RootGroupGuid { get; set; }
-        public List<int> IncludedGroupTypeIds { get; set; } = new List<int>();
+
+        /// <summary>
+        /// List of group types IDs to limit to groups of those types.
+        /// </summary>
+        public List<Guid> IncludedGroupTypeGuids { get; set; } = new List<Guid>();
+
+        /// <summary>
+        /// Whether to include inactive groups or not.
+        /// </summary>
         public bool IncludeInactiveGroups { get; set; } = false;
+
+        /// <summary>
+        /// Whether to limit to only groups that have scheduling enabled.
+        /// </summary>
         public bool LimitToSchedulingEnabled { get; set; } = false;
+
+        /// <summary>
+        /// Whether to limit to only groups that have RSVPs enabled.
+        /// </summary>
         public bool LimitToRSVPEnabled { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets the security grant token to use when performing
+        /// authorization checks.
+        /// </summary>
+        /// <value>The security grant token.</value>
+        public string SecurityGrantToken { get; set; }
     }
 }
