@@ -67,6 +67,7 @@
     <Compile Include="Cms\PersonalLinkSectionDetail.cs" />
     <Compile Include="Core\Attributes.cs" />
     <Compile Include="Core\CampusDetail.cs" />
+    <Compile Include="Core\LocationDetail.cs" />
     <Compile Include="Crm\AssessmentTypeDetail.cs" />
     <Compile Include="Crm\PersonDetail\Badges.cs" />
     <Compile Include="Event\RegistrationEntry.cs" />
