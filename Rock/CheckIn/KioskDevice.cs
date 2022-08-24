@@ -15,6 +15,7 @@
 // </copyright>
 //
 using DotLiquid;
+using Lucene.Net.Analysis.Hunspell;
 using Rock.Data;
 using Rock.Lava;
 using Rock.Model;
@@ -31,8 +32,7 @@ namespace Rock.CheckIn
     /// The status of a check-in device.  
     /// </summary>
     [DataContract]
-    [LiquidType( "CampusId", "Device" )]
-    public class KioskDevice : ItemCache<KioskDevice>, ILavaDataDictionary
+    public class KioskDevice : ItemCache<KioskDevice>, ILavaDataDictionary, Lava.ILiquidizable
     {
         #region Constructors
 
@@ -435,7 +435,7 @@ namespace Rock.CheckIn
         /// <summary>
         /// Gets a list of the keys defined by this data object.
         /// </summary>
-        public List<string> AvailableKeys { get; } = new List<string> { "CampusId", "Device" };
+        public List<string> AvailableKeys { get; } = new List<string> { "CampusId", "Device", "KioskGroupTypes" };
 
         /// <summary>
         /// Returns the data value associated with the specified key.
@@ -445,15 +445,17 @@ namespace Rock.CheckIn
         /// <exception cref="System.NotImplementedException"></exception>
         public object GetValue( string key )
         {
-            if ( key == "CampusId" )
+            switch ( key )
             {
-                return CampusId;
+                case "CampusId":
+                    return CampusId;
+                case "Device":
+                    return Device;
+                case "KioskGroupTypes":
+                    return KioskGroupTypes;
+                default:
+                    return null;
             }
-            else if ( key == "Device" )
-            {
-                return Device;
-            }
-            return null;
         }
 
         /// <summary>
@@ -465,6 +467,51 @@ namespace Rock.CheckIn
         public bool ContainsKey( string key )
         {
             return AvailableKeys.Contains( key );
+        }
+
+        #endregion
+
+        #region ILiquidizable
+
+        /// <summary>
+        /// Gets the <see cref="System.Object"/> with the specified key.
+        /// </summary>
+        /// <value>
+        /// The <see cref="System.Object"/>.
+        /// </value>
+        /// <param name="key">The key.</param>
+        /// <returns></returns>
+        public object this[object key]
+        {
+            get => GetValue( key.ToStringSafe() );
+        }
+
+        /// <summary>
+        /// Converts to liquid.
+        /// </summary>
+        /// <returns></returns>
+        /// <exception cref="System.NotImplementedException"></exception>
+        public object ToLiquid()
+        {
+            var dictionary = new Dictionary<string, object>()
+            {
+              { "CampusId", CampusId },
+              { "Device", Device },
+              { "KioskGroupTypes", KioskGroupTypes },
+            };
+            return dictionary;
+        }
+
+        /// <summary>
+        /// Determines whether the specified key contains key.
+        /// </summary>
+        /// <param name="key">The key.</param>
+        /// <returns>
+        ///   <c>true</c> if the specified key contains key; otherwise, <c>false</c>.
+        /// </returns>
+        public bool ContainsKey(object key)
+        {
+            return AvailableKeys.Contains( key.ToStringSafe() );
         }
 
         #endregion
