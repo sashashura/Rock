@@ -15,7 +15,6 @@
 // </copyright>
 //
 using DotLiquid;
-using Lucene.Net.Analysis.Hunspell;
 using Rock.Data;
 using Rock.Lava;
 using Rock.Model;
