@@ -1,4 +1,4 @@
-﻿// <copyright>
+// <copyright>
 // Copyright by the Spark Development Network
 //
 // Licensed under the Rock Community License (the "License");
@@ -74,9 +74,9 @@ namespace Rock.SystemGuid
         public const string BENEVOLENCE_REQUEST = "CF0CE5C1-9286-4310-9B50-10D040F8EBD2";
 
         /// <summary>
-        /// The benevolence type
+        /// The guid for the <seealso cref="Rock.Model.BenevolenceType"/> entity.
         /// </summary>
-        public const string BENEVOLENCE_TYPE = "A612BF6F-EF9C-4625-AF68-3C6BC4AE7C46";
+        public const string BENEVOLENCE_TYPE = "9DB5D35A-F2DF-4AFF-AB9F-06C2EB587C0D";
 
         /// <summary>
         /// The Block entity type
@@ -144,9 +144,9 @@ namespace Rock.SystemGuid
         public const string CONNECTION_OPPORTUNITY_GROUP = "CD3F425C-9B36-4433-9C38-D58DE42C9F65";
 
         /// <summary>
-        /// The guid for the Rock.Model.ConnectionOpportunityConnectorGroup entity
+        /// The EntityType Guid for <see cref="Rock.Model.ConnectionOpportunityConnectorGroup"/> 
         /// </summary>
-        public const string CONNECTION_OPPORTUNITY_CONNECTOR_GROUP = "4CB430B1-0F32-482F-9C95-164A09332CC1";
+        public const string CONNECTION_OPPORTUNITY_CONNECTOR_GROUP = "2ADBE499-C9EC-479B-B33B-6E92BDE09FD1";
 
         /// <summary>
         /// The guid for the Rock.Model.ConnectionRequest entity
@@ -279,9 +279,9 @@ namespace Rock.SystemGuid
         public const string LAYOUT = "9DACC861-FED4-47FC-946D-D6A120FF6D56";
 
         /// <summary>
-        /// The guid for the Rock.Model.MediaAccount entity
+        /// The EntityType Guid for <see cref="Rock.Model.MediaAccount"/> 
         /// </summary>
-        public const string MEDIA_ACCOUNT = "3723425F-6BB3-4F5C-8BD6-0B0B9D22EF70";
+        public const string MEDIA_ACCOUNT = "CD35F034-AC18-40D5-B703-6BF16D79C51C";
 
         /// <summary>
         /// The guid for the Rock.Model.MetricCategory entity
@@ -759,5 +759,10 @@ namespace Rock.SystemGuid
         /// The EntityType Guid for <see cref="Rock.Model.WorkflowLog"/>
         /// </summary>
         public const string WORKFLOW_LOG = "332CFF36-D637-414D-B732-370B330B8D73";
+
+        /// <summary>
+        /// The EntityType Guid for <see cref="Rock.Model.Location"/> 
+        /// </summary>
+        public const string LOCATION = "0D6410AD-C83C-47AC-AF3D-616D09EDF63B";
     }
 }
