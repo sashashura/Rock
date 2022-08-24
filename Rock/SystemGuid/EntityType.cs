@@ -759,5 +759,15 @@ namespace Rock.SystemGuid
         /// The EntityType Guid for <see cref="Rock.Model.WorkflowLog"/>
         /// </summary>
         public const string WORKFLOW_LOG = "332CFF36-D637-414D-B732-370B330B8D73";
+
+        /// <summary>
+        /// The EntityType Guid for <see cref="Rock.Model.NoteType"/>
+        /// </summary>
+        public const string NOTE_TYPE = "337EED57-D4AB-4EED-BBDB-0CB3A467DBCC";
+
+        /// <summary>
+        /// The EntityType Guid for <see cref="Rock.Model.PageShortLink"/>
+        /// </summary>
+        public const string PAGE_SHORT_LINK = "83D8C6DF-1D53-438B-93B2-75A2038BBEE6";
     }
 }

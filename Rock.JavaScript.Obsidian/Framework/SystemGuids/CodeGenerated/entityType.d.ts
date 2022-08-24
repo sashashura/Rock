@@ -231,8 +231,6 @@ export const enum EntityType {
     Note = "53DC1E78-14A5-44DE-903F-6A2CB02164E7",
     /** The guid for the Rock.Model.Page entity */
     Page = "E104DCDF-247C-4CED-A119-8CC51632761F",
-    /** The guid for the Rock.Model.PageShortLink entity */
-    PageShortLink = "83D8C6DF-1D53-438B-93B2-75A2038BBEE6",
     /** The guid for the Rock.Model.Person entity */
     Person = "72657ED8-D16E-492E-AC12-144C5E7567E7",
     /** The guid for the Rock.Model.PersonAlias entity */
@@ -319,4 +317,8 @@ export const enum EntityType {
     PersonalLinkSection = "42411FC0-7ACD-42E9-A8A1-BCEA78AF0AAF",
     /** The EntityType Guid for Rock.Model.WorkflowLog */
     WorkflowLog = "332CFF36-D637-414D-B732-370B330B8D73",
+    /** The EntityType Guid for Rock.Model.NoteType */
+    NoteType = "337EED57-D4AB-4EED-BBDB-0CB3A467DBCC",
+    /** The EntityType Guid for Rock.Model.PageShortLink */
+    PageShortLink = "83D8C6DF-1D53-438B-93B2-75A2038BBEE6",
 }
