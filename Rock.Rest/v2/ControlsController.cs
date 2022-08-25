@@ -1868,6 +1868,44 @@ namespace Rock.Rest.v2
 
         #endregion
 
+        #region Merge Template Picker
+
+        /// <summary>
+        /// Gets the merge templates and their categories that match the options sent in the request body.
+        /// This endpoint returns items formatted for use in a tree view control.
+        /// </summary>
+        /// <param name="options">The options that describe which merge templates to load.</param>
+        /// <returns>A List of <see cref="ListItemBag"/> objects that represent a tree of merge templates.</returns>
+        [HttpPost]
+        [System.Web.Http.Route( "MergeTemplatePickerGetMergeTemplates" )]
+        [Authenticate]
+        [Rock.SystemGuid.RestActionGuid( "2e486da8-927f-4474-8ba8-00a68d261403" )]
+        public IHttpActionResult MergeTemplatePickerGetMergeTemplates( [FromBody] MergeTemplatePickerGetMergeTemplatesOptionsBag options )
+        {
+            //MergeTemplateOwnership
+            using ( var rockContext = new RockContext() )
+            {
+                var clientService = new CategoryClientService( rockContext, GetPerson( rockContext ) );
+                var grant = SecurityGrant.FromToken( options.SecurityGrantToken );
+
+                var items = clientService.GetCategorizedTreeItems( new CategoryItemTreeOptions
+                {
+                    ParentGuid = options.ParentGuid,
+                    GetCategorizedItems = true,
+                    EntityTypeGuid = EntityTypeCache.Get<MergeTemplate>().Guid,
+                    IncludeUnnamedEntityItems = false,
+                    IncludeCategoriesWithoutChildren = options.IncludeCategoriesWithoutChildren,
+                    DefaultIconCssClass = options.DefaultIconCssClass,
+                    LazyLoad = options.LazyLoad,
+                    SecurityGrant = grant
+                } );
+
+                return Ok( items );
+            }
+        }
+
+        #endregion
+
         #region Page Picker
 
         /// <summary>
