@@ -1,4 +1,4 @@
-// <copyright>
+﻿// <copyright>
 // Copyright by the Spark Development Network
 //
 // Licensed under the Rock Community License (the "License");
@@ -15,9 +15,14 @@
 // </copyright>
 //
 
+using System.Collections.Generic;
+
+using Rock.ViewModels.Utility;
+
 namespace Rock.ViewModels.Blocks.Core.LocationDetail
 {
     public class LocationDetailOptionsBag
     {
+        public List<ListItemBag> PrinterDeviceOptions { get; set; }
     }
 }

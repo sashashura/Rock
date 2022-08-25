@@ -1,4 +1,4 @@
-// <copyright>
+﻿// <copyright>
 // Copyright by the Spark Development Network
 //
 // Licensed under the Rock Community License (the "License");
@@ -45,7 +45,7 @@ namespace Rock.ViewModels.Blocks.Core.LocationDetail
         /// Gets or sets the Id of the LocationType Rock.Model.DefinedValue that is used to identify the type of Rock.Model.Location
         /// that this is. Examples: Campus, Building, Room, etc
         /// </summary>
-        public int? LocationTypeValueId { get; set; }
+        public ListItemBag LocationTypeValue { get; set; }
 
         /// <summary>
         /// Gets or sets the Location's Name.
@@ -55,7 +55,7 @@ namespace Rock.ViewModels.Blocks.Core.LocationDetail
         /// <summary>
         /// Gets or sets the if the location's parent Location. 
         /// </summary>
-        public int? ParentLocationId { get; set; }
+        public ListItemBag ParentLocation { get; set; }
 
         /// <summary>
         /// Gets or sets the Rock.Model.Device Id of the printer (if any) associated with the location.

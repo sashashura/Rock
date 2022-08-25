@@ -21,6 +21,7 @@
 // </copyright>
 //
 
+import { ListItemBag } from "@Obsidian/ViewModels/Utility/listItemBag";
 import { PublicAttributeBag } from "@Obsidian/ViewModels/Utility/publicAttributeBag";
 
 export type LocationBag = {
@@ -40,13 +41,13 @@ export type LocationBag = {
      * Gets or sets the Id of the LocationType Rock.Model.DefinedValue that is used to identify the type of Rock.Model.Location
      * that this is. Examples: Campus, Building, Room, etc
      */
-    locationTypeValueId?: number | null;
+    locationTypeValue?: ListItemBag | null;
 
     /** Gets or sets the Location's Name. */
     name?: string | null;
 
     /** Gets or sets the if the location's parent Location.  */
-    parentLocationId?: number | null;
+    parentLocation?: ListItemBag | null;
 
     /** Gets or sets the Rock.Model.Device Id of the printer (if any) associated with the location. */
     printerDeviceId?: number | null;

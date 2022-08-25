@@ -1,4 +1,4 @@
-// <copyright>
+﻿// <copyright>
 // Copyright by the Spark Development Network
 //
 // Licensed under the Rock Community License (the "License");
@@ -26,6 +26,7 @@ using Rock.Data;
 using Rock.Model;
 using Rock.ViewModels.Blocks;
 using Rock.ViewModels.Blocks.Core.LocationDetail;
+using Rock.ViewModels.Utility;
 
 namespace Rock.Blocks.Core
 {
@@ -90,6 +91,15 @@ namespace Rock.Blocks.Core
         private LocationDetailOptionsBag GetBoxOptions( bool isEditable, RockContext rockContext )
         {
             var options = new LocationDetailOptionsBag();
+            var deviceItems = new Rock.Model.DeviceService( rockContext )
+                .GetByDeviceTypeGuid( Rock.SystemGuid.DefinedValue.DEVICE_TYPE_PRINTER.AsGuid() )
+                .OrderBy( d => d.Name ).ToList().Select( d => new ListItemBag
+                {
+                    Value = d.Id.ToString(),
+                    Text = d.Name
+                } ).ToList();
+
+            options.PrinterDeviceOptions = deviceItems;
 
             return options;
         }
@@ -177,16 +187,16 @@ namespace Rock.Blocks.Core
                 ImageId = entity.ImageId,
                 IsActive = entity.IsActive,
                 IsGeoPointLocked = entity.IsGeoPointLocked,
-                LocationTypeValueId = entity.LocationTypeValueId,
+                LocationTypeValue = entity.LocationTypeValue.ToListItemBag(),
                 Name = entity.Name,
-                ParentLocationId = entity.ParentLocationId,
+                ParentLocation = entity.ParentLocation.ToListItemBag(),
                 PrinterDeviceId = entity.PrinterDeviceId,
                 SoftRoomThreshold = entity.SoftRoomThreshold
             };
         }
 
         /// <summary>
-        /// Gets the bag for viewing the specied entity.
+        /// Gets the bag for viewing the specified entity.
         /// </summary>
         /// <param name="entity">The entity to be represented for view purposes.</param>
         /// <returns>A <see cref="LocationBag"/> that represents the entity.</returns>
@@ -205,7 +215,7 @@ namespace Rock.Blocks.Core
         }
 
         /// <summary>
-        /// Gets the bag for editing the specied entity.
+        /// Gets the bag for editing the specified entity.
         /// </summary>
         /// <param name="entity">The entity to be represented for edit purposes.</param>
         /// <returns>A <see cref="LocationBag"/> that represents the entity.</returns>
@@ -249,14 +259,14 @@ namespace Rock.Blocks.Core
             box.IfValidProperty( nameof( box.Entity.IsGeoPointLocked ),
                 () => entity.IsGeoPointLocked = box.Entity.IsGeoPointLocked );
 
-            box.IfValidProperty( nameof( box.Entity.LocationTypeValueId ),
-                () => entity.LocationTypeValueId = box.Entity.LocationTypeValueId );
+            box.IfValidProperty( nameof( box.Entity.LocationTypeValue ),
+                () => entity.LocationTypeValueId = box.Entity.LocationTypeValue.GetEntityId<DefinedValue>(rockContext) );
 
             box.IfValidProperty( nameof( box.Entity.Name ),
                 () => entity.Name = box.Entity.Name );
 
-            box.IfValidProperty( nameof( box.Entity.ParentLocationId ),
-                () => entity.ParentLocationId = box.Entity.ParentLocationId );
+            box.IfValidProperty( nameof( box.Entity.ParentLocation ),
+                () => entity.ParentLocationId = box.Entity.ParentLocation.GetEntityId<Location>(rockContext) );
 
             box.IfValidProperty( nameof( box.Entity.PrinterDeviceId ),
                 () => entity.PrinterDeviceId = box.Entity.PrinterDeviceId );

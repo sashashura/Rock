@@ -1,3 +1,4 @@
+/// <reference path="../../../../Rock.JavaScript.Obsidian/Framework/Controls/numberBox.ts" />
 // <copyright>
 // Copyright by the Spark Development Network
 //
@@ -15,14 +16,21 @@
 // </copyright>
 //
 
-import { defineComponent, PropType, ref, watch } from "vue";
+import { computed, defineComponent, PropType, ref, watch } from "vue";
 import AttributeValuesContainer from "@Obsidian/Controls/attributeValuesContainer";
+import AddressControl from "@Obsidian/Controls/addressControl";
 import CheckBox from "@Obsidian/Controls/checkBox";
+import DefinedValuePicker from "@Obsidian/Controls/definedValuePicker";
+import DropDownList from "@Obsidian/Controls/dropDownList";
+import ImageUploader from "@Obsidian/Controls/imageUploader";
+import NumberBox from "@Obsidian/Controls/numberBox";
 import TextBox from "@Obsidian/Controls/textBox";
 import { watchPropertyChanges } from "@Obsidian/Utility/block";
 import { propertyRef, updateRefValue } from "@Obsidian/Utility/component";
 import { LocationBag } from "@Obsidian/ViewModels/Blocks/Core/LocationDetail/locationBag";
 import { LocationDetailOptionsBag } from "@Obsidian/ViewModels/Blocks/Core/LocationDetail/locationDetailOptionsBag";
+import { DefinedType } from "../../../../Rock.JavaScript.Obsidian/Framework/SystemGuids";
+import { ListItemBag } from "@Obsidian/ViewModels/Utility/listItemBag";
 
 export default defineComponent({
     name: "Core.LocationDetail.EditPanel",
@@ -40,8 +48,13 @@ export default defineComponent({
     },
 
     components: {
+        AddressControl,
         AttributeValuesContainer,
         CheckBox,
+        DefinedValuePicker,
+        DropDownList,
+        ImageUploader,
+        NumberBox,
         TextBox
     },
 
@@ -55,16 +68,26 @@ export default defineComponent({
 
         const attributes = ref(props.modelValue.attributes ?? {});
         const attributeValues = ref(props.modelValue.attributeValues ?? {});
+        const parentLocation = propertyRef(props.modelValue.parentLocation, "ParentLocation");
         const isActive = propertyRef(props.modelValue.isActive ?? false, "IsActive");
         const name = propertyRef(props.modelValue.name ?? "", "Name");
+        const locationTypeValue = propertyRef(props.modelValue.locationTypeValue, "LocationTypeValue");
+        const printerDeviceId = propertyRef(props.modelValue.printerDeviceId, "PrinterDeviceId");
+        const isGeoPointLocked = propertyRef(props.modelValue.isGeoPointLocked ?? false, "IsGeoPointLocked");
+        const softRoomThreshold = propertyRef(props.modelValue.softRoomThreshold, "SoftRoomThreshold");
+        const firmRoomThreshold = propertyRef(props.modelValue.firmRoomThreshold, "FirmRoomThreshold");
 
         // The properties that are being edited. This should only contain
         // objects returned by propertyRef().
-        const propRefs = [isActive, name];
+        const propRefs = [isActive, name, parentLocation, locationTypeValue, printerDeviceId, isGeoPointLocked, softRoomThreshold, firmRoomThreshold];
 
         // #endregion
 
         // #region Computed Values
+
+        const printerDeviceOptions = computed((): ListItemBag[] => {
+            return props.options.printerDeviceOptions ?? [];
+        });
 
         // #endregion
 
@@ -80,8 +103,15 @@ export default defineComponent({
         watch(() => props.modelValue, () => {
             updateRefValue(attributes, props.modelValue.attributes ?? {});
             updateRefValue(attributeValues, props.modelValue.attributeValues ?? {});
+            updateRefValue(parentLocation, props.modelValue.parentLocation);
             updateRefValue(isActive, props.modelValue.isActive ?? false);
             updateRefValue(name, props.modelValue.name ?? "");
+            updateRefValue(locationTypeValue, props.modelValue.locationTypeValue);
+            updateRefValue(printerDeviceId, props.modelValue.printerDeviceId);
+
+            updateRefValue(isGeoPointLocked, props.modelValue.isGeoPointLocked ?? false);
+            updateRefValue(softRoomThreshold, props.modelValue.softRoomThreshold);
+            updateRefValue(firmRoomThreshold, props.modelValue.firmRoomThreshold);
         });
 
         // Determines which values we want to track changes on (defined in the
@@ -91,7 +121,13 @@ export default defineComponent({
                 ...props.modelValue,
                 attributeValues: attributeValues.value,
                 isActive: isActive.value,
-                name: name.value
+                name: name.value,
+                locationTypeValue: locationTypeValue.value,
+                parentLocation: parentLocation.value,
+                printerDeviceId: printerDeviceId.value,
+                isGeoPointLocked: isGeoPointLocked.value,
+                softRoomThreshold: softRoomThreshold.value,
+                firmRoomThreshold: firmRoomThreshold.value
             };
 
             emit("update:modelValue", newValue);
@@ -105,7 +141,15 @@ export default defineComponent({
             attributes,
             attributeValues,
             isActive,
-            name
+            name,
+            locationTypeValue,
+            locationTypeDefinedTypeGuid: DefinedType.LocationType,
+            parentLocation,
+            printerDeviceId,
+            isGeoPointLocked,
+            softRoomThreshold,
+            firmRoomThreshold,
+            printerDeviceOptions
         };
     },
 
@@ -113,9 +157,23 @@ export default defineComponent({
 <fieldset>
     <div class="row">
         <div class="col-md-6">
+
+            <LocationPicker v-model="location"
+                label="Parent Location"
+                rules="" />
+
             <TextBox v-model="name"
                 label="Name"
                 rules="required" />
+
+            <DefinedValuePicker v-model="locationTypeValue"
+                label="Location Type"
+                :definedTypeGuid="locationTypeDefinedTypeGuid" />
+
+            <DropDownList v-model="printerDeviceId"
+                label="Printer"
+                help="The printer that this location should use for printing."
+                :items="printerDeviceOptions" />
         </div>
 
         <div class="col-md-6">

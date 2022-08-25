@@ -240,8 +240,6 @@ export default defineComponent({
                 }
                 else if (result.statusCode === 201 && typeof result.data === "string") {
                     return result.data;
-
-                    return false;
                 }
             }
 
