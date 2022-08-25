@@ -24,6 +24,7 @@ import { watchPropertyChanges, useInvokeBlockAction } from "@Obsidian/Utility/bl
 import { propertyRef, updateRefValue } from "@Obsidian/Utility/component";
 import { PageRouteBag } from "@Obsidian/ViewModels/Blocks/Cms/PageRouteDetail/pageRouteBag";
 import { PageRouteDetailOptionsBag } from "@Obsidian/ViewModels/Blocks/Cms/PageRouteDetail/pageRouteDetailOptionsBag";
+import { ListItemBag } from "@Obsidian/ViewModels/Utility/listItemBag";
 
 export default defineComponent({
     name: "Cms.PageRouteDetail.EditPanel",
@@ -60,10 +61,7 @@ export default defineComponent({
         const isGlobal = propertyRef(props.modelValue.isGlobal ?? false, "IsGlobal");
         const site = ref(props.modelValue.site ?? "");
         const page = ref({
-            "page": {
-                value: props.modelValue.page?.value ?? "",
-                text: props.modelValue.page?.text ?? ""
-            }
+            page: props.modelValue.page ?? {}
         });
 
         const invokeBlockAction = useInvokeBlockAction();
@@ -75,7 +73,7 @@ export default defineComponent({
 
         // #region Computed Values
 
-        async function getSiteName(selectedPage: { page: { value, text } }) {
+        async function getSiteName(selectedPage: { page: ListItemBag }) {
             let response = await invokeBlockAction<{ siteName: string }>("GetSiteName", {
                 guid: selectedPage.page.value
             });
@@ -102,10 +100,7 @@ export default defineComponent({
             updateRefValue(route, props.modelValue.route ?? "");
             updateRefValue(isGlobal, props.modelValue.isGlobal);
             updateRefValue(page, {
-                "page": {
-                    value: props.modelValue.page?.value ?? "",
-                    text: props.modelValue.page?.text ?? ""
-                }
+                page: props.modelValue.page ?? {}
             });
         });
 
@@ -117,10 +112,7 @@ export default defineComponent({
                 attributeValues: attributeValues.value,
                 route: route.value,
                 isGlobal: isGlobal.value,
-                page: {
-                    value: page.value?.page?.value ?? "",
-                    text: page.value?.page?.text ?? ""
-                }
+                page: page.value?.page
 
             };
             emit("update:modelValue", newValue);
