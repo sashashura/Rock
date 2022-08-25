@@ -69,7 +69,7 @@ export default defineComponent({
         const invokeBlockAction = useInvokeBlockAction();
         // The properties that are being edited. This should only contain
         // objects returned by propertyRef().
-        const propRefs = [];
+        const propRefs = [route, isGlobal];
 
         // #endregion
 
@@ -107,8 +107,6 @@ export default defineComponent({
                     text: props.modelValue.page?.text ?? ""
                 }
             });
-
-            console.log(props);
         });
 
         // Determines which values we want to track changes on (defined in the
@@ -145,9 +143,6 @@ export default defineComponent({
 
     template: `
 <fieldset>
-    <Alert v-if="isSystem" alertType="info">
-        <strong>Note</strong> Because this page route is used by Rock, editing is not enabled.
-    </Alert>
     <div class="row">
         <div class="col-md-6">
             <PagePicker v-model="page"

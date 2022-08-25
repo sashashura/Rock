@@ -80,8 +80,12 @@ export default defineComponent({
                 valueBuilder.addTextValue("Page", props.modelValue.page.text ?? "");
             }
 
+            if (props.modelValue.route) {
+                valueBuilder.addTextValue("Route", props.modelValue.route);
+            }
+
             if (props.modelValue.site) {
-                valueBuilder.addTextValue("Site", props.modelValue.site ?? "");
+                valueBuilder.addTextValue("Site", props.modelValue.site);
             }
 
             return valueBuilder.build();
