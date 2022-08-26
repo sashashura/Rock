@@ -20,6 +20,7 @@ import AttributeValuesContainer from "@Obsidian/Controls/attributeValuesContaine
 import CheckBox from "@Obsidian/Controls/checkBox";
 import TextBox from "@Obsidian/Controls/textBox";
 import PagePicker from "@Obsidian/Controls/pagePicker";
+import RockLabel from "@Obsidian/Controls/rockLabel";
 import { watchPropertyChanges, useInvokeBlockAction } from "@Obsidian/Utility/block";
 import { propertyRef, updateRefValue } from "@Obsidian/Utility/component";
 import { PageRouteBag } from "@Obsidian/ViewModels/Blocks/Cms/PageRouteDetail/pageRouteBag";
@@ -45,7 +46,8 @@ export default defineComponent({
         AttributeValuesContainer,
         CheckBox,
         PagePicker,
-        TextBox
+        TextBox,
+        RockLabel
     },
 
     emits: {
@@ -77,8 +79,7 @@ export default defineComponent({
             let response = await invokeBlockAction<{ siteName: string }>("GetSiteName", {
                 guid: selectedPage.page.value
             });
-
-            if (response.data) {
+            if (response.isSuccess && response.data) {
                 site.value = response.data.siteName;
             }
         }
@@ -143,7 +144,7 @@ export default defineComponent({
                         :multiple="false"
                         showSelectCurrentPage
                         @update:modelValue="getSiteName" />
-            <Label>Site</Label>
+            <RockLabel>Site</RockLabel>
             <p>{{site}}</p>
         </div>
         <div class="col-md-6">

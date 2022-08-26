@@ -229,6 +229,11 @@ namespace Rock.Blocks.Cms
             return bag;
         }
 
+        /// <summary>
+        /// Gets the page site for the Page
+        /// </summary>
+        /// <param name="pageId">The page identifier.</param>
+        /// <returns></returns>
         private string GetPageSite( int pageId )
         {
             Rock.Web.Cache.PageCache page = Rock.Web.Cache.PageCache.Get( pageId );
@@ -241,11 +246,11 @@ namespace Rock.Blocks.Cms
             return string.Empty;
         }
 
-/// <summary>
-/// Gets the bag for editing the specied entity.
-/// </summary>
-/// <param name="entity">The entity to be represented for edit purposes.</param>
-/// <returns>A <see cref="PageRouteBag"/> that represents the entity.</returns>
+        /// <summary>
+        /// Gets the bag for editing the specied entity.
+        /// </summary>
+        /// <param name="entity">The entity to be represented for edit purposes.</param>
+        /// <returns>A <see cref="PageRouteBag"/> that represents the entity.</returns>
         private PageRouteBag GetEntityBagForEdit( PageRoute entity )
         {
             if ( entity == null )
@@ -471,8 +476,6 @@ namespace Rock.Blocks.Cms
                     } ) );
                 }
 
-                var idfromHash = Rock.Utility.IdHasher.Instance.GetId( entity.IdKey );
-                var id = entity.Id;
 
                 // Ensure navigation properties will work now.
                 entity = entityService.Get( entity.Id );
@@ -566,11 +569,10 @@ namespace Rock.Blocks.Cms
         }
 
         /// <summary>
-        /// Gets the box that will contain all the information needed to begin
-        /// the edit operation.
+        /// Gets the name of the site the page is found on.
         /// </summary>
-        /// <param name="key">The identifier of the entity to be edited.</param>
-        /// <returns>A box that contains the entity and any other information required.</returns>
+        /// <param name="guid">The unique identifier.</param>
+        /// <returns></returns>
         [BlockAction]
         public BlockActionResult GetSiteName( Guid? guid )
         {
