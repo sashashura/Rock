@@ -93,7 +93,7 @@ export default defineComponent({
             }
 
             if (props.modelValue.entityType?.text) {
-                valueBuilder.addTextValue("Attachemnt Entity Type", props.modelValue.entityType.text);
+                valueBuilder.addTextValue("Attachment Entity Type", props.modelValue.entityType.text);
             }
 
             return valueBuilder.build();

@@ -264,7 +264,7 @@ namespace Rock.Blocks.Core
                 () => entity.BackgroundColor = box.Entity.BackgroundColor );
 
             box.IfValidProperty( nameof( box.Entity.BinaryFileType ),
-                () => entity.BinaryFileTypeId = box.Entity.BinaryFileType.GetEntityId<BinaryFileType>( rockContext ) );
+                () => entity.BinaryFileTypeId = box.Entity.AllowsAttachments ? box.Entity.BinaryFileType.GetEntityId<BinaryFileType>( rockContext ) : null );
 
             box.IfValidProperty( nameof( box.Entity.BorderColor ),
                 () => entity.BorderColor = box.Entity.BorderColor );

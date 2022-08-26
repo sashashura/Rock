@@ -69,7 +69,7 @@ export default defineComponent({
         const attributeValues = ref(props.modelValue.attributeValues ?? {});
         const name = propertyRef(props.modelValue.name ?? "", "Name");
         const isSystem = propertyRef(props.modelValue.isSystem, "IsSystem");
-        const entityType = propertyRef(props.modelValue.entityType ?? {}, "EntityType");
+        const entityType = propertyRef(props.modelValue.entityType ?? {}, "EntityTypeId");
         const iconCssClass = propertyRef(props.modelValue.iconCssClass ?? "", "IconCssClass");
         const backgroundColor = propertyRef(props.modelValue.backgroundColor ?? "", "BackgroundColor");
         const fontColor = propertyRef(props.modelValue.fontColor ?? "", "FontColor");
@@ -82,7 +82,7 @@ export default defineComponent({
         const allowsReplies = propertyRef(props.modelValue.allowsReplies, "AllowsReplies");
         const maxReplyDepth = propertyRef(props.modelValue.maxReplyDepth, "MaxReplyDepth");
         const allowsAttachments = propertyRef(props.modelValue.allowsAttachments, "AllowsAttachments");
-        const binaryFileType = propertyRef(props.modelValue.binaryFileType ?? {}, "BinaryFileType");
+        const binaryFileType = propertyRef(props.modelValue.binaryFileType ?? {}, "BinaryFileTypeId");
         const approvalUrlTemplate = propertyRef(props.modelValue.approvalUrlTemplate ?? "", "ApprovalUrlTemplate");
 
         // The properties that are being edited. This should only contain
@@ -148,7 +148,6 @@ export default defineComponent({
                 approvalUrlTemplate: approvalUrlTemplate.value
             };
 
-            console.log(newValue);
             emit("update:modelValue", newValue);
         });
 
@@ -188,13 +187,7 @@ export default defineComponent({
                 label="Name"
                 rules="required" />
 
-            <div v-if="isSystem">
-                <Label>Site</Label>
-                <p>{{site}}</p>
-            </div>
-
-            <EntityTypePicker v-else
-                v-model="entityType"
+            <EntityTypePicker v-model="entityType"
                 label="Entity Type"
                 rules="required"
                 :multiple="false"
