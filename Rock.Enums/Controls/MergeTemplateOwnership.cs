@@ -17,10 +17,13 @@
 
 using System;
 
-namespace Rock.ViewModels.Rest.Controls
+namespace Rock.Enums.Controls
 {
     /// <summary>
-    /// Enum denoting which merge template to query for
+    /// Enum denoting which merge template to query for.
+    /// **NOTE**
+    /// This is copied from Rock.Model.MergeTemplateOwnerShip to make accessible to other
+    /// areas of the codebase. If you make changes here, also update the original if applicable.
     /// </summary>
     public enum MergeTemplateOwnership
     {

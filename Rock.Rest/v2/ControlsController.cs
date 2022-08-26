@@ -26,6 +26,7 @@ using Rock.ClientService.Core.Category;
 using Rock.ClientService.Core.Category.Options;
 using Rock.Communication;
 using Rock.Data;
+using Rock.Enums.Controls;
 using Rock.Extension;
 using Rock.Financial;
 using Rock.Model;
@@ -1882,23 +1883,42 @@ namespace Rock.Rest.v2
         [Rock.SystemGuid.RestActionGuid( "2e486da8-927f-4474-8ba8-00a68d261403" )]
         public IHttpActionResult MergeTemplatePickerGetMergeTemplates( [FromBody] MergeTemplatePickerGetMergeTemplatesOptionsBag options )
         {
+            List<Guid> include = null;
+            List<Guid> exclude = null;
+
+            if (options.MergeTemplateOwnership == Rock.Enums.Controls.MergeTemplateOwnership.Global)
+            {
+                exclude = new List<Guid>();
+                exclude.Add( Rock.SystemGuid.Category.PERSONAL_MERGE_TEMPLATE.AsGuid() );
+            }
+            else if ( options.MergeTemplateOwnership == Rock.Enums.Controls.MergeTemplateOwnership.Personal )
+            {
+                include = new List<Guid>();
+                include.Add( Rock.SystemGuid.Category.PERSONAL_MERGE_TEMPLATE.AsGuid() );
+            }
+
             //MergeTemplateOwnership
             using ( var rockContext = new RockContext() )
             {
                 var clientService = new CategoryClientService( rockContext, GetPerson( rockContext ) );
                 var grant = SecurityGrant.FromToken( options.SecurityGrantToken );
-
-                var items = clientService.GetCategorizedTreeItems( new CategoryItemTreeOptions
+                var queryOptions = new CategoryItemTreeOptions
                 {
                     ParentGuid = options.ParentGuid,
-                    GetCategorizedItems = true,
+                    GetCategorizedItems = options.ParentGuid.HasValue,
                     EntityTypeGuid = EntityTypeCache.Get<MergeTemplate>().Guid,
                     IncludeUnnamedEntityItems = false,
-                    IncludeCategoriesWithoutChildren = options.IncludeCategoriesWithoutChildren,
+                    IncludeCategoriesWithoutChildren = false,
+                    IncludeCategoryGuids = include,
+                    ExcludeCategoryGuids = exclude,
                     DefaultIconCssClass = options.DefaultIconCssClass,
-                    LazyLoad = options.LazyLoad,
+                    ItemFilterPropertyName = null,
+                    ItemFilterPropertyValue = "",
+                    LazyLoad = true,
                     SecurityGrant = grant
-                } );
+                };
+
+                var items = clientService.GetCategorizedTreeItems( queryOptions );
 
                 return Ok( items );
             }

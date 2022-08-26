@@ -16,6 +16,7 @@
 //
 
 using System;
+using Rock.Enums.Controls;
 
 namespace Rock.ViewModels.Rest.Controls
 {
@@ -33,15 +34,6 @@ namespace Rock.ViewModels.Rest.Controls
         public Guid? ParentGuid { get; set; }
 
         /// <summary>
-        /// Gets or sets a value indicating whether categories that have no
-        /// child categories and no items should be included.
-        /// </summary>
-        /// <value>
-        ///   <c>true</c> if categories with no children should be included; otherwise, <c>false</c>.
-        /// </value>
-        public bool IncludeCategoriesWithoutChildren { get; set; } = false;
-
-        /// <summary>
         /// Gets or sets the default icon CSS class to use for items that do not
         /// specify their own IconCssClass value.
         /// </summary>
@@ -52,15 +44,6 @@ namespace Rock.ViewModels.Rest.Controls
         /// Gets or sets a filter for which merge templates to include in results: Global, Public, or Both
         /// </summary>
         public MergeTemplateOwnership MergeTemplateOwnership { get; set; } = MergeTemplateOwnership.Global;
-
-        /// <summary>
-        /// Gets or sets a value indicating whether child categories and items
-        /// are loaded automatically. If <c>true</c> then all descendant categories
-        /// will be loaded along with the items. This results in the Children property
-        /// of the results being null to indicate they must be loaded on demand.
-        /// </summary>
-        /// <value><c>true</c> if child items should not be loaded eagerly; otherwise, <c>false</c>.</value>
-        public bool LazyLoad { get; set; } = true;
 
         /// <summary>
         /// Gets or sets the security grant token to use when performing
